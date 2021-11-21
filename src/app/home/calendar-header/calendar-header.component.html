@@ -1,0 +1,55 @@
+<div class="grid text-center">
+  <div class="md:col-4">
+    <div class="p-buttonset">
+      <button
+        pButton
+        mwlCalendarPreviousView
+        [view]="view"
+        [(viewDate)]="viewDate"
+        (viewDateChange)="viewDateChange.next(viewDate)"
+        [label]="'Previous'"
+      ></button>
+      <button
+        pButton
+        class="p-button-outlined"
+        mwlCalendarToday
+        [(viewDate)]="viewDate"
+        (viewDateChange)="viewDateChange.next(viewDate)"
+        [label]="'Today'"
+      ></button>
+      <button
+        pButton
+        mwlCalendarNextView
+        [view]="view"
+        [(viewDate)]="viewDate"
+        (viewDateChange)="viewDateChange.next(viewDate)"
+        [label]="'Next'"
+      ></button>
+    </div>
+  </div>
+  <div class="md:col-4">
+    <div class="font-bold text-xl py-2">{{ viewDate | calendarDate: view + 'ViewTitle' }}</div>
+  </div>
+  <div class="md:col-4">
+    <div class="p-buttonset">
+      <button
+        pButton
+        (click)="viewChange.emit(CalendarView.Month)"
+        [class.active]="view === CalendarView.Month"
+        [label]="'Month'"
+      ></button>
+      <button
+        pButton
+        (click)="viewChange.emit(CalendarView.Week)"
+        [class.active]="view === CalendarView.Week"
+        [label]="'Week'"
+      ></button>
+      <button
+        pButton
+        (click)="viewChange.emit(CalendarView.Day)"
+        [class.active]="view === CalendarView.Day"
+        [label]="'Day'"
+      ></button>
+    </div>
+  </div>
+</div>
