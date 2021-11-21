@@ -65,6 +65,7 @@ export class HomeComponent implements OnInit {
       draggable: true,
     },
   ];
+  open = false;
 
   constructor() { }
 

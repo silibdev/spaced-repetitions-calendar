@@ -6,7 +6,7 @@ import { CalendarModule, DateAdapter } from 'angular-calendar';
 import { adapterFactory } from 'angular-calendar/date-adapters/date-fns';
 import { CalendarHeaderComponent } from './calendar-header/calendar-header.component';
 import { ButtonModule } from 'primeng/button';
-
+import { DialogModule } from 'primeng/dialog';
 
 
 @NgModule({
@@ -21,7 +21,8 @@ import { ButtonModule } from 'primeng/button';
       provide: DateAdapter,
       useFactory: adapterFactory
     }),
-    ButtonModule
+    ButtonModule,
+    DialogModule
   ]
 })
 export class HomeModule { }

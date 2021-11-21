@@ -1,9 +1,11 @@
-<p-menubar [model]="menu">
-  <div *pTemplate="'start'" class="px-2">
-    <span class="pi pi-calendar pr-2"></span>
-    <span class="lg:text-xl md:text-lg">Spaced Repetition Calendar</span>
-  </div>
-</p-menubar>
+<div>
+  <p-menubar [model]="menu">
+    <div *pTemplate="'start'" class="px-2">
+      <span class="pi pi-calendar pr-2"></span>
+      <span class="lg:text-xl md:text-lg">Spaced Repetition Calendar</span>
+    </div>
+  </p-menubar>
+</div>
 <div class="mt-2">
   <router-outlet></router-outlet>
 </div>
