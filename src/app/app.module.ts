@@ -6,6 +6,7 @@ import { AppComponent } from './app.component';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { MenubarModule } from 'primeng/menubar';
 import { SharedModule } from 'primeng/api';
+import { RouterModule } from '@angular/router';
 
 @NgModule({
   declarations: [
