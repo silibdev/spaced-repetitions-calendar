@@ -16,4 +16,10 @@ export class CalendarHeaderComponent {
   @Output() viewDateChange = new EventEmitter<Date>();
 
   CalendarView = CalendarView;
+
+  viewsOptions = [
+    {label: 'Month', value: CalendarView.Month},
+    {label: 'Week', value: CalendarView.Week},
+    {label: 'Day', value: CalendarView.Day}
+  ]
 }

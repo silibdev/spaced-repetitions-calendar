@@ -1,2 +1,36 @@
 /* You can add global styles to this file, and also import other style files */
 @import "../node_modules/angular-calendar/css/angular-calendar.css";
+
+.cal-month-view .cal-open-day-events {
+  background: #f8f9fa;
+  box-shadow: unset;
+  border-bottom: 1px solid #e1e1e1;
+  color: rgba(0, 0, 0, 0.5);
+
+  & > div {
+    padding: 0.5rem 0;
+  }
+}
+
+.cal-week-view {
+  .cal-event {
+    border-width: 2px;
+  }
+}
+
+.modal-lg {
+  min-width: 65vw;
+  width: 35rem;
+  max-width: 100vw;
+}
+
+.p-field {
+  label {
+    display: block;
+    margin-bottom: .5rem;
+  }
+
+  .p-element {
+    width: 100%
+  }
+}

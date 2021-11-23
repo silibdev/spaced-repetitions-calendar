@@ -1,22 +1,13 @@
 import { Component, OnInit } from '@angular/core';
 import { CalendarEvent, CalendarView } from 'angular-calendar';
-import { addDays, addHours, endOfMonth, startOfDay, subDays } from 'date-fns';
+import { EventFormService } from '../services/event-form.service';
+import { SpacedRepService } from '../services/spaced-rep.service';
+import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
+import { finalize, Observable } from 'rxjs';
+import { SpacedRepModel } from '../models/spaced-rep.model';
+import { isSameDay, isSameMonth } from 'date-fns';
 
-const colors: any = {
-  red: {
-    primary: '#ad2121',
-    secondary: '#FAE3E3',
-  },
-  blue: {
-    primary: '#1e90ff',
-    secondary: '#D1E8FF',
-  },
-  yellow: {
-    primary: '#e3bc08',
-    secondary: '#FDF1BA',
-  },
-};
-
+@UntilDestroy()
 @Component({
   selector: 'app-home',
   templateUrl: './home.component.html',
@@ -27,49 +18,80 @@ export class HomeComponent implements OnInit {
   CalendarView = CalendarView;
 
   viewDate: Date = new Date();
+  currentEvents?: SpacedRepModel[];
 
-  events: CalendarEvent[] = [
-    {
-      start: subDays(startOfDay(new Date()), 1),
-      end: addDays(new Date(), 1),
-      title: 'A 3 day event',
-      color: colors.red,
-      allDay: true,
-      resizable: {
-        beforeStart: true,
-        afterEnd: true,
-      },
-      draggable: true,
-    },
-    {
-      start: startOfDay(new Date()),
-      title: 'An event with no end date',
-      color: colors.yellow,
-    },
-    {
-      start: subDays(endOfMonth(new Date()), 3),
-      end: addDays(endOfMonth(new Date()), 3),
-      title: 'A long event that spans 2 months',
-      color: colors.blue,
-      allDay: true,
-    },
-    {
-      start: addHours(startOfDay(new Date()), 2),
-      end: addHours(new Date(), 2),
-      title: 'A draggable and resizable event',
-      color: colors.yellow,
-      resizable: {
-        beforeStart: true,
-        afterEnd: true,
-      },
-      draggable: true,
-    },
-  ];
+  events$: Observable<CalendarEvent[]>;
+
   open = false;
+  loading = false
+  activeDayIsOpen = false;
+  eventToModify?: SpacedRepModel;
+  openEdit?: boolean;
 
-  constructor() { }
+  constructor(
+    public eventFormService: EventFormService,
+    private spacedRepService: SpacedRepService
+  ) {
+    this.events$ = this.spacedRepService.getAll();
+  }
 
   ngOnInit(): void {
   }
 
+  createSpacedRep(): void {
+    if (!this.eventFormService.isValid()) {
+      return;
+    }
+    const createSpacedRep = this.eventFormService.getCreateSpacedRep();
+    this.loading = true;
+    this.spacedRepService.create(createSpacedRep)
+      .pipe(untilDestroyed(this),
+        finalize(() => {
+          this.loading = false;
+          this.open = false;
+        })
+      ).subscribe()
+  }
+
+  dayClicked({date, events}: { date: Date; events: CalendarEvent[] }): void {
+    if (isSameMonth(date, this.viewDate)) {
+      this.activeDayIsOpen = !((isSameDay(this.viewDate, date) && this.activeDayIsOpen) || events.length === 0);
+      this.viewDate = date;
+    }
+  }
+
+  editEvent(event: SpacedRepModel): void {
+    this.eventToModify = event;
+    this.openEdit = true;
+  }
+
+  closeEditEvent(): void {
+    this.eventToModify = undefined;
+  }
+
+  deleteEvent(): void {
+    this.loading = true;
+    this.spacedRepService.deleteEvent(this.eventToModify).pipe(
+      untilDestroyed(this),
+      finalize( () => {
+        this.loading = false;
+        this.openEdit = false;
+      })
+    ).subscribe()
+  }
+
+  saveEvent(): void {
+    if (!this.eventFormService.isValid()) {
+      return;
+    }
+    this.loading = true;
+    const event = this.eventFormService.getEditedSpacedRep();
+    this.spacedRepService.save(event).pipe(
+      untilDestroyed(this),
+      finalize( () => {
+        this.loading = false;
+        this.openEdit = false;
+      })
+    ).subscribe();
+  }
 }

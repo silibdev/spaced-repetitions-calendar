@@ -1,0 +1,39 @@
+<div class="grid" [formGroup]="eventFormService.form" #content>
+  <div class="col-12 p-field">
+    <label>Title</label>
+    <input
+      pInputText
+      type="text"
+      [formControlName]="'title'">
+  </div>
+  <div class="col-12 p-field">
+    <label>Description</label>
+    <textarea
+      pInputTextarea
+      [formControlName]="'description'"
+      rows="4"
+    ></textarea>
+  </div>
+
+  <div class="col-4 p-field">
+    <label>Date</label>
+    <p-calendar [formControlName]="'start'" appendTo="body"></p-calendar>
+  </div>
+
+  <div class="col-2 p-field">
+    <label>Color</label>
+    <p-colorPicker [formControlName]="'color'" appendTo="body"></p-colorPicker>
+  </div>
+
+  <div class="col-6 p-field" *ngIf="!isEdit">
+    <label>RepetitionSchema</label>
+    <p-dropdown
+      appendTo="body"
+      [options]="eventFormService.repetitionSchemaOpts"
+      [formControlName]="'repetitionSchema'"
+    ></p-dropdown>
+  </div>
+
+  <p-message *ngIf="isMaster" severity="warn" text="Deleting this will delete the whole series!"
+             class="mt-3 col-12"></p-message>
+</div>
