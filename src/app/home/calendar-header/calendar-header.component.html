@@ -3,7 +3,6 @@
     <div class="p-buttonset">
       <button
         pButton
-        class="p-button-sm"
         mwlCalendarPreviousView
         [view]="view"
         [(viewDate)]="viewDate"
@@ -12,7 +11,7 @@
       ></button>
       <button
         pButton
-        class="p-button-sm p-button-outlined"
+        class="p-button-outlined"
         mwlCalendarToday
         [(viewDate)]="viewDate"
         (viewDateChange)="viewDateChange.next(viewDate)"
@@ -20,7 +19,6 @@
       ></button>
       <button
         pButton
-        class="p-button-sm"
         mwlCalendarNextView
         [view]="view"
         [(viewDate)]="viewDate"
@@ -33,29 +31,10 @@
     <div class="font-bold text-xl py-2">{{ viewDate | calendarDate: view + 'ViewTitle' }}</div>
   </div>
   <div class="col-7 flex-order-1 md:flex-order-2 md:col-4">
-    <div class="p-buttonset">
-      <p-selectButton [options]="viewsOptions" [ngModel]="view" (ngModelChange)="viewChange.emit($event)"></p-selectButton>
-<!--      <button-->
-<!--        pButton-->
-<!--        class="p-button-sm"-->
-<!--        (click)="viewChange.emit(CalendarView.Month)"-->
-<!--        [class.active]="view === CalendarView.Month"-->
-<!--        [label]="'Month'"-->
-<!--      ></button>-->
-<!--      <button-->
-<!--        pButton-->
-<!--        class="p-button-sm"-->
-<!--        (click)="viewChange.emit(CalendarView.Week)"-->
-<!--        [class.active]="view === CalendarView.Week"-->
-<!--        [label]="'Week'"-->
-<!--      ></button>-->
-<!--      <button-->
-<!--        pButton-->
-<!--        class="p-button-sm"-->
-<!--        (click)="viewChange.emit(CalendarView.Day)"-->
-<!--        [class.active]="view === CalendarView.Day"-->
-<!--        [label]="'Day'"-->
-<!--      ></button>-->
-    </div>
+    <p-selectButton
+      [options]="viewsOptions"
+      [ngModel]="view"
+      (ngModelChange)="viewChange.emit($event)"
+    ></p-selectButton>
   </div>
 </div>

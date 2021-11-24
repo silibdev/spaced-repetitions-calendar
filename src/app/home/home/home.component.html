@@ -2,7 +2,7 @@
   <app-calendar-header [(view)]="view" [(viewDate)]="viewDate">
   </app-calendar-header>
 
-  <div [ngSwitch]="view" class="mt-3" *ngIf="events$ | async as events">
+  <div [ngSwitch]="view" class="mt-3 calendar-container" *ngIf="events$ | async as events">
     <mwl-calendar-month-view
       *ngSwitchCase="CalendarView.Month"
       [viewDate]="viewDate"
