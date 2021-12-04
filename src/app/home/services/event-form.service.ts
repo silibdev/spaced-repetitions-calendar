@@ -24,9 +24,17 @@ export class EventFormService {
       id: [],
       allDay: [],
       start: [undefined, Validators.required],
-      color: [undefined, Validators.required]
+      color: [{value: undefined, disabled: true}, Validators.required]
     })
     this.reset();
+  }
+
+  enableColorControl(): void {
+    this.form.get('color')?.enable()
+  }
+
+  disableColorControl(): void {
+    this.form.get('color')?.disable()
   }
 
 
@@ -34,7 +42,7 @@ export class EventFormService {
     this.form.setValue({
       repetitionSchema: this.repetitionSchemaOpts[0].value,
       start: new Date(),
-      color: '#1359f8',
+      color: '',
       title: '',
       description: '',
       linkedSpacedRepId: '',
@@ -44,7 +52,7 @@ export class EventFormService {
   }
 
   getCreateSpacedRep(): CreateSpacedReps {
-    const value = this.form.value
+    const value = this.form.getRawValue()
     return {
       spacedRep: {
         title: value.title,
@@ -60,7 +68,7 @@ export class EventFormService {
   }
 
   getEditedSpacedRep(): SpacedRepModel {
-    const value = this.form.value;
+    const value = this.form.getRawValue();
     return {
       title: value.title,
       description: value.description,

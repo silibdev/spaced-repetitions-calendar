@@ -20,12 +20,26 @@
     <p-calendar [formControlName]="'start'" appendTo="body"></p-calendar>
   </div>
 
-  <div class="col-2 p-field">
+  <div class="col-4 p-field">
     <label>Color</label>
-    <p-colorPicker [formControlName]="'color'" appendTo="body"></p-colorPicker>
+    <p-dropdown [options]="colorOpts" [formControl]="customColorControl" appendTo="body">
+      <ng-template let-item pTemplate="selectedItem">
+        <div class="flex align-items-center">
+          <span class="color inline-block" [style.background-color]="item.value"></span>
+          <span class="pl-1">{{item.label}}</span>
+        </div>
+      </ng-template>
+      <ng-template let-item pTemplate="item">
+        <div class="flex align-items-center">
+          <span class="color inline-block" [style.background-color]="item.value"></span>
+          <span class="pl-1">{{item.label}}</span>
+        </div>
+      </ng-template>
+    </p-dropdown>
+    <p-colorPicker class="pl-2" [formControlName]="'color'" appendTo="body"></p-colorPicker>
   </div>
 
-  <div class="col-6 p-field" *ngIf="!isEdit">
+  <div class="col-4 p-field" *ngIf="!isEdit">
     <label>RepetitionSchema</label>
     <p-dropdown
       appendTo="body"
