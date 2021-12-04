@@ -35,7 +35,7 @@
     (click)="open = true"
   ></button>
 
-  <p-dialog [(visible)]="open" [modal]="true" styleClass="modal-lg" (onHide)="eventFormService.reset()">
+  <p-dialog appMaximized [(visible)]="open" [modal]="true" (onHide)="eventFormService.reset()">
     <div *pTemplate="'header'">
       Create event
     </div>
@@ -52,7 +52,7 @@
   </p-dialog>
 
 
-  <p-dialog [(visible)]="openEdit" [modal]="true" styleClass="modal-lg" (onHide)="closeEditEvent()">
+  <p-dialog appMaximized [(visible)]="openEdit" [modal]="true" (onHide)="closeEditEvent()">
     <div *pTemplate="'header'">
       Edit <span class="font-bold">{{eventToModify?.title}}</span>
     </div>
