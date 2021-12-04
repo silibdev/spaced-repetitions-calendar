@@ -35,14 +35,16 @@
     (click)="open = true"
   ></button>
 
-  <p-dialog [(visible)]="open" [modal]="true" styleClass="modal-lg" (onHide)="eventFormService.reset()">
+  <p-dialog appMaximized [(visible)]="open" [modal]="true" (onHide)="eventFormService.reset()">
     <div *pTemplate="'header'">
       Create event
     </div>
-    <app-event-view #content *ngIf="open"></app-event-view>
-    <p-blockUI [target]="content" [blocked]="loading">
-      <p-progressSpinner></p-progressSpinner>
-    </p-blockUI>
+    <ng-container *ngIf="open">
+      <app-event-view #content1></app-event-view>
+      <p-blockUI [target]="content1" [blocked]="loading">
+        <p-progressSpinner></p-progressSpinner>
+      </p-blockUI>
+    </ng-container>
     <ng-template pTemplate="footer">
       <button pButton [label]="'Cancel'" [disabled]="loading" class="p-button-outlined" (click)="open = false"></button>
       <button pButton [label]="'Create'" [loading]="loading" (click)="createSpacedRep()"></button>
@@ -50,7 +52,7 @@
   </p-dialog>
 
 
-  <p-dialog [(visible)]="openEdit" [modal]="true" styleClass="modal-lg" (onHide)="closeEditEvent()">
+  <p-dialog appMaximized [(visible)]="openEdit" [modal]="true" (onHide)="closeEditEvent()">
     <div *pTemplate="'header'">
       Edit <span class="font-bold">{{eventToModify?.title}}</span>
     </div>

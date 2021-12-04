@@ -19,13 +19,15 @@ import { MessageModule } from 'primeng/message';
 import { ColorPickerModule } from 'primeng/colorpicker';
 import { TitleFormatterProvider } from './services/title-formatter.provider';
 import { SelectButtonModule } from 'primeng/selectbutton';
+import { DialogMaximizedDirective } from './dialog-maximized.directive';
 
 
 @NgModule({
   declarations: [
     HomeComponent,
     CalendarHeaderComponent,
-    EventViewComponent
+    EventViewComponent,
+    DialogMaximizedDirective
   ],
   imports: [
     CommonModule,
