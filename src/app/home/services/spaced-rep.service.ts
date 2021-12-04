@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { CreateSpacedReps, SpacedRepModel } from '../models/spaced-rep.model';
 import { BehaviorSubject, Observable, of, shareReplay, tap, throwError } from 'rxjs';
 import { addDays } from 'date-fns';
+import { EventFormService } from './event-form.service';
 
 const DB_NAME = 'src-db';
 
@@ -12,7 +13,9 @@ export class SpacedRepService {
   private spacedReps = new BehaviorSubject<SpacedRepModel[]>([]);
   private spacedReps$: Observable<SpacedRepModel[]>;
 
-  constructor() {
+  constructor(
+    private eventFormService: EventFormService
+  ) {
     const db = localStorage.getItem(DB_NAME);
     if (db) {
       const oldDb = JSON.parse(db);
@@ -37,6 +40,8 @@ export class SpacedRepService {
 
   create(createSpacedRep: CreateSpacedReps): Observable<void> {
     const repSchema: number[] = createSpacedRep.repetitionSchema.split(';').map( rep => +rep);
+
+    this.eventFormService.saveNewRepetitionSchema(createSpacedRep.repetitionSchema);
 
     const firstSR: SpacedRepModel = {
       id: Math.random().toString(),

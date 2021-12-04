@@ -2,20 +2,31 @@ import { Injectable } from '@angular/core';
 import { AbstractControl, FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { CreateSpacedReps, SpacedRepModel } from '../models/spaced-rep.model';
 
+const OPTS_DB_NAME = 'src-opts-db';
+
 @Injectable({
   providedIn: 'root'
 })
 export class EventFormService {
-  repetitionSchemaOpts: { label: string, value: string }[] = [
-    {label: '1;7;30;90', value: '1;7;30;90'},
-    {label: '1;5;15;30', value: '1;5;15;30'}
-  ]
+  get repetitionSchemaOpts(): { label: string, value: string }[] {
+    return this.opts.repetitionSchemaOpts;
+  }
 
   form: FormGroup;
+  private opts: {
+    repetitionSchemaOpts: { label: string, value: string }[]
+  } = {
+    repetitionSchemaOpts: [
+      {label: '1;7;30;90', value: '1;7;30;90'},
+      {label: '1;5;15;30', value: '1;5;15;30'}
+    ]
+  };
 
   constructor(
     fb: FormBuilder
   ) {
+    this.loadOpts();
+
     this.form = fb.group({
       title: [undefined, Validators.required],
       description: [undefined, Validators.required],
@@ -27,6 +38,57 @@ export class EventFormService {
       color: [{value: undefined, disabled: true}, Validators.required]
     })
     this.reset();
+  }
+
+  loadOpts(): void {
+    const optsString = localStorage.getItem(OPTS_DB_NAME);
+    const opts = optsString ? JSON.parse(optsString) : undefined;
+
+    if (opts) {
+      this.opts = opts;
+    } else {
+      this.saveOpts();
+    }
+  }
+
+  saveOpts(): void {
+    localStorage.setItem(OPTS_DB_NAME, JSON.stringify(this.opts));
+  }
+
+  saveNewRepetitionSchema(repSchema: string): boolean {
+    if (!this.repetitionSchemaOpts.find(rs => rs.value === repSchema)) {
+      this.opts.repetitionSchemaOpts.push({
+        value: repSchema,
+        label: repSchema
+      });
+      this.saveOpts();
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  editRepetitionSchema(index: number, repSchema: string): boolean {
+    if (!this.repetitionSchemaOpts.find(rs => rs.value === repSchema)) {
+      const repSchemaOpt = this.repetitionSchemaOpts[index];
+      // could be an out of bound
+      if (repSchemaOpt) {
+        repSchemaOpt.value = repSchema;
+        repSchemaOpt.label = repSchema;
+        this.saveOpts();
+      } else {
+        this.saveNewRepetitionSchema(repSchema);
+      }
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  deleteRepetitionSchema(index: number): void {
+    const repSchema = this.repetitionSchemaOpts[index].value;
+    this.opts.repetitionSchemaOpts = this.repetitionSchemaOpts.filter(rs => rs.value !== repSchema);
+    this.saveOpts();
   }
 
   enableColorControl(): void {
@@ -63,7 +125,7 @@ export class EventFormService {
         }
       },
       repetitionSchema: value.repetitionSchema,
-      startDate: value.start,
+      startDate: value.start
     }
   }
 

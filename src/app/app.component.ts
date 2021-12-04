@@ -10,8 +10,16 @@ export class AppComponent {
   menu: MenuItem[] = [
     {
       label: 'Home',
-      title: 'Home',
       routerLink: '/'
+    },
+    {
+      label: 'Settings',
+      items: [
+        {
+          label: 'Repetition schemas',
+          routerLink: 'settings/rep-schemas'
+        }
+      ]
     }
   ]
 }
