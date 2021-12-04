@@ -20,6 +20,10 @@ export class AppComponent {
           routerLink: 'settings/rep-schemas'
         }
       ]
+    },
+    {
+      label: 'About',
+      routerLink: 'about'
     }
   ]
 }
