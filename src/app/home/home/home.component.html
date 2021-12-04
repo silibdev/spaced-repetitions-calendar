@@ -39,10 +39,12 @@
     <div *pTemplate="'header'">
       Create event
     </div>
-    <app-event-view #content *ngIf="open"></app-event-view>
-    <p-blockUI [target]="content" [blocked]="loading">
-      <p-progressSpinner></p-progressSpinner>
-    </p-blockUI>
+    <ng-container *ngIf="open">
+      <app-event-view #content1></app-event-view>
+      <p-blockUI [target]="content1" [blocked]="loading">
+        <p-progressSpinner></p-progressSpinner>
+      </p-blockUI>
+    </ng-container>
     <ng-template pTemplate="footer">
       <button pButton [label]="'Cancel'" [disabled]="loading" class="p-button-outlined" (click)="open = false"></button>
       <button pButton [label]="'Create'" [loading]="loading" (click)="createSpacedRep()"></button>
