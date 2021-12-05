@@ -37,7 +37,8 @@ export class EventFormService {
       allDay: [],
       start: [undefined, Validators.required],
       color: [{value: undefined, disabled: true}, Validators.required],
-      done: []
+      done: [],
+      repetitionNumber: []
     })
     this.reset();
   }
@@ -112,7 +113,8 @@ export class EventFormService {
       id: '',
       allDay: true,
       done: false,
-      shortDescription: ''
+      shortDescription: '',
+      repetitionNumber: null
     })
   }
 
@@ -147,7 +149,8 @@ export class EventFormService {
         secondary: 'white'
       },
       allDay: value.allDay,
-      done: value.done
+      done: value.done,
+      repetitionNumber: value.repetitionNumber
     }
   }
 
@@ -184,7 +187,8 @@ export class EventFormService {
         color: event.color?.primary,
         linkedSpacedRepId: event.linkedSpacedRepId,
         allDay: event.allDay,
-        done: event.done
+        done: event.done,
+        repetitionNumber: event.repetitionNumber
       });
     }
   }

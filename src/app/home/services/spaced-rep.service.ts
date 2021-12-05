@@ -51,7 +51,8 @@ export class SpacedRepService {
       color: createSpacedRep.spacedRep.color,
       allDay: true,
       done: false,
-      shortDescription: createSpacedRep.spacedRep.shortDescription
+      shortDescription: createSpacedRep.spacedRep.shortDescription,
+      repetitionNumber: 0
     }
 
     const newSpacedReps = [firstSR];
@@ -66,7 +67,8 @@ export class SpacedRepService {
         color: firstSR.color,
         allDay: true,
         done: false,
-        shortDescription: firstSR.shortDescription
+        shortDescription: firstSR.shortDescription,
+        repetitionNumber: rep
       }
       newSpacedReps.push(spacedRep);
     })

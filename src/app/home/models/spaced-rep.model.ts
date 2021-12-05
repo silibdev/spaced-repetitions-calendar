@@ -5,6 +5,7 @@ export interface SpacedRepModel extends CalendarEvent {
   description: string;
   done: boolean;
   shortDescription: string;
+  repetitionNumber: number;
 }
 
 export interface CreateSpacedReps {
