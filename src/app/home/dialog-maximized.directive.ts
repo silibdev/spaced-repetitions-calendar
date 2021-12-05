@@ -9,7 +9,7 @@ export class DialogMaximizedDirective {
   constructor(
     private dialog: Dialog
   ) {
-    const oldOnAnimationStart = this.dialog.onAnimationStart;
+    const oldOnAnimationStart = this.dialog.onAnimationStart.bind(this.dialog);
     this.dialog.onAnimationStart = (event: any) => {
       this.dialog.maximized = true;
       oldOnAnimationStart(event);
