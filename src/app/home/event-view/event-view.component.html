@@ -49,6 +49,10 @@
     ></p-dropdown>
   </div>
 
+  <div class="col-4 p-field-checkbox" *ngIf="isEdit">
+    <p-checkbox class="pt-5" [formControlName]="'done'" [binary]="true" label="Done"></p-checkbox>
+  </div>
+
   <p-message *ngIf="isMaster" severity="warn" text="Deleting this will delete the whole series!"
              class="mt-3 col-12"></p-message>
 </div>

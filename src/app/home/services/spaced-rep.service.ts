@@ -49,7 +49,8 @@ export class SpacedRepService {
       description: createSpacedRep.spacedRep.description,
       start: createSpacedRep.startDate,
       color: createSpacedRep.spacedRep.color,
-      allDay: true
+      allDay: true,
+      done: false
     }
 
     const newSpacedReps = [firstSR];
@@ -62,7 +63,8 @@ export class SpacedRepService {
         linkedSpacedRepId: firstSR.id,
         start: addDays(firstSR.start, rep),
         color: firstSR.color,
-        allDay: true
+        allDay: true,
+        done: false
       }
       newSpacedReps.push(spacedRep);
     })
