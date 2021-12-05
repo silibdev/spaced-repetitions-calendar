@@ -40,7 +40,7 @@
       Create event
     </div>
     <ng-container *ngIf="open">
-      <app-event-view #content1></app-event-view>
+      <app-event-view #content1 [event]="undefined"></app-event-view>
       <p-blockUI [target]="content1" [blocked]="loading">
         <p-progressSpinner></p-progressSpinner>
       </p-blockUI>
@@ -52,14 +52,17 @@
   </p-dialog>
 
 
-  <p-dialog appMaximized [(visible)]="openEdit" [modal]="true" (onHide)="closeEditEvent()">
-    <div *pTemplate="'header'">
-      Edit <span class="font-bold">{{eventToModify?.title}}</span>
+  <p-dialog appMaximized [(visible)]="openEdit" [modal]="true" (onHide)="closeEditEvent()" (onShow)="showEditEvent()">
+    <div *pTemplate="'header'" class="flex justify-content-between" [style.width]="'100%'">
+      <span>Edit <span class="font-bold">{{editEventModel?.title}}</span> </span>
+      <span class="pr-4">Repetition: {{editEventModel?.repetitionNumber}}</span>
     </div>
-    <app-event-view #content [event]="eventToModify"></app-event-view>
-    <p-blockUI [target]="content" [blocked]="loading">
-      <p-progressSpinner></p-progressSpinner>
-    </p-blockUI>
+    <ng-container *ngIf="editEventModel">
+      <app-event-view #content [event]="editEventModel"></app-event-view>
+      <p-blockUI [target]="content" [blocked]="loading">
+        <p-progressSpinner></p-progressSpinner>
+      </p-blockUI>
+    </ng-container>
     <ng-template pTemplate="footer">
       <button pButton [label]="'Delete'" [disabled]="loading" class="p-button-danger" [style.float]="'left'" (click)="deleteEvent()"></button>
       <button pButton [label]="'Cancel'" [disabled]="loading" class="p-button-outlined" (click)="openEdit = false"></button>

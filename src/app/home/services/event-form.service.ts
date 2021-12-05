@@ -29,13 +29,16 @@ export class EventFormService {
 
     this.form = fb.group({
       title: [undefined, Validators.required],
-      description: [undefined, Validators.required],
+      description: [undefined],
+      shortDescription: [undefined, Validators.required],
       repetitionSchema: [undefined, Validators.required],
       linkedSpacedRepId: [],
       id: [],
       allDay: [],
       start: [undefined, Validators.required],
-      color: [{value: undefined, disabled: true}, Validators.required]
+      color: [{value: undefined, disabled: true}, Validators.required],
+      done: [],
+      repetitionNumber: []
     })
     this.reset();
   }
@@ -99,7 +102,6 @@ export class EventFormService {
     this.form.get('color')?.disable()
   }
 
-
   reset(): void {
     this.form.setValue({
       repetitionSchema: this.repetitionSchemaOpts[0].value,
@@ -109,7 +111,10 @@ export class EventFormService {
       description: '',
       linkedSpacedRepId: '',
       id: '',
-      allDay: true
+      allDay: true,
+      done: false,
+      shortDescription: '',
+      repetitionNumber: null
     })
   }
 
@@ -122,7 +127,8 @@ export class EventFormService {
         color: {
           primary: value.color,
           secondary: 'white'
-        }
+        },
+        shortDescription: value.shortDescription
       },
       repetitionSchema: value.repetitionSchema,
       startDate: value.start
@@ -134,6 +140,7 @@ export class EventFormService {
     return {
       title: value.title,
       description: value.description,
+      shortDescription: value.shortDescription,
       start: value.start,
       id: value.id,
       linkedSpacedRepId: value.linkedSpacedRepId,
@@ -141,7 +148,9 @@ export class EventFormService {
         primary: value.color,
         secondary: 'white'
       },
-      allDay: value.allDay
+      allDay: value.allDay,
+      done: value.done,
+      repetitionNumber: value.repetitionNumber
     }
   }
 
@@ -172,11 +181,14 @@ export class EventFormService {
       this.form.patchValue({
         title: event.title,
         description: event.description,
+        shortDescription: event.shortDescription,
         id: event.id,
         start: event.start,
         color: event.color?.primary,
         linkedSpacedRepId: event.linkedSpacedRepId,
-        allDay: event.allDay
+        allDay: event.allDay,
+        done: event.done,
+        repetitionNumber: event.repetitionNumber
       });
     }
   }

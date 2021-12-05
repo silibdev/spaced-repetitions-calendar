@@ -29,7 +29,7 @@ export class SpacedRepService {
           const toDb: any = {
             ...event
           };
-          toDb.start = toDb.start.toUTCString();
+          toDb.start = toDb.start.toISOString();
           return toDb;
         })
         localStorage.setItem(DB_NAME, JSON.stringify(dbToSave));
@@ -49,7 +49,10 @@ export class SpacedRepService {
       description: createSpacedRep.spacedRep.description,
       start: createSpacedRep.startDate,
       color: createSpacedRep.spacedRep.color,
-      allDay: true
+      allDay: true,
+      done: false,
+      shortDescription: createSpacedRep.spacedRep.shortDescription,
+      repetitionNumber: 0
     }
 
     const newSpacedReps = [firstSR];
@@ -62,7 +65,10 @@ export class SpacedRepService {
         linkedSpacedRepId: firstSR.id,
         start: addDays(firstSR.start, rep),
         color: firstSR.color,
-        allDay: true
+        allDay: true,
+        done: false,
+        shortDescription: firstSR.shortDescription,
+        repetitionNumber: rep
       }
       newSpacedReps.push(spacedRep);
     })

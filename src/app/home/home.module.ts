@@ -20,6 +20,8 @@ import { ColorPickerModule } from 'primeng/colorpicker';
 import { TitleFormatterProvider } from './services/title-formatter.provider';
 import { SelectButtonModule } from 'primeng/selectbutton';
 import { DialogMaximizedDirective } from './dialog-maximized.directive';
+import { CheckboxModule } from 'primeng/checkbox';
+import { EditorModule } from 'primeng/editor';
 
 
 @NgModule({
@@ -48,7 +50,9 @@ import { DialogMaximizedDirective } from './dialog-maximized.directive';
     CalendarModule,
     MessageModule,
     ColorPickerModule,
-    SelectButtonModule
+    SelectButtonModule,
+    CheckboxModule,
+    EditorModule
   ],
   providers: [
     TitleFormatterProvider

@@ -1,4 +1,7 @@
 <div class="grid" [formGroup]="eventFormService.form" #content>
+  <p-message *ngIf="isMaster" severity="warn" text="Deleting this will delete the whole series!"
+             class="col-12"></p-message>
+
   <div class="col-12 p-field">
     <label>Title</label>
     <input
@@ -6,21 +9,29 @@
       type="text"
       [formControlName]="'title'">
   </div>
+
   <div class="col-12 p-field">
-    <label>Description</label>
-    <textarea
-      pInputTextarea
-      [formControlName]="'description'"
-      rows="4"
-    ></textarea>
+    <label>Short description</label>
+    <input
+      pInputText
+      type="text"
+      [formControlName]="'shortDescription'">
   </div>
 
-  <div class="col-4 p-field">
+  <div class="col-12 p-field">
+    <label>Description</label>
+    <p-editor
+      [formControlName]="'description'"
+      [style]="{height: '40vh'}"
+    ></p-editor>
+  </div>
+
+  <div class="col-5 sm:col-3 md:col-2 p-field">
     <label>Date</label>
     <p-calendar [formControlName]="'start'" appendTo="body"></p-calendar>
   </div>
 
-  <div class="col-4 p-field">
+  <div class="col-7 sm:col-6 md:col-5 lg:col-4 p-field">
     <label>Color</label>
     <p-dropdown [options]="colorOpts" [formControl]="customColorControl" appendTo="body">
       <ng-template let-item pTemplate="selectedItem">
@@ -39,7 +50,7 @@
     <p-colorPicker class="pl-2" [formControlName]="'color'" appendTo="body"></p-colorPicker>
   </div>
 
-  <div class="col-4 p-field" *ngIf="!isEdit">
+  <div class="col-6 md:col-4 p-field" *ngIf="!isEdit">
     <label>RepetitionSchema</label>
     <p-dropdown
       appendTo="body"
@@ -49,6 +60,7 @@
     ></p-dropdown>
   </div>
 
-  <p-message *ngIf="isMaster" severity="warn" text="Deleting this will delete the whole series!"
-             class="mt-3 col-12"></p-message>
+  <div class="col-4 sm:col-3 md:col-2 p-field-checkbox" *ngIf="isEdit">
+    <p-checkbox class="pt-5" [formControlName]="'done'" [binary]="true" label="Done"></p-checkbox>
+  </div>
 </div>
