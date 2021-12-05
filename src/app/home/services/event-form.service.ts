@@ -29,7 +29,8 @@ export class EventFormService {
 
     this.form = fb.group({
       title: [undefined, Validators.required],
-      description: [undefined, Validators.required],
+      description: [undefined],
+      shortDescription: [undefined, Validators.required],
       repetitionSchema: [undefined, Validators.required],
       linkedSpacedRepId: [],
       id: [],
@@ -110,7 +111,8 @@ export class EventFormService {
       linkedSpacedRepId: '',
       id: '',
       allDay: true,
-      done: false
+      done: false,
+      shortDescription: ''
     })
   }
 
@@ -123,7 +125,8 @@ export class EventFormService {
         color: {
           primary: value.color,
           secondary: 'white'
-        }
+        },
+        shortDescription: value.shortDescription
       },
       repetitionSchema: value.repetitionSchema,
       startDate: value.start
@@ -135,6 +138,7 @@ export class EventFormService {
     return {
       title: value.title,
       description: value.description,
+      shortDescription: value.shortDescription,
       start: value.start,
       id: value.id,
       linkedSpacedRepId: value.linkedSpacedRepId,
@@ -174,6 +178,7 @@ export class EventFormService {
       this.form.patchValue({
         title: event.title,
         description: event.description,
+        shortDescription: event.shortDescription,
         id: event.id,
         start: event.start,
         color: event.color?.primary,

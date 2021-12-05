@@ -27,6 +27,7 @@ export class HomeComponent implements OnInit {
   activeDayIsOpen = false;
   eventToModify?: SpacedRepModel;
   openEdit?: boolean;
+  editEventModel?: SpacedRepModel;
 
   constructor(
     public eventFormService: EventFormService,
@@ -65,8 +66,13 @@ export class HomeComponent implements OnInit {
     this.openEdit = true;
   }
 
+  showEditEvent() {
+    this.editEventModel = this.eventToModify;
+  }
+
   closeEditEvent(): void {
     this.eventToModify = undefined;
+    this.editEventModel = undefined;
   }
 
   deleteEvent(): void {

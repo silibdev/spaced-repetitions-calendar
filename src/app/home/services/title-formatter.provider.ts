@@ -4,7 +4,7 @@ import { SpacedRepModel } from '../models/spaced-rep.model';
 
 class TitleFormatter extends CalendarEventTitleFormatter {
   private static getTitle(event: SpacedRepModel): string {
-    return `${event.done ? '✅' : ' '} ${event.title} - ${event.description}`;
+    return `${event.done ? '✅' : ' '} ${event.title} - ${event.shortDescription}`;
   }
 
   override month(event: SpacedRepModel, title: string): string {

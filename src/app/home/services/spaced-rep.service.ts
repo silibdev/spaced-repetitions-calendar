@@ -29,7 +29,7 @@ export class SpacedRepService {
           const toDb: any = {
             ...event
           };
-          toDb.start = toDb.start.toUTCString();
+          toDb.start = toDb.start.toISOString();
           return toDb;
         })
         localStorage.setItem(DB_NAME, JSON.stringify(dbToSave));
@@ -50,7 +50,8 @@ export class SpacedRepService {
       start: createSpacedRep.startDate,
       color: createSpacedRep.spacedRep.color,
       allDay: true,
-      done: false
+      done: false,
+      shortDescription: createSpacedRep.spacedRep.shortDescription
     }
 
     const newSpacedReps = [firstSR];
@@ -64,7 +65,8 @@ export class SpacedRepService {
         start: addDays(firstSR.start, rep),
         color: firstSR.color,
         allDay: true,
-        done: false
+        done: false,
+        shortDescription: firstSR.shortDescription
       }
       newSpacedReps.push(spacedRep);
     })

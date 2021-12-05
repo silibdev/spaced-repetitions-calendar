@@ -21,6 +21,7 @@ import { TitleFormatterProvider } from './services/title-formatter.provider';
 import { SelectButtonModule } from 'primeng/selectbutton';
 import { DialogMaximizedDirective } from './dialog-maximized.directive';
 import { CheckboxModule } from 'primeng/checkbox';
+import { EditorModule } from 'primeng/editor';
 
 
 @NgModule({
@@ -50,7 +51,8 @@ import { CheckboxModule } from 'primeng/checkbox';
     MessageModule,
     ColorPickerModule,
     SelectButtonModule,
-    CheckboxModule
+    CheckboxModule,
+    EditorModule
   ],
   providers: [
     TitleFormatterProvider
