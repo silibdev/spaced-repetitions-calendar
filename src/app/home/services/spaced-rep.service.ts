@@ -138,6 +138,7 @@ export class SpacedRepService {
           event.color = eventToModify.color;
           event.title = eventToModify.title || '';
           event.description = eventToModify.description;
+          event.shortDescription = eventToModify.shortDescription;
         }
       })
 
