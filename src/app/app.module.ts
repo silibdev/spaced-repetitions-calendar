@@ -8,6 +8,7 @@ import { MenubarModule } from 'primeng/menubar';
 import { SharedModule } from 'primeng/api';
 import { ReactiveFormsModule } from '@angular/forms';
 import { AboutComponent } from './about/about.component';
+import { DB_MIGRATOR_PROVIDER } from './migrator';
 
 @NgModule({
   declarations: [
@@ -22,7 +23,9 @@ import { AboutComponent } from './about/about.component';
     MenubarModule,
     SharedModule
   ],
-  providers: [],
+  providers: [
+    DB_MIGRATOR_PROVIDER
+  ],
   bootstrap: [AppComponent]
 })
 export class AppModule { }

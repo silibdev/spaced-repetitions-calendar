@@ -3,7 +3,7 @@ import { CalendarEvent, CalendarView } from 'angular-calendar';
 import { EventFormService } from '../services/event-form.service';
 import { SpacedRepService } from '../services/spaced-rep.service';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
-import { finalize, Observable } from 'rxjs';
+import { finalize, Observable, tap } from 'rxjs';
 import { SpacedRepModel } from '../models/spaced-rep.model';
 import { isSameDay, isSameMonth } from 'date-fns';
 
@@ -62,8 +62,13 @@ export class HomeComponent implements OnInit {
   }
 
   editEvent(event: SpacedRepModel): void {
-    this.eventToModify = event;
-    this.openEdit = true;
+    this.spacedRepService.get(event.id as string).pipe(
+      untilDestroyed(this),
+      tap(fullEvent => {
+        this.eventToModify = fullEvent;
+        this.openEdit = true;
+      })
+    ).subscribe()
   }
 
   showEditEvent() {
@@ -79,7 +84,7 @@ export class HomeComponent implements OnInit {
     this.loading = true;
     this.spacedRepService.deleteEvent(this.eventToModify).pipe(
       untilDestroyed(this),
-      finalize( () => {
+      finalize(() => {
         this.loading = false;
         this.openEdit = false;
       })
@@ -94,7 +99,7 @@ export class HomeComponent implements OnInit {
     const event = this.eventFormService.getEditedSpacedRep();
     this.spacedRepService.save(event).pipe(
       untilDestroyed(this),
-      finalize( () => {
+      finalize(() => {
         this.loading = false;
         this.openEdit = false;
       })
