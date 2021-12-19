@@ -19,7 +19,6 @@ class Migrator {
   }
 
   migrate(): () => Observable<unknown> {
-    debugger;
     return () => of(undefined).pipe(
       switchMap(() => this.switchToFirstMigration())
     )

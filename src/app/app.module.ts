@@ -9,6 +9,7 @@ import { SharedModule } from 'primeng/api';
 import { ReactiveFormsModule } from '@angular/forms';
 import { AboutComponent } from './about/about.component';
 import { DB_MIGRATOR_PROVIDER } from './migrator';
+import { ButtonModule } from 'primeng/button';
 
 @NgModule({
   declarations: [
@@ -21,7 +22,8 @@ import { DB_MIGRATOR_PROVIDER } from './migrator';
     ReactiveFormsModule,
     AppRoutingModule,
     MenubarModule,
-    SharedModule
+    SharedModule,
+    ButtonModule
   ],
   providers: [
     DB_MIGRATOR_PROVIDER
