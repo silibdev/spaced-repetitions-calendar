@@ -22,6 +22,7 @@
     "@ngneat/until-destroy": "^9.0.0",
     "angular-calendar": "^0.28.28",
     "date-fns": "^2.27.0",
+    "js-file-download": "^0.4.12",
     "primeflex": "^3.1.0",
     "primeicons": "^5.0.0",
     "primeng": "^13.0.1",

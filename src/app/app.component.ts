@@ -18,6 +18,10 @@ export class AppComponent {
         {
           label: 'Repetition schemas',
           routerLink: 'settings/rep-schemas'
+        },
+        {
+          label: 'Import/Export',
+          routerLink: 'settings/import-export'
         }
       ]
     },

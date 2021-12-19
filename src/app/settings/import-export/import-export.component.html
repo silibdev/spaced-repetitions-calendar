@@ -1,0 +1,42 @@
+<div>
+  <div class="grid">
+    <div class="col-12 md:col-4 lg:col-3">
+      <button pButton label="Export" (click)="export()" icon="pi pi-download"></button>
+    </div>
+    <div class="col-12 md:col-8 lg:col-9">A txt backup file will be downloaded</div>
+  </div>
+  <div class="grid mt-4">
+    <div class="col-12 md:col-4 lg:col-3">
+      <div class="grid">
+        <p-fileUpload
+          class="inline-block col"
+          (onSelect)="backupSelected($event, fileUpload)"
+          (uploadHandler)="restore($event)"
+          [chooseLabel]="'Import...'"
+          [chooseIcon]="'pi pi-upload'"
+          [uploadIcon]="'pi pi-history'"
+          [customUpload]="true"
+          [mode]="'basic'"
+          #fileUpload
+        ></p-fileUpload>
+        <p-message
+          *ngIf="error"
+          class="col"
+          (click)="error = undefined"
+          severity="error"
+          text="{{error}}"
+        ></p-message>
+        <div class="col" *ngIf="fileUpload.hasFiles()">
+          <button
+            class="p-button-outlined"
+            pButton
+            icon="pi pi-times"
+            label="Cancel"
+            (click)="fileUpload.clear()"
+          ></button>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 md:col-8 lg:col-9">You can restore a backup</div>
+  </div>
+</div>
