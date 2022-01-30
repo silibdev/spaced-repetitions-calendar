@@ -2,12 +2,31 @@
   <p-message *ngIf="isMaster" severity="warn" text="Deleting this will delete the whole series!"
              class="col-12"></p-message>
 
-  <div class="col-12 p-field">
+  <div
+    *ngIf="titleOptions$ | async as titleOpts"
+    class="col-12 lg:col-9 p-field"
+    [class.src-bold]="titleOpts.boldTitle"
+    [class.src-highlight]="titleOpts.highlightTitle"
+  >
     <label>Title</label>
     <input
       pInputText
       type="text"
       [formControlName]="'title'">
+  </div>
+
+  <div class="col-4 lg:col-3 flex align-items-end">
+    <p-toggleButton
+      [formControlName]="'boldTitle'"
+      onLabel="Bold"
+      offLabel="Bold"
+    ></p-toggleButton>
+    <p-toggleButton
+      [formControlName]="'highlightTitle'"
+      onLabel="Highlight"
+      offLabel="Highlight"
+      styleClass="ml-2"
+    ></p-toggleButton>
   </div>
 
   <div class="col-12 p-field">

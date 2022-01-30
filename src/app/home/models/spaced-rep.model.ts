@@ -6,10 +6,12 @@ export interface SpacedRepModel extends CalendarEvent {
   done: boolean;
   shortDescription: string;
   repetitionNumber: number;
+  boldTitle?: boolean;
+  highlightTitle?: boolean;
 }
 
 export interface CreateSpacedReps {
-  spacedRep: Pick<SpacedRepModel, 'title' | 'description' | 'color' | 'shortDescription'>;
+  spacedRep: Pick<SpacedRepModel, 'title' | 'description' | 'color' | 'shortDescription' | 'boldTitle' | 'highlightTitle'>;
   startDate: Date;
   repetitionSchema: string;
 }

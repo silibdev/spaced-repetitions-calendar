@@ -3,7 +3,7 @@ import { CalendarEvent, CalendarView } from 'angular-calendar';
 import { EventFormService } from '../services/event-form.service';
 import { SpacedRepService } from '../services/spaced-rep.service';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
-import { finalize, Observable, tap } from 'rxjs';
+import { finalize, map, Observable, tap } from 'rxjs';
 import { SpacedRepModel } from '../models/spaced-rep.model';
 import { isSameDay, isSameMonth } from 'date-fns';
 
@@ -28,12 +28,26 @@ export class HomeComponent implements OnInit {
   eventToModify?: SpacedRepModel;
   openEdit?: boolean;
   editEventModel?: SpacedRepModel;
+  autoSavingInterval?: number;
+  autoSavingState?: 'saving' | 'saved' | undefined;
+  lastAutoSave?: Date;
 
   constructor(
     public eventFormService: EventFormService,
     private spacedRepService: SpacedRepService
   ) {
-    this.events$ = this.spacedRepService.getAll();
+    this.events$ = this.spacedRepService.getAll().pipe(
+      map( events => events.map( srModel => {
+        srModel.cssClass = '';
+        if (srModel.boldTitle) {
+          srModel.cssClass += 'src-bold-title ';
+        }
+        if (srModel.highlightTitle) {
+          srModel.cssClass += 'src-highlight-title';
+        }
+        return srModel;
+      }))
+    );
   }
 
   ngOnInit(): void {
@@ -67,8 +81,20 @@ export class HomeComponent implements OnInit {
       tap(fullEvent => {
         this.eventToModify = fullEvent;
         this.openEdit = true;
+
+        const autoSavingTimer = this.eventFormService.generalOptions.autoSavingTimer;
+        if (autoSavingTimer) {
+          this.autoSavingInterval = window.setInterval(() => this.saveEvent(true), autoSavingTimer * 1000);
+        }
       })
     ).subscribe()
+  }
+
+  removeAutoSaving(): void {
+    if (this.autoSavingInterval) {
+      window.clearInterval(this.autoSavingInterval);
+      this.autoSavingInterval = undefined;
+    }
   }
 
   showEditEvent() {
@@ -81,6 +107,7 @@ export class HomeComponent implements OnInit {
   }
 
   deleteEvent(): void {
+    this.removeAutoSaving();
     this.loading = true;
     this.spacedRepService.deleteEvent(this.eventToModify).pipe(
       untilDestroyed(this),
@@ -91,17 +118,27 @@ export class HomeComponent implements OnInit {
     ).subscribe()
   }
 
-  saveEvent(): void {
+  saveEvent(autoSaving?: boolean): void {
     if (!this.eventFormService.isValid()) {
       return;
     }
-    this.loading = true;
+    if (autoSaving) {
+      this.autoSavingState = 'saving';
+    } else {
+      this.loading = true;
+      this.removeAutoSaving();
+    }
     const event = this.eventFormService.getEditedSpacedRep();
     this.spacedRepService.save(event).pipe(
       untilDestroyed(this),
       finalize(() => {
-        this.loading = false;
-        this.openEdit = false;
+        if (autoSaving) {
+          this.autoSavingState = 'saved';
+          this.lastAutoSave = new Date();
+        } else {
+          this.loading = false;
+          this.openEdit = false;
+        }
       })
     ).subscribe();
   }

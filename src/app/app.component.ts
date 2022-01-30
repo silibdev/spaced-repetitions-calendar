@@ -16,6 +16,10 @@ export class AppComponent {
       label: 'Settings',
       items: [
         {
+          label: 'General',
+          routerLink: 'settings/general'
+        },
+        {
           label: 'Repetition schemas',
           routerLink: 'settings/rep-schemas'
         },

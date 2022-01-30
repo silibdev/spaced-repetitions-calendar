@@ -8,3 +8,13 @@
   margin-left: -0.5rem;
   margin-right: -0.5rem;
 }
+
+::ng-deep {
+  .src-bold-title .cal-event-title {
+    font-weight: bold;
+  }
+
+  .src-highlight-title .cal-event-title {
+    background-color: gold;
+  }
+}

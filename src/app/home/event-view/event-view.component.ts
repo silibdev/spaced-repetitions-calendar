@@ -4,7 +4,7 @@ import { BlockableUI } from 'primeng/api';
 import { SpacedRepModel } from '../models/spaced-rep.model';
 import { FormControl } from '@angular/forms';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
-import { distinctUntilChanged, startWith, tap } from 'rxjs';
+import { distinctUntilChanged, Observable, startWith, tap } from 'rxjs';
 
 @UntilDestroy()
 @Component({
@@ -55,6 +55,8 @@ export class EventViewComponent implements OnInit, BlockableUI {
 
   customColorControl: FormControl;
 
+  titleOptions$?: Observable<{ boldTitle?: boolean, highlightTitle?: boolean}>;
+
   @Input()
   set event(event: SpacedRepModel | undefined) {
     this.isEdit = !!event;
@@ -99,6 +101,10 @@ export class EventViewComponent implements OnInit, BlockableUI {
         })
       ).subscribe()
     }
+
+    this.titleOptions$ = this.eventFormService.form.valueChanges.pipe(
+      startWith(this.eventFormService.form.value)
+    );
   }
 
   getBlockableElement(): HTMLElement {

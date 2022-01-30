@@ -12,12 +12,15 @@ import { ImportExportComponent } from './import-export/import-export.component';
 import { FileUploadModule } from 'primeng/fileupload';
 import { HttpClientModule } from '@angular/common/http';
 import { MessageModule } from 'primeng/message';
+import { GeneralComponent } from './general/general.component';
+import { InputNumberModule } from 'primeng/inputnumber';
 
 
 @NgModule({
   declarations: [
     RepetitionSchemasComponent,
-    ImportExportComponent
+    ImportExportComponent,
+    GeneralComponent
   ],
   imports: [
     CommonModule,
@@ -29,7 +32,8 @@ import { MessageModule } from 'primeng/message';
     ConfirmPopupModule,
     FileUploadModule,
     HttpClientModule,
-    MessageModule
+    MessageModule,
+    InputNumberModule
   ]
 })
 export class SettingsModule { }
