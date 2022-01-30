@@ -28,6 +28,9 @@ export class HomeComponent implements OnInit {
   eventToModify?: SpacedRepModel;
   openEdit?: boolean;
   editEventModel?: SpacedRepModel;
+  autoSavingInterval?: number;
+  autoSavingState?: 'saving' | 'saved' | undefined;
+  lastAutoSave?: Date;
 
   constructor(
     public eventFormService: EventFormService,
@@ -67,8 +70,20 @@ export class HomeComponent implements OnInit {
       tap(fullEvent => {
         this.eventToModify = fullEvent;
         this.openEdit = true;
+
+        const autoSavingTimer = this.eventFormService.generalOptions.autoSavingTimer;
+        if (autoSavingTimer) {
+          this.autoSavingInterval = window.setInterval(() => this.saveEvent(true), autoSavingTimer * 1000);
+        }
       })
     ).subscribe()
+  }
+
+  removeAutoSaving(): void {
+    if (this.autoSavingInterval) {
+      window.clearInterval(this.autoSavingInterval);
+      this.autoSavingInterval = undefined;
+    }
   }
 
   showEditEvent() {
@@ -81,6 +96,7 @@ export class HomeComponent implements OnInit {
   }
 
   deleteEvent(): void {
+    this.removeAutoSaving();
     this.loading = true;
     this.spacedRepService.deleteEvent(this.eventToModify).pipe(
       untilDestroyed(this),
@@ -91,17 +107,27 @@ export class HomeComponent implements OnInit {
     ).subscribe()
   }
 
-  saveEvent(): void {
+  saveEvent(autoSaving?: boolean): void {
     if (!this.eventFormService.isValid()) {
       return;
     }
-    this.loading = true;
+    if (autoSaving) {
+      this.autoSavingState = 'saving';
+    } else {
+      this.loading = true;
+      this.removeAutoSaving();
+    }
     const event = this.eventFormService.getEditedSpacedRep();
     this.spacedRepService.save(event).pipe(
       untilDestroyed(this),
       finalize(() => {
-        this.loading = false;
-        this.openEdit = false;
+        if (autoSaving) {
+          this.autoSavingState = 'saved';
+          this.lastAutoSave = new Date();
+        } else {
+          this.loading = false;
+          this.openEdit = false;
+        }
       })
     ).subscribe();
   }
