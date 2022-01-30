@@ -3,7 +3,7 @@ import { CalendarEvent, CalendarView } from 'angular-calendar';
 import { EventFormService } from '../services/event-form.service';
 import { SpacedRepService } from '../services/spaced-rep.service';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
-import { finalize, Observable, tap } from 'rxjs';
+import { finalize, map, Observable, tap } from 'rxjs';
 import { SpacedRepModel } from '../models/spaced-rep.model';
 import { isSameDay, isSameMonth } from 'date-fns';
 
@@ -36,7 +36,18 @@ export class HomeComponent implements OnInit {
     public eventFormService: EventFormService,
     private spacedRepService: SpacedRepService
   ) {
-    this.events$ = this.spacedRepService.getAll();
+    this.events$ = this.spacedRepService.getAll().pipe(
+      map( events => events.map( srModel => {
+        srModel.cssClass = '';
+        if (srModel.boldTitle) {
+          srModel.cssClass += 'src-bold-title ';
+        }
+        if (srModel.highlightTitle) {
+          srModel.cssClass += 'src-highlight-title';
+        }
+        return srModel;
+      }))
+    );
   }
 
   ngOnInit(): void {

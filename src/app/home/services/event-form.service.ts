@@ -48,7 +48,9 @@ export class EventFormService {
       start: [undefined, Validators.required],
       color: [{value: undefined, disabled: true}, Validators.required],
       done: [],
-      repetitionNumber: []
+      repetitionNumber: [],
+      boldTitle: [],
+      highlightTitle: []
     })
     this.reset();
   }
@@ -138,7 +140,9 @@ export class EventFormService {
       allDay: true,
       done: false,
       shortDescription: '',
-      repetitionNumber: null
+      repetitionNumber: null,
+      boldTitle: false,
+      highlightTitle: false
     })
   }
 
@@ -152,7 +156,9 @@ export class EventFormService {
           primary: value.color,
           secondary: 'white'
         },
-        shortDescription: value.shortDescription
+        shortDescription: value.shortDescription,
+        boldTitle: value.boldTitle,
+        highlightTitle: value.highlightTitle
       },
       repetitionSchema: value.repetitionSchema,
       startDate: value.start
@@ -174,7 +180,9 @@ export class EventFormService {
       },
       allDay: value.allDay,
       done: value.done,
-      repetitionNumber: value.repetitionNumber
+      repetitionNumber: value.repetitionNumber,
+      boldTitle: value.boldTitle,
+      highlightTitle: value.highlightTitle
     }
   }
 
@@ -212,7 +220,9 @@ export class EventFormService {
         linkedSpacedRepId: event.linkedSpacedRepId,
         allDay: event.allDay,
         done: event.done,
-        repetitionNumber: event.repetitionNumber
+        repetitionNumber: event.repetitionNumber,
+        boldTitle: event.boldTitle,
+        highlightTitle: event.highlightTitle
       });
     }
   }

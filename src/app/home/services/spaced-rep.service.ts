@@ -54,21 +54,19 @@ export class SpacedRepService {
       allDay: true,
       done: false,
       shortDescription: createSpacedRep.spacedRep.shortDescription,
-      repetitionNumber: 0
+      repetitionNumber: 0,
+      boldTitle: createSpacedRep.spacedRep.boldTitle,
+      highlightTitle: createSpacedRep.spacedRep.highlightTitle
     }
 
     const newSpacedReps = [firstSR];
 
     repSchema.forEach((rep) => {
       const spacedRep: SpacedRepModel = {
+        ...firstSR,
         id: Math.random().toString(),
-        title: firstSR.title,
         linkedSpacedRepId: firstSR.id,
         start: addDays(firstSR.start, rep),
-        color: firstSR.color,
-        allDay: true,
-        done: false,
-        shortDescription: firstSR.shortDescription,
         repetitionNumber: rep
       }
       newSpacedReps.push(spacedRep);
@@ -139,6 +137,8 @@ export class SpacedRepService {
           event.title = eventToModify.title || '';
           event.description = eventToModify.description;
           event.shortDescription = eventToModify.shortDescription;
+          event.boldTitle = eventToModify.boldTitle;
+          event.highlightTitle = eventToModify.highlightTitle;
         }
       })
 
