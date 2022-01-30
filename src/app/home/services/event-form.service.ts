@@ -12,14 +12,24 @@ export class EventFormService {
     return this.opts.repetitionSchemaOpts;
   }
 
+  get generalOptions(): { autoSavingTimer: number } {
+    return {
+      autoSavingTimer: this.opts.autoSavingTimer
+    };
+  }
+
   form: FormGroup;
+  // This default are merged with the already present ones
+  // it is a shallow merge so be careful in using nested objects!
   private opts: {
-    repetitionSchemaOpts: { label: string, value: string }[]
+    repetitionSchemaOpts: { label: string, value: string }[],
+    autoSavingTimer: number
   } = {
     repetitionSchemaOpts: [
       {label: '1;7;30;90', value: '1;7;30;90'},
       {label: '1;5;15;30', value: '1;5;15;30'}
-    ]
+    ],
+    autoSavingTimer: 15
   };
 
   constructor(
@@ -48,7 +58,10 @@ export class EventFormService {
     const opts = optsString ? JSON.parse(optsString) : undefined;
 
     if (opts) {
-      this.opts = opts;
+      this.opts = {
+        ...this.opts,
+        ...opts
+      };
     } else {
       this.saveOpts();
     }
@@ -56,6 +69,17 @@ export class EventFormService {
 
   saveOpts(): void {
     localStorage.setItem(OPTS_DB_NAME, JSON.stringify(this.opts));
+  }
+
+  saveGeneralOptions(opts: { autoSavingTimer: number }): boolean {
+    const {autoSavingTimer} = opts;
+    if (autoSavingTimer < 0) {
+      console.error('Auto-saving timer: wrong value');
+      return false;
+    }
+    this.opts.autoSavingTimer = autoSavingTimer;
+    this.saveOpts();
+    return true;
   }
 
   saveNewRepetitionSchema(repSchema: string): boolean {
