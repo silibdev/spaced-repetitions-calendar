@@ -6,12 +6,14 @@ import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { finalize, map, Observable, tap } from 'rxjs';
 import { SpacedRepModel } from '../models/spaced-rep.model';
 import { isSameDay, isSameMonth } from 'date-fns';
+import { ConfirmationService } from 'primeng/api';
 
 @UntilDestroy()
 @Component({
   selector: 'app-home',
   templateUrl: './home.component.html',
-  styleUrls: ['./home.component.scss']
+  styleUrls: ['./home.component.scss'],
+  providers: [ConfirmationService]
 })
 export class HomeComponent implements OnInit {
   view: CalendarView = CalendarView.Month;
@@ -34,7 +36,8 @@ export class HomeComponent implements OnInit {
 
   constructor(
     public eventFormService: EventFormService,
-    private spacedRepService: SpacedRepService
+    private spacedRepService: SpacedRepService,
+    private confirmationService: ConfirmationService
   ) {
     this.events$ = this.spacedRepService.getAll().pipe(
       map( events => events.map( srModel => {
@@ -104,6 +107,14 @@ export class HomeComponent implements OnInit {
   closeEditEvent(): void {
     this.eventToModify = undefined;
     this.editEventModel = undefined;
+  }
+
+  confirmDeleteEvent(): void {
+    const isMasterMessage = !this.eventToModify?.linkedSpacedRepId ? ' (Deleting this will delete the whole series!)' : '';
+    this.confirmationService.confirm({
+      message: 'Are you sure do you want to delete this repetition?' + isMasterMessage,
+      accept: () => this.deleteEvent()
+    });
   }
 
   deleteEvent(): void {
