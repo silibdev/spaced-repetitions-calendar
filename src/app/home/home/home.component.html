@@ -65,9 +65,10 @@
       </p-blockUI>
     </ng-container>
     <ng-template pTemplate="footer">
-      <button pButton [label]="'Delete'" [disabled]="loading" class="p-button-danger" [style.float]="'left'" (click)="deleteEvent()"></button>
+      <button pButton [label]="'Delete'" [disabled]="loading" class="p-button-danger" [style.float]="'left'" (click)="confirmDeleteEvent()"></button>
       <button pButton [label]="'Close'" [disabled]="loading" class="p-button-outlined" (click)="openEdit = false"></button>
       <button pButton [label]="'Save'" [loading]="loading" (click)="saveEvent()"></button>
     </ng-template>
   </p-dialog>
 </div>
+<p-confirmDialog icon="pi pi-exclamation-triangle" header="Confirm" acceptButtonStyleClass="p-button-outlined" [defaultFocus]="'reject'"></p-confirmDialog>
