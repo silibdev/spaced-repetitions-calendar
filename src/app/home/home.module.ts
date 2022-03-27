@@ -24,6 +24,8 @@ import { CheckboxModule } from 'primeng/checkbox';
 import { EditorModule } from 'primeng/editor';
 import { ToggleButtonModule } from 'primeng/togglebutton';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { SearchComponent } from './search/search.component';
+import { AutoCompleteModule } from 'primeng/autocomplete';
 
 
 @NgModule({
@@ -31,7 +33,8 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
     HomeComponent,
     CalendarHeaderComponent,
     EventViewComponent,
-    DialogMaximizedDirective
+    DialogMaximizedDirective,
+    SearchComponent
   ],
   imports: [
     CommonModule,
@@ -56,7 +59,8 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
     CheckboxModule,
     EditorModule,
     ToggleButtonModule,
-    ConfirmDialogModule
+    ConfirmDialogModule,
+    AutoCompleteModule
   ],
   providers: [
     TitleFormatterProvider
