@@ -150,4 +150,25 @@ export class SpacedRepService {
       return of(undefined);
     }
   }
+
+  search(query: string): Observable<SpacedRepModel[]> {
+    return forkJoin(this.spacedReps.value
+      .map(sr =>
+        this.descriptionService.get(sr.id as string)
+          .pipe(
+            map(description => ({
+                ...sr,
+                description
+              })
+            )
+          )
+      )
+    ).pipe(
+      map(srs => srs.filter(sr =>
+        sr.title.includes(query)
+        || sr.shortDescription?.includes(query)
+        || sr.description?.includes(query)
+      ))
+    );
+  }
 }
