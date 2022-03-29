@@ -152,6 +152,7 @@ export class SpacedRepService {
   }
 
   search(query: string): Observable<SpacedRepModel[]> {
+    const regex = new RegExp(query, 'i');
     return forkJoin(this.spacedReps.value
       .map(sr =>
         this.descriptionService.get(sr.id as string)
@@ -165,9 +166,9 @@ export class SpacedRepService {
       )
     ).pipe(
       map(srs => srs.filter(sr =>
-        sr.title.includes(query)
-        || sr.shortDescription?.includes(query)
-        || sr.description?.includes(query)
+        sr.title.match(regex)
+        || sr.shortDescription?.match(regex)
+        || sr.description?.match(regex)
       ))
     );
   }
