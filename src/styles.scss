@@ -33,6 +33,17 @@
 }
 
 .ql-container {
-  font-size: 0.9rem;
+  font-size: 1.25rem;
 }
+
+.p-dialog {
+  .p-dialog-content {
+    padding: 0 0.5rem 1rem 0.5rem;
+  }
+
+  .p-dialog-header, .p-dialog-footer {
+    padding: 0.5rem;
+  }
+}
+
 /*! purgecss end ignore */
