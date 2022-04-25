@@ -25,3 +25,14 @@ Run `ng e2e` to execute the end-to-end tests via a platform of your choice. To u
 ## Further help
 
 To get more help on the Angular CLI use `ng help` or go check out the [Angular CLI Overview and Command Reference](https://angular.io/cli) page.
+
+## Release
+Do a release with git-flow, update the version with npm and then finish the release deleting the tag created by npm (we're using the git-flow one).
+
+Example:
+```bash
+$ git-flow release start 1.6.1
+$ npm version 1.6.1
+$ git tag -d v1.6.1
+$ git-flow release finish 1.6.1
+```
