@@ -1,6 +1,7 @@
 <div class="mb-8">
 
   <app-search
+    [class.hidden]="view === SRCCalendarView.List"
     (eventClicked)="editEvent($event)"
   ></app-search>
 
@@ -31,6 +32,10 @@
       [dayStartHour]="8"
       [dayEndHour]="22"
     ></mwl-calendar-day-view>
+    <app-list-view
+      *ngSwitchCase="SRCCalendarView.List"
+      (eventClicked)="editEvent($any($event))"
+    ></app-list-view>
   </div>
 
   <button

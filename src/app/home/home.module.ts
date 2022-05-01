@@ -26,6 +26,8 @@ import { ToggleButtonModule } from 'primeng/togglebutton';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { SearchComponent } from './search/search.component';
 import { AutoCompleteModule } from 'primeng/autocomplete';
+import { ListViewComponent } from './list-view/list-view.component';
+import { TableModule } from 'primeng/table';
 
 
 @NgModule({
@@ -34,7 +36,8 @@ import { AutoCompleteModule } from 'primeng/autocomplete';
     CalendarHeaderComponent,
     EventViewComponent,
     DialogMaximizedDirective,
-    SearchComponent
+    SearchComponent,
+    ListViewComponent
   ],
   imports: [
     CommonModule,
@@ -60,7 +63,8 @@ import { AutoCompleteModule } from 'primeng/autocomplete';
     EditorModule,
     ToggleButtonModule,
     ConfirmDialogModule,
-    AutoCompleteModule
+    AutoCompleteModule,
+    TableModule
   ],
   providers: [
     TitleFormatterProvider

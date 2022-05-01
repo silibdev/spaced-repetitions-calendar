@@ -7,6 +7,7 @@ import { finalize, map, Observable, tap } from 'rxjs';
 import { SpacedRepModel } from '../models/spaced-rep.model';
 import { isSameDay, isSameMonth } from 'date-fns';
 import { ConfirmationService } from 'primeng/api';
+import { ExtendedCalendarView, SRCCalendarView } from '../calendar-header/calendar-header.component';
 
 @UntilDestroy()
 @Component({
@@ -16,11 +17,11 @@ import { ConfirmationService } from 'primeng/api';
   providers: [ConfirmationService]
 })
 export class HomeComponent implements OnInit {
-  view: CalendarView = CalendarView.Month;
+  view: ExtendedCalendarView = CalendarView.Month;
   CalendarView = CalendarView;
+  SRCCalendarView = SRCCalendarView;
 
   viewDate: Date = new Date();
-  currentEvents?: SpacedRepModel[];
 
   events$: Observable<CalendarEvent[]>;
 
