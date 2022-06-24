@@ -9,10 +9,13 @@
     [class.src-highlight]="titleOpts.highlightTitle"
   >
     <label>Title</label>
-    <input
+    <textarea
+      [style.resize]="'vertical'"
       pInputText
       type="text"
-      [formControlName]="'title'">
+      rows="3"
+      [formControlName]="'title'"
+    ></textarea>
   </div>
 
   <div class="col-4 lg:col-3 flex align-items-end">
