@@ -258,6 +258,7 @@ export class SpacedRepService {
           )
       )
     ).pipe(
+      defaultIfEmpty([]),
       map(srs => srs.filter(sr =>
         sr.title.match(regex)
         || sr.shortDescription?.match(regex)
