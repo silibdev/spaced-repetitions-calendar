@@ -1,6 +1,18 @@
 import { Injectable } from '@angular/core';
 import { CreateSpacedReps, SpacedRepModel } from '../models/spaced-rep.model';
-import { BehaviorSubject, forkJoin, map, mapTo, Observable, of, shareReplay, tap, throwError } from 'rxjs';
+import {
+  BehaviorSubject,
+  defaultIfEmpty,
+  forkJoin,
+  map,
+  mapTo,
+  Observable,
+  of,
+  shareReplay,
+  switchMap,
+  tap,
+  throwError
+} from 'rxjs';
 import { addDays } from 'date-fns';
 import { EventFormService } from './event-form.service';
 import { DescriptionsService } from './descriptions.service';
@@ -110,7 +122,16 @@ export class SpacedRepService {
   }
 
   getAll(): Observable<SpacedRepModel[]> {
-    return this.spacedReps$;
+    return this.spacedReps$.pipe(
+      switchMap(events => forkJoin(
+        events.map(e => this.shortDescriptionService.get((e.linkedSpacedRepId || e.id) as string).pipe(
+          map(sd => ({
+            ...e,
+            shortDescription: sd
+          }))
+        ))
+      ).pipe(defaultIfEmpty([])))
+    );
   }
 
   get(id: string): Observable<SpacedRepModel> {
