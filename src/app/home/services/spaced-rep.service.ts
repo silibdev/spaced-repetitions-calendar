@@ -4,6 +4,7 @@ import { BehaviorSubject, forkJoin, map, mapTo, Observable, of, shareReplay, tap
 import { addDays } from 'date-fns';
 import { EventFormService } from './event-form.service';
 import { DescriptionsService } from './descriptions.service';
+import { ShortDescriptionsService } from './short-descriptions.service';
 
 export const DB_NAME = 'src-db';
 
@@ -12,19 +13,30 @@ export const DB_NAME = 'src-db';
 })
 export class SpacedRepService {
   private spacedReps = new BehaviorSubject<SpacedRepModel[]>([]);
-  private spacedReps$: Observable<SpacedRepModel[]>;
+  private readonly spacedReps$: Observable<SpacedRepModel[]>;
+  private _db: SpacedRepModel[] = [];
+  private get db(): SpacedRepModel[] {
+    return this._db;
+  }
+
+  private set db(newDb: SpacedRepModel[]) {
+    this._db = newDb;
+    this.spacedReps.next(newDb);
+  }
 
   constructor(
     private eventFormService: EventFormService,
-    private descriptionService: DescriptionsService
+    private descriptionService: DescriptionsService,
+    private shortDescriptionService: ShortDescriptionsService
   ) {
     const db = localStorage.getItem(DB_NAME);
     if (db) {
       const oldDb = JSON.parse(db);
       oldDb.forEach((event: any) => event.start = new Date(event.start));
-      this.spacedReps.next(oldDb)
+      this.db = oldDb;
     }
 
+    let timer: number;
     this.spacedReps$ = this.spacedReps.pipe(
       tap(db => {
         const dbToSave = db.map(event => {
@@ -34,7 +46,10 @@ export class SpacedRepService {
           toDb.start = toDb.start.toISOString();
           return toDb;
         })
-        localStorage.setItem(DB_NAME, JSON.stringify(dbToSave));
+        if (timer) {
+          clearTimeout(timer);
+        }
+        timer = setTimeout(() => localStorage.setItem(DB_NAME, JSON.stringify(dbToSave)), 250);
       }),
       shareReplay(1)
     )
@@ -53,7 +68,7 @@ export class SpacedRepService {
       color: createSpacedRep.spacedRep.color,
       allDay: true,
       done: false,
-      shortDescription: createSpacedRep.spacedRep.shortDescription,
+      shortDescription: '',
       repetitionNumber: 0,
       boldTitle: createSpacedRep.spacedRep.boldTitle,
       highlightTitle: createSpacedRep.spacedRep.highlightTitle
@@ -72,13 +87,14 @@ export class SpacedRepService {
       newSpacedReps.push(spacedRep);
     })
 
-    const currentSR = this.spacedReps.value;
+    const currentSR = this.db;
 
-    this.spacedReps.next([...currentSR, ...newSpacedReps]);
+    this.db = [...currentSR, ...newSpacedReps];
 
     return forkJoin([
       of(undefined),
-      this.descriptionService.save(id, createSpacedRep.spacedRep.description as string)
+      this.descriptionService.save(id, createSpacedRep.spacedRep.description as string),
+      this.shortDescriptionService.save(id, createSpacedRep.spacedRep.shortDescription)
     ]).pipe(
       mapTo(undefined)
     );
@@ -89,15 +105,19 @@ export class SpacedRepService {
   }
 
   get(id: string): Observable<SpacedRepModel> {
-    const event = this.spacedReps.value.find(sr => sr.id === id);
+    const event = this.db.find(sr => sr.id === id);
     if (event) {
       const descId = event.linkedSpacedRepId || event.id;
       return forkJoin([
         of(event),
-        this.descriptionService.get(descId as string)
-      ]).pipe(map(([srm, description]) => {
-        srm.description = description;
-        return srm;
+        this.descriptionService.get(descId as string),
+        this.shortDescriptionService.get(descId as string)
+      ]).pipe(map(([srm, description, shortDescription]) => {
+        return {
+          ...srm,
+          description,
+          shortDescription: srm.shortDescription || shortDescription
+        };
       }));
     }
     return throwError(() => 'Error');
@@ -105,20 +125,20 @@ export class SpacedRepService {
 
   deleteEvent(event: SpacedRepModel | undefined): Observable<void> {
     if (event) {
-      const newDb = this.spacedReps.value.filter(e => {
+      const newDb = this.db.filter(e => {
         let toRemove = e.id !== event.id;
         if (!event.linkedSpacedRepId && toRemove) {
           return e.linkedSpacedRepId !== event.id;
         }
         return toRemove;
       });
-      this.spacedReps.next(newDb);
+      this.db = newDb;
     }
     return of(undefined);
   }
 
-  save(eventToModify: SpacedRepModel): Observable<void> {
-    const db = this.spacedReps.value;
+  saveFirstMigration(eventToModify: SpacedRepModel): Observable<void> {
+    const db = this.db;
     const index = db.findIndex(event => event.id === eventToModify.id);
     if (index > -1) {
       const oldEvent = db[index];
@@ -142,7 +162,7 @@ export class SpacedRepService {
         }
       })
 
-      this.spacedReps.next([...db]);
+      this.db = [...db];
 
       return this.descriptionService.save(masterId as string, description)
         .pipe(mapTo(undefined));
@@ -151,15 +171,58 @@ export class SpacedRepService {
     }
   }
 
+  save(eventToModify: SpacedRepModel): Observable<void> {
+    const db = this.db;
+    const index = db.findIndex(event => event.id === eventToModify.id);
+    if (index > -1) {
+      const oldEvent = db[index];
+      db[index] = {
+        ...oldEvent,
+        ...eventToModify
+      };
+
+      const masterId = eventToModify.linkedSpacedRepId || eventToModify.id;
+      const description = eventToModify.description || '';
+      eventToModify.description = undefined;
+      const shortDescription = eventToModify.shortDescription || '';
+      eventToModify.shortDescription = '';
+
+      db.forEach(event => {
+        if (event.linkedSpacedRepId === masterId || event.id === masterId) {
+          event.color = eventToModify.color;
+          event.title = eventToModify.title || '';
+          event.description = eventToModify.description;
+          event.shortDescription = eventToModify.shortDescription;
+          event.boldTitle = eventToModify.boldTitle;
+          event.highlightTitle = eventToModify.highlightTitle;
+        }
+      })
+
+      this.db = [...db];
+
+      return forkJoin([
+        this.descriptionService.save(masterId as string, description),
+        this.shortDescriptionService.save(masterId as string, shortDescription)
+      ])
+        .pipe(mapTo(undefined));
+    } else {
+      return of(undefined);
+    }
+  }
+
   search(query: string): Observable<SpacedRepModel[]> {
     const regex = new RegExp(query, 'i');
-    return forkJoin(this.spacedReps.value
+    return forkJoin(this.db
       .map(sr =>
-        this.descriptionService.get(sr.id as string)
+        forkJoin([
+          this.descriptionService.get(sr.id as string),
+          this.shortDescriptionService.get(sr.id as string)
+        ])
           .pipe(
-            map(description => ({
+            map(([description, shortDescription]) => ({
                 ...sr,
-                description
+                description,
+                shortDescription
               })
             )
           )
