@@ -5,6 +5,7 @@ import { addDays } from 'date-fns';
 import { EventFormService } from './event-form.service';
 import { DescriptionsService } from './descriptions.service';
 import { ShortDescriptionsService } from './short-descriptions.service';
+import LZString from 'lz-string';
 
 export const DB_NAME = 'src-db';
 
@@ -31,7 +32,12 @@ export class SpacedRepService {
   ) {
     const db = localStorage.getItem(DB_NAME);
     if (db) {
-      const oldDb = JSON.parse(db);
+      let oldDb;
+      try {
+        oldDb = JSON.parse(db);
+      } catch (e) {
+        oldDb = JSON.parse(LZString.decompressFromUTF16(db) || '[]');
+      }
       oldDb.forEach((event: any) => event.start = new Date(event.start));
       this.db = oldDb;
     }
@@ -49,7 +55,10 @@ export class SpacedRepService {
         if (timer) {
           clearTimeout(timer);
         }
-        timer = setTimeout(() => localStorage.setItem(DB_NAME, JSON.stringify(dbToSave)), 250);
+        timer = setTimeout(() => {
+          const newDb = LZString.compressToUTF16(JSON.stringify(dbToSave));
+          localStorage.setItem(DB_NAME, newDb)
+        }, 250);
       }),
       shareReplay(1)
     )
