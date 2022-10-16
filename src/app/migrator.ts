@@ -20,10 +20,14 @@ class Migrator {
 
   migrate(): () => Observable<unknown> {
     return () => of(undefined).pipe(
-      switchMap(() => this.switchToFirstMigration())
+      switchMap(() => this.switchToFirstMigration()),
+      switchMap(() => this.switchToSecondMigration())
     )
   }
 
+  /**
+   * Extract description from src-db
+   */
   switchToFirstMigration(): Observable<unknown> {
     if (this.getVersion() >= 1) {
       return of(undefined);
@@ -36,12 +40,37 @@ class Migrator {
         const id = event.linkedSpacedRepId || event.id;
         if (id && !eventsDone.has(id)) {
           eventsDone.add(id);
-          return this.spacedRepsService.save(event);
+          return this.spacedRepsService.saveFirstMigration(event);
         }
         return of(undefined);
       }),
       reduce((acc, _) => acc, undefined), // wait for all mergeMap to complete
       tap(() => this.setVersion(1))
+    );
+  }
+
+  /**
+   * Extract shortDescription from src-db
+   */
+  switchToSecondMigration(): Observable<unknown> {
+    if (this.getVersion() >= 2) {
+      return of(undefined);
+    }
+    const eventsDone = new Set();
+    return this.spacedRepsService.getAll().pipe(
+      first(),
+      switchMap(events => from(events)),
+      switchMap(event => this.spacedRepsService.get(event.id as string)),
+      mergeMap((event) => {
+        const id = event.linkedSpacedRepId || event.id;
+        if (id && !eventsDone.has(id)) {
+          eventsDone.add(id);
+          return this.spacedRepsService.save(event);
+        }
+        return of(undefined);
+      }),
+      reduce((acc, _) => acc, undefined), // wait for all mergeMap to complete
+      tap(() => this.setVersion(2))
     );
   }
 }
