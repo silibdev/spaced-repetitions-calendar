@@ -243,6 +243,7 @@ export class SpacedRepService {
   search(query: string): Observable<SpacedRepModel[]> {
     const regex = new RegExp(query, 'i');
     return forkJoin(this.db
+      .filter( sr => !sr.linkedSpacedRepId)
       .map(sr =>
         forkJoin([
           this.descriptionService.get(sr.id as string),
