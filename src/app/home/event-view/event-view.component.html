@@ -9,10 +9,13 @@
     [class.src-highlight]="titleOpts.highlightTitle"
   >
     <label>Title</label>
-    <input
+    <textarea
+      [style.resize]="'vertical'"
       pInputText
       type="text"
-      [formControlName]="'title'">
+      rows="2"
+      [formControlName]="'title'"
+    ></textarea>
   </div>
 
   <div class="col-4 lg:col-3 flex align-items-end">
@@ -31,10 +34,13 @@
 
   <div class="col-12 p-field">
     <label>Short description</label>
-    <input
+    <textarea
+      [style.resize]="'vertical'"
       pInputText
       type="text"
-      [formControlName]="'shortDescription'">
+      rows="3"
+      [formControlName]="'shortDescription'"
+    ></textarea>
   </div>
 
   <div class="col-12 p-field">
