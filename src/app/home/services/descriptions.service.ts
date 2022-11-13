@@ -24,4 +24,9 @@ export class DescriptionsService {
     localStorage.setItem(DescriptionsService.getInternalId(id), description);
     return of(description);
   }
+
+  delete(id: string): Observable<string> {
+    localStorage.removeItem(DescriptionsService.getInternalId(id));
+    return of(id);
+  }
 }

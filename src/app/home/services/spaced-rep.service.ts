@@ -154,17 +154,22 @@ export class SpacedRepService {
   }
 
   deleteEvent(event: SpacedRepModel | undefined): Observable<void> {
-    if (event) {
-      const newDb = this.db.filter(e => {
-        let toRemove = e.id !== event.id;
-        if (!event.linkedSpacedRepId && toRemove) {
-          return e.linkedSpacedRepId !== event.id;
-        }
-        return toRemove;
-      });
-      this.db = newDb;
+    if (!event) {
+      return of(undefined);
     }
-    return of(undefined);
+    const eventsToRemove = [event.id as string];
+    const newDb = this.db.filter(e => {
+        if (event.linkedSpacedRepId === event.id) {
+          eventsToRemove.push(e.id as string);
+        }
+        return !(e.id === event.id || e.linkedSpacedRepId === event.id);
+      }
+    );
+    this.db = newDb;
+    return forkJoin(eventsToRemove.map(id => ([
+      this.shortDescriptionService.delete(id),
+      this.descriptionService.delete(id)
+    ])).flat()).pipe(mapTo(undefined));
   }
 
   saveFirstMigration(eventToModify: SpacedRepModel): Observable<void> {
@@ -243,7 +248,7 @@ export class SpacedRepService {
   search(query: string): Observable<SpacedRepModel[]> {
     const regex = new RegExp(query, 'i');
     return forkJoin(this.db
-      .filter( sr => !sr.linkedSpacedRepId)
+      .filter(sr => !sr.linkedSpacedRepId)
       .map(sr =>
         forkJoin([
           this.descriptionService.get(sr.id as string),
