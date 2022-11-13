@@ -42,14 +42,15 @@ export class HomeComponent implements OnInit {
   ) {
     this.events$ = this.spacedRepService.getAll().pipe(
       map( events => events.map( srModel => {
-        srModel.cssClass = '';
-        if (srModel.boldTitle) {
-          srModel.cssClass += 'src-bold-title ';
+        const calendarEvent: CalendarEvent & SpacedRepModel = srModel;
+        calendarEvent.cssClass = '';
+        if (calendarEvent.boldTitle) {
+          calendarEvent.cssClass += 'src-bold-title ';
         }
-        if (srModel.highlightTitle) {
-          srModel.cssClass += 'src-highlight-title';
+        if (calendarEvent.highlightTitle) {
+          calendarEvent.cssClass += 'src-highlight-title';
         }
-        return srModel;
+        return calendarEvent;
       }))
     );
   }

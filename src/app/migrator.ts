@@ -5,6 +5,8 @@ import { SpacedRepService } from './home/services/spaced-rep.service';
 const CURRENT_VERSION_KEY = 'src-cv-k';
 
 class Migrator {
+  private secondMigrationRun = false;
+
   constructor(
     private spacedRepsService: SpacedRepService
   ) {
@@ -21,7 +23,8 @@ class Migrator {
   migrate(): () => Observable<unknown> {
     return () => of(undefined).pipe(
       switchMap(() => this.switchToFirstMigration()),
-      switchMap(() => this.switchToSecondMigration())
+      switchMap(() => this.switchToSecondMigration()),
+      switchMap(() => this.switchToThirdMigration())
     )
   }
 
@@ -52,15 +55,15 @@ class Migrator {
   /**
    * Extract shortDescription from src-db
    */
-  switchToSecondMigration(): Observable<unknown> {
-    if (this.getVersion() >= 2) {
+  switchToSecondMigration(skipCheck?: boolean): Observable<unknown> {
+    if (!skipCheck && this.getVersion() >= 2) {
       return of(undefined);
     }
     const eventsDone = new Set();
-    return this.spacedRepsService.getAll().pipe(
+    return this.spacedRepsService.getAllSecondMigration().pipe(
       first(),
       switchMap(events => from(events)),
-      switchMap(event => this.spacedRepsService.get(event.id as string)),
+      switchMap(event => this.spacedRepsService.getSecondMigration(event.id as string)),
       mergeMap((event) => {
         const id = event.linkedSpacedRepId || event.id;
         if (id && !eventsDone.has(id)) {
@@ -70,7 +73,27 @@ class Migrator {
         return of(undefined);
       }),
       reduce((acc, _) => acc, undefined), // wait for all mergeMap to complete
-      tap(() => this.setVersion(2))
+      tap(() => {
+        this.secondMigrationRun = true;
+        this.setVersion(2);
+      })
+    );
+  }
+
+  /**
+   * Extract everything from db
+   */
+  switchToThirdMigration(): Observable<unknown> {
+    if (this.getVersion() >= 3) {
+      return of(undefined);
+    }
+    if (this.secondMigrationRun) {
+      this.setVersion(3);
+      return of(undefined);
+    }
+    return this.switchToSecondMigration(true).pipe(
+      switchMap(() => this.spacedRepsService.cleanDb()),
+      tap(() => this.setVersion(3))
     );
   }
 }

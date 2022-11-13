@@ -158,7 +158,10 @@ export class EventFormService {
         },
         shortDescription: value.shortDescription,
         boldTitle: value.boldTitle,
-        highlightTitle: value.highlightTitle
+        highlightTitle: value.highlightTitle,
+        id: '',
+        done: false,
+        allDay: true
       },
       repetitionSchema: value.repetitionSchema,
       startDate: value.start
@@ -182,7 +185,7 @@ export class EventFormService {
       done: value.done,
       repetitionNumber: value.repetitionNumber,
       boldTitle: value.boldTitle,
-      highlightTitle: value.highlightTitle
+      highlightTitle: value.highlightTitle,
     }
   }
 
