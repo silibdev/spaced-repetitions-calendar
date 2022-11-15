@@ -8,6 +8,7 @@ import { SpacedRepModel } from '../models/spaced-rep.model';
 import { isSameDay, isSameMonth } from 'date-fns';
 import { ConfirmationService } from 'primeng/api';
 import { ExtendedCalendarView, SRCCalendarView } from '../calendar-header/calendar-header.component';
+import { SettingsService } from '../services/settings.service';
 
 @UntilDestroy()
 @Component({
@@ -37,6 +38,7 @@ export class HomeComponent implements OnInit {
 
   constructor(
     public eventFormService: EventFormService,
+    private settingsService: SettingsService,
     private spacedRepService: SpacedRepService,
     private confirmationService: ConfirmationService
   ) {
@@ -87,7 +89,7 @@ export class HomeComponent implements OnInit {
         this.eventToModify = fullEvent;
         this.openEdit = true;
 
-        const autoSavingTimer = this.eventFormService.generalOptions.autoSavingTimer;
+        const autoSavingTimer = this.settingsService.generalOptions.autoSavingTimer;
         if (autoSavingTimer) {
           this.autoSavingInterval = window.setInterval(() => this.saveEvent(true), autoSavingTimer * 1000);
         }

@@ -6,6 +6,16 @@
         <span class="lg:text-xl md:text-lg">Spaced Repetition Calendar</span>
       </button>
     </ng-template>
+    <ng-template pTemplate="end">
+      <button *ngIf="!user" pButton class="py-0 px-1 p-button-text p-button-plain" (click)="login()">
+        <span class="lg:text-xl md:text-lg">Login</span>
+      </button>
+      <button *ngIf="user" pButton class="py-0 px-1 p-button-text p-button-plain" (click)="logout()">
+        <span class="pi pi-user pr-2"></span>
+        <span class="lg:text-xl md:text-lg">Logout</span>
+      </button>
+
+    </ng-template>
   </p-menubar>
 </div>
 <div class="mt-2 p-component">

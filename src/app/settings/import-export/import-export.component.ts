@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+ import { Component, OnInit } from '@angular/core';
 import fileDownload from 'js-file-download';
 import { FileUpload } from 'primeng/fileupload';
 
@@ -21,10 +21,6 @@ export class ImportExportComponent implements OnInit {
   export(): void {
     const backup = JSON.stringify(localStorage, null, 2)
     fileDownload(backup, `backup-${new Date().toISOString()}.txt`)
-  }
-
-  import(): void {
-
   }
 
   backupSelected(event: any, fileUpload: FileUpload): void {

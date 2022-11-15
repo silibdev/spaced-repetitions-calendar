@@ -5,6 +5,7 @@ import { SpacedRepModel } from '../models/spaced-rep.model';
 import { FormControl } from '@angular/forms';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { distinctUntilChanged, Observable, startWith, tap } from 'rxjs';
+import { SettingsService } from '../services/settings.service';
 
 @UntilDestroy()
 @Component({
@@ -65,7 +66,8 @@ export class EventViewComponent implements OnInit, BlockableUI {
   };
 
   constructor(
-    public eventFormService: EventFormService
+    public eventFormService: EventFormService,
+    public settingsService: SettingsService
   ) {
     this.customColorControl = new FormControl();
   }

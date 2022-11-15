@@ -23,6 +23,7 @@ import { EventFormService } from './event-form.service';
 import { DescriptionsService } from './descriptions.service';
 import { EventDetailService } from './event-detail.service';
 import LZString from 'lz-string';
+import { SettingsService } from './settings.service';
 
 export const DB_NAME = 'src-db';
 
@@ -44,6 +45,7 @@ export class SpacedRepService {
 
   constructor(
     private eventFormService: EventFormService,
+    private settingsService: SettingsService,
     private descriptionService: DescriptionsService,
     private eventDetailService: EventDetailService
   ) {
@@ -84,7 +86,7 @@ export class SpacedRepService {
   create(createSpacedRep: CreateSpacedReps): Observable<void> {
     const repSchema: number[] = createSpacedRep.repetitionSchema.split(';').map(rep => +rep);
 
-    this.eventFormService.saveNewRepetitionSchema(createSpacedRep.repetitionSchema);
+    this.settingsService.saveNewRepetitionSchema(createSpacedRep.repetitionSchema);
 
     const id = Math.random().toString();
     createSpacedRep.spacedRep.id = id;
