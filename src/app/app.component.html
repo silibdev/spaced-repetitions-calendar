@@ -1,5 +1,5 @@
 <div>
-  <p-menubar [model]="menu">
+  <p-menubar [model]="(menu$ | async) || []">
     <ng-template pTemplate="start">
       <button pButton class="py-0 px-2 p-button-text p-button-plain" routerLink="home">
         <span class="pi pi-calendar pr-2"></span>
@@ -7,14 +7,13 @@
       </button>
     </ng-template>
     <ng-template pTemplate="end">
-      <button *ngIf="!user" pButton class="py-0 px-1 p-button-text p-button-plain" (click)="login()">
-        <span class="lg:text-xl md:text-lg">Login</span>
-      </button>
-      <button *ngIf="user" pButton class="py-0 px-1 p-button-text p-button-plain" (click)="logout()">
-        <span class="pi pi-user pr-2"></span>
-        <span class="lg:text-xl md:text-lg">Logout</span>
-      </button>
-
+      <p-button *ngIf="(user$ | async) as user" [styleClass]="'p-button-text p-button-plain'" (click)="menu.toggle($event)">
+        <ng-template pTemplate="content">
+          <span class="pi pi-user pr-2"></span>
+          <span class="hidden md:block">{{user.name}}</span>
+        </ng-template>
+      </p-button>
+      <p-menu #menu [popup]="true" [model]="(userMenu$ | async) || []"></p-menu>
     </ng-template>
   </p-menubar>
 </div>

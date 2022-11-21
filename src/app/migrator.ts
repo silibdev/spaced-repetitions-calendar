@@ -92,7 +92,7 @@ class Migrator {
       return of(undefined);
     }
     return this.switchToSecondMigration(true).pipe(
-      switchMap(() => this.spacedRepsService.cleanDb()),
+      switchMap(() => this.spacedRepsService.purgeDB()),
       tap(() => this.setVersion(3))
     );
   }

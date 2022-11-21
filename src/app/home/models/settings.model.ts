@@ -10,3 +10,8 @@ export interface FullSettings extends Options {
 export interface Options {
   autoSavingTimer: number;
 }
+
+export interface User {
+  name: string;
+  token?: string;
+}

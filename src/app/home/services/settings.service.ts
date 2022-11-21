@@ -1,10 +1,8 @@
 import { Injectable } from '@angular/core';
-import { AbstractControl, FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { CreateSpacedReps, SpacedRepModel } from '../models/spaced-rep.model';
 import { FullSettings, Options, RepetitionSchema } from '../models/settings.model';
-import { HttpClient } from '@angular/common/http';
+import { ApiService } from './api.service';
+import { Observable, tap } from 'rxjs';
 
-const OPTS_DB_NAME = 'src-opts-db';
 
 @Injectable({
   providedIn: 'root'
@@ -23,6 +21,7 @@ export class SettingsService {
       autoSavingTimer: this.opts.autoSavingTimer
     };
   }
+
   // This default are merged with the already present ones
   // it is a shallow merge so be careful in using nested objects!
   private opts: FullSettings = {
@@ -34,32 +33,32 @@ export class SettingsService {
   };
 
   constructor(
-    private httpClient: HttpClient
+    private apiService: ApiService
   ) {
-    this.loadOpts();
   }
 
-  loadOpts(): void {
-    this.httpClient.get<any>('/.netlify/functions/settings').subscribe(({data: optsString}) => {
-      // const optsString = localStorage.getItem(OPTS_DB_NAME);
-      const opts = optsString ? JSON.parse(optsString) : undefined;
-
-      if (opts) {
-        this.opts = {
-          ...this.opts,
-          ...opts
-        };
-      } else {
-        this.saveOpts();
+  loadOpts(): Observable<unknown> {
+    return this.apiService.getSettings().pipe(tap(
+      (opts) => {
+        if (opts) {
+          this.opts = opts;
+        } else {
+          // it'll save the default options
+          this.saveOpts();
+        }
       }
-    });
+    ));
   }
 
   saveOpts(): void {
-    localStorage.setItem(OPTS_DB_NAME, JSON.stringify(this.opts));
-    this.httpClient.post('/.netlify/functions/settings', {data: JSON.stringify(this.opts)}).subscribe(resp => {
-      console.log('opts saved', resp);
-    })
+    this.apiService.setSettings(this.opts).subscribe({
+      next: resp => {
+        console.log('opts saved', resp);
+      },
+      error: (error) => {
+        console.error('opts not saved', error);
+      }
+    });
   }
 
   saveGeneralOptions(opts: Options): boolean {
@@ -89,7 +88,7 @@ export class SettingsService {
   editRepetitionSchema(index: number, repSchema: string): boolean {
     if (!this.repetitionSchemaOpts.find(rs => rs.value === repSchema)) {
       const repSchemaOpt = this.repetitionSchemaOpts[index];
-      // could be an out of bound
+      // could be an out of bound (how?)
       if (repSchemaOpt) {
         repSchemaOpt.value = repSchema;
         repSchemaOpt.label = repSchema;

@@ -1,6 +1,9 @@
 import { Component } from '@angular/core';
 import { MenuItem } from 'primeng/api';
-import * as netlifyIdentity from 'netlify-identity-widget';
+import { AuthService } from './home/services/auth.service';
+import { map, Observable, shareReplay } from 'rxjs';
+import { User } from './home/models/settings.model';
+import { logout } from 'netlify-identity-widget';
 
 @Component({
   selector: 'app-root',
@@ -8,7 +11,7 @@ import * as netlifyIdentity from 'netlify-identity-widget';
   styleUrls: ['./app.component.scss']
 })
 export class AppComponent {
-  menu: MenuItem[] = [
+  private menu: MenuItem[] = [
     {
       label: 'Home',
       routerLink: '/'
@@ -36,32 +39,53 @@ export class AppComponent {
     }
   ];
 
-  user: any;
+  user$: Observable<User | undefined>;
+  menu$: Observable<MenuItem[]>;
+  userMenu$: Observable<MenuItem[]>;
 
-  constructor() {
-    netlifyIdentity.init();
-    netlifyIdentity.on('init', user => {
-      this.user = user;
-      console.log('init', user)
-    });
-    netlifyIdentity.on('login', user => {
-      this.user = user;
-      console.log('login', user);
-    });
-    netlifyIdentity.on('logout', () => {
-      this.user = undefined;
-      console.log('Logged out');
-    });
-    netlifyIdentity.on('error', err => console.error('Error', err));
-    netlifyIdentity.on('open', () => console.log('Widget opened'));
-    netlifyIdentity.on('close', () => console.log('Widget closed'));
-  }
+  constructor(
+    private authService: AuthService
+  ) {
+    this.user$ = authService.getUser$().pipe(
+      shareReplay()
+    );
 
-  login(): void {
-    netlifyIdentity.open();
+    this.menu$ = this.user$.pipe(
+      map(user => {
+        if (user) {
+          return [...this.menu];
+        }
+        return [];
+      })
+    );
+
+    this.userMenu$ = this.user$.pipe(
+      map(user => {
+        if (user) {
+          const userMenu: MenuItem[] = [{
+            label: user.name,
+            styleClass: 'font-bold md:hidden'
+          }];
+
+          if (!user.token) {
+            userMenu.push({
+              label: "Login and sync"
+            });
+          } else {
+            userMenu.push({
+              label: 'Logout',
+              command: () => logout()
+            });
+          }
+
+          return userMenu;
+        }
+        return [];
+      })
+    );
   }
 
   logout(): void {
-    netlifyIdentity.logout();
+    this.authService.logout();
   }
 }
