@@ -2,12 +2,14 @@ import { Injectable } from '@angular/core';
 import { AbstractControl, FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { CreateSpacedReps, SpacedRepModel } from '../models/spaced-rep.model';
 import { SettingsService } from './settings.service';
+import { filter, Observable } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
 })
 export class EventFormService {
   form: FormGroup;
+  private loaded = false;
 
   constructor(
     fb: FormBuilder,
@@ -32,11 +34,11 @@ export class EventFormService {
   }
 
   enableColorControl(): void {
-    this.form.get('color')?.enable()
+    this.form.get('color')?.enable();
   }
 
   disableColorControl(): void {
-    this.form.get('color')?.disable()
+    this.form.get('color')?.disable();
   }
 
   reset(): void {
@@ -54,7 +56,8 @@ export class EventFormService {
       repetitionNumber: null,
       boldTitle: false,
       highlightTitle: false
-    })
+    });
+    this.loaded = false;
   }
 
   getCreateSpacedRep(): CreateSpacedReps {
@@ -138,6 +141,13 @@ export class EventFormService {
         boldTitle: event.boldTitle,
         highlightTitle: event.highlightTitle
       });
+      this.loaded = true;
     }
+  }
+
+  onEditedSpacedRep(): Observable<SpacedRepModel> {
+    return this.form.valueChanges.pipe(
+      filter(() => this.loaded)
+    );
   }
 }
