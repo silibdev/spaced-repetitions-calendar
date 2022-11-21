@@ -89,9 +89,8 @@ export class ApiService {
   private postWithCache<R>(url: string, data: R, extra: Extra): Observable<R> {
     const itemToCache = extra.isString ? data as unknown as string : JSON.stringify(data);
     localStorage.setItem(extra.cacheKey, itemToCache);
-    // @ts-ignore
-    return this.httpClient.post(url, {data: itemToCache});
-      // .pipe(ApiService.MAP_DATA<any, R>(), ApiService.HANDLE_ANONYMOUS(data));
+    return this.httpClient.post(url, {data: itemToCache})
+      .pipe(ApiService.MAP_DATA<any, R>(), ApiService.HANDLE_ANONYMOUS(data));
   }
 
   private deleteWithCache<R>(url: string, extra: Extra): Observable<R> {
