@@ -19,7 +19,7 @@ export const EventDetailRepository = {
     }
     const result = await DB.execute(query, params);
     console.log('post eventDetail', result);
-    return 'ok';
+    return '{"ok":"ok"}';
   },
 
   async deleteEventDetail(userId: string, eventId: string) {
