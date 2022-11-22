@@ -1,13 +1,16 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import {
+  BehaviorSubject,
   catchError,
+  defaultIfEmpty,
+  forkJoin,
   map,
   MonoTypeOperatorFunction,
   Observable,
   of,
   OperatorFunction,
-  share, shareReplay,
+  shareReplay,
   tap,
   throwError
 } from 'rxjs';
@@ -57,11 +60,28 @@ export class ApiService {
     }))
   }
 
-  private requestOptimizer = new Map<string, any>();
+  private requestOptimizer = new Map<string, Observable<any>>();
+
+  private pendingChangesMap = new Map<string, Observable<unknown>>();
+  private pendingChanges$ = new BehaviorSubject<number>(0);
 
   constructor(
     private httpClient: HttpClient
   ) {
+  }
+
+  private addPendingChanges(url: string, request: any): void {
+    this.pendingChangesMap.set(url, request);
+    this.notifyPendingChanges();
+  }
+
+  private removePendingChanges(url: string): void {
+    this.pendingChangesMap.delete(url);
+    this.notifyPendingChanges();
+  }
+
+  private notifyPendingChanges(): void {
+    this.pendingChanges$.next(this.pendingChangesMap.size);
   }
 
   private getLastUpdatesMap(): Observable<unknown> {
@@ -73,8 +93,9 @@ export class ApiService {
     if (cachedItem || cachedItem === '') {
       return extra.isString ? of(cachedItem) : of(JSON.parse(cachedItem));
     }
-    if (this.requestOptimizer.has(url)) {
-      return this.requestOptimizer.get(url);
+    const cachedRequest = this.requestOptimizer.get(url);
+    if (cachedRequest) {
+      return cachedRequest;
     }
     const request = this.httpClient.get(url).pipe(
       tap(({data}: any) => localStorage.setItem(extra.cacheKey, data)),
@@ -89,15 +110,47 @@ export class ApiService {
   private postWithCache<R>(url: string, data: R, extra: Extra): Observable<R> {
     const itemToCache = extra.isString ? data as unknown as string : JSON.stringify(data);
     localStorage.setItem(extra.cacheKey, itemToCache);
-    return this.httpClient.post(url, {data: itemToCache})
-      .pipe(ApiService.MAP_DATA<any, R>(), ApiService.HANDLE_ANONYMOUS(data));
+    const request = this.httpClient.post(url, {data: itemToCache})
+      .pipe(
+        ApiService.MAP_DATA<any, R>(extra.isString),
+        ApiService.HANDLE_ANONYMOUS(data)
+      );
+    return request.pipe(
+      catchError(() => {
+        this.addPendingChanges(url, request);
+        return of(data);
+      })
+    );
   }
 
   private deleteWithCache<R>(url: string, extra: Extra): Observable<R> {
-    if(extra.cacheKey){
+    if (extra.cacheKey) {
       localStorage.removeItem(extra.cacheKey);
     }
     return this.httpClient.delete(url).pipe(ApiService.MAP_DATA<any, R>());
+  }
+
+  getPendingChanges$(): Observable<number> {
+    return this.pendingChanges$.asObservable();
+  }
+
+  syncPendingChanges(): Observable<number> {
+    const requestMap: Observable<{ done: boolean, url: string }>[] = [];
+    this.pendingChangesMap.forEach((request, url) => requestMap.push(request.pipe(
+      map(() => ({done: true, url})),
+      catchError(() => of({done: false, url}))
+    )));
+    return forkJoin(requestMap).pipe(
+      defaultIfEmpty([]),
+      tap(results =>
+        results
+          .filter(({done}) => done)
+          .forEach(({url}) => {
+            this.removePendingChanges(url);
+          })
+      ),
+      map(() => this.pendingChangesMap.size)
+    );
   }
 
   getSettings(): Observable<FullSettings | undefined> {
@@ -123,7 +176,10 @@ export class ApiService {
   }
 
   setEventDescription(id: string, description: string): Observable<string> {
-    return this.postWithCache(ApiUrls.description(id), description, {cacheKey: DESCRIPTIONS_DB_NAME(id), isString: true});
+    return this.postWithCache(ApiUrls.description(id), description, {
+      cacheKey: DESCRIPTIONS_DB_NAME(id),
+      isString: true
+    });
   }
 
   deleteEventDescription(id: string): Observable<string> {
@@ -151,7 +207,7 @@ export class ApiService {
     //     Update storage
     //     Reload everything
     return this.getLastUpdatesMap().pipe(
-      catchError( error => {
+      catchError(error => {
         if (error === ERROR_ANONYMOUS || error.status === 404) {
           return of(undefined);
         }
@@ -178,12 +234,12 @@ export class ApiService {
 
   purgeDetails(ids: Set<string>): Observable<unknown> {
     const internalIds = new Set<string>();
-    ids.forEach( id => {
+    ids.forEach(id => {
       const internalId = DESCRIPTIONS_DB_NAME(id);
       internalIds.add(internalId);
     });
 
-    Object.keys(localStorage).forEach( key => {
+    Object.keys(localStorage).forEach(key => {
       if (key.includes(OLD_SHORT_DESCRIPTION_DB_NAME)) {
         localStorage.removeItem(key)
       }

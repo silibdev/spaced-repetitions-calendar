@@ -1,16 +1,29 @@
+<p-confirmDialog header="Confirmation" icon="pi pi-exclamation-triangle"></p-confirmDialog>
 <div>
   <p-menubar [model]="(menu$ | async) || []">
     <ng-template pTemplate="start">
-      <button pButton class="py-0 px-2 p-button-text p-button-plain" routerLink="home">
-        <span class="pi pi-calendar pr-2"></span>
-        <span class="lg:text-xl md:text-lg">Spaced Repetition Calendar</span>
-      </button>
+      <p-button styleClass="py-0 px-2 p-button-text p-button-plain" routerLink="home">
+        <ng-template pTemplate="content">
+          <span class="pi pi-calendar pr-2"></span>
+          <span class="lg:text-xl md:text-lg">Spaced Repetition Calendar</span>
+        </ng-template>
+      </p-button>
     </ng-template>
     <ng-template pTemplate="end">
-      <p-button *ngIf="(user$ | async) as user" [styleClass]="'p-button-text p-button-plain'" (click)="menu.toggle($event)">
+      <p-button
+        *ngIf="(user$ | async) as user"
+        [styleClass]="'p-button-text p-button-plain'"
+        (click)="menu.toggle($event)"
+      >
         <ng-template pTemplate="content">
-          <span class="pi pi-user pr-2"></span>
+          <span class="pi pi-user md:pr-2"></span>
           <span class="hidden md:block">{{user.name}}</span>
+          <p-badge
+            *ngIf="pendingChanges$ | async as pendingChanges"
+            [value]="pendingChanges"
+            styleClass="ml-2 mb-1"
+            severity="info"
+          ></p-badge>
         </ng-template>
       </p-button>
       <p-menu #menu [popup]="true" [model]="(userMenu$ | async) || []"></p-menu>

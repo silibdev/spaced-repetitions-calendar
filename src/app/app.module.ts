@@ -16,6 +16,8 @@ import { HttpClientModule } from '@angular/common/http';
 import { AUTH_INTERCEPTOR_PROVIDER } from './home/services/auth.interceptor';
 import { AuthService } from './home/services/auth.service';
 import { MenuModule } from 'primeng/menu';
+import { BadgeModule } from 'primeng/badge';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
 
 @NgModule({
   declarations: [
@@ -37,7 +39,9 @@ import { MenuModule } from 'primeng/menu';
       // or after 30 seconds (whichever comes first).
       registrationStrategy: 'registerWhenStable:30000'
     }),
-    MenuModule
+    MenuModule,
+    BadgeModule,
+    ConfirmDialogModule
   ],
   providers: [
     {
