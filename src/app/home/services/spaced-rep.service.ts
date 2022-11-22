@@ -8,6 +8,7 @@ import {
 import {
   BehaviorSubject,
   defaultIfEmpty,
+  first,
   forkJoin,
   map,
   mapTo,
@@ -15,7 +16,8 @@ import {
   of,
   switchMap,
   tap,
-  throwError
+  throwError,
+  withLatestFrom
 } from 'rxjs';
 import { addDays } from 'date-fns';
 import { EventFormService } from './event-form.service';
@@ -50,9 +52,9 @@ export class SpacedRepService {
       clearTimeout(this.remoteSaveTimer);
     }
     this.remoteSaveTimer = setTimeout(() => {
-      const newDb = LZString.compressToUTF16(JSON.stringify(dbToSave));
+      const newCompressedDb = LZString.compressToUTF16(JSON.stringify(dbToSave));
       if (remoteSave) {
-        this.apiService.setEventList(newDb).subscribe(() => console.log('save db done!'));
+        this.apiService.setEventList(newCompressedDb).subscribe();
       }
     }, 250);
     this.spacedReps.next(newDb);
@@ -80,18 +82,25 @@ export class SpacedRepService {
   }
 
   private loadDb(): Observable<unknown> {
-    return this.apiService.getEventList().pipe(tap(savedDb => {
-      let db = [];
-      if (savedDb) {
-        try {
-          db = JSON.parse(savedDb);
-        } catch (e) {
-          db = JSON.parse(LZString.decompressFromUTF16(savedDb) || '[]');
+    return this.apiService.getEventList().pipe(
+      tap(savedDb => {
+        let db: any = [];
+        if (savedDb) {
+          try {
+            db = JSON.parse(savedDb);
+          } catch (e) {
+            db = JSON.parse(LZString.decompressFromUTF16(savedDb) || '[]');
+          }
         }
-      }
-      db.forEach((event: any) => event.start = new Date(event.start));
-      this.setDb(db);
-    }));
+        db.forEach((event: any) => event.start = new Date(event.start));
+        this.setDb(db);
+      }),
+      withLatestFrom(this.spacedReps$),
+      switchMap(() => this.getAll().pipe(first())),
+      switchMap(db => forkJoin(
+        db.map(e => this.descriptionService.get(e.linkedSpacedRepId || e.id))
+      ))
+    );
   }
 
   create(createSpacedRep: CreateSpacedReps): Observable<void> {
