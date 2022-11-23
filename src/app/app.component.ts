@@ -1,9 +1,10 @@
 import { Component } from '@angular/core';
 import { ConfirmationService, MenuItem } from 'primeng/api';
 import { AuthService } from './home/services/auth.service';
-import { combineLatest, map, Observable, shareReplay } from 'rxjs';
+import { combineLatest, map, Observable, shareReplay, tap } from 'rxjs';
 import { User } from './home/models/settings.model';
 import { ApiService } from './home/services/api.service';
+import { SpacedRepService } from './home/services/spaced-rep.service';
 
 @Component({
   selector: 'app-root',
@@ -48,7 +49,8 @@ export class AppComponent {
   constructor(
     private authService: AuthService,
     private apiService: ApiService,
-    private confirmationService: ConfirmationService
+    private spacedRepService: SpacedRepService,
+    private confirmationService: ConfirmationService,
   ) {
     this.user$ = authService.getUser$().pipe(
       shareReplay()
@@ -102,10 +104,24 @@ export class AppComponent {
         return [];
       })
     );
+
+    this.apiService.getOutOfSync$().pipe(
+      tap( outOfSync => {
+        if(outOfSync) {
+          this.confirmationService.confirm({
+            header: 'ATTENTION',
+            message: 'You have modified stale data. You need to synchronize your data: this operation will cancel all the current changes. Are you ok with this?',
+            accept: () => this.spacedRepService.sync().subscribe(),
+            acceptLabel: 'Yes, let\'s sync'
+          });
+        }
+      })
+    ).subscribe();
   }
 
   logout(): void {
     this.confirmationService.confirm({
+      header: 'Confirmation',
       message: 'Do you really want to logout?',
       accept: () => this.authService.logout(),
       dismissableMask: true

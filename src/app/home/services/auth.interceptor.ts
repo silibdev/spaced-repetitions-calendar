@@ -1,12 +1,15 @@
 import { Injectable, Provider } from '@angular/core';
 import {
-  HttpRequest,
-  HttpHandler,
+  HTTP_INTERCEPTORS,
+  HttpErrorResponse,
   HttpEvent,
-  HttpInterceptor, HTTP_INTERCEPTORS, HttpResponse
+  HttpHandler,
+  HttpInterceptor,
+  HttpRequest
 } from '@angular/common/http';
-import { Observable, throwError } from 'rxjs';
+import { catchError, Observable, throwError } from 'rxjs';
 import { AuthService } from './auth.service';
+import { ApiService } from './api.service';
 
 export const ERROR_ANONYMOUS = 'error-anonymous';
 
@@ -14,7 +17,8 @@ export const ERROR_ANONYMOUS = 'error-anonymous';
 export class AuthInterceptor implements HttpInterceptor {
 
   constructor(
-    private authService: AuthService
+    private authService: AuthService,
+    private apiService: ApiService
   ) {
   }
 
@@ -26,7 +30,14 @@ export class AuthInterceptor implements HttpInterceptor {
     if (token) {
       const headers = request.headers.append('Authorization', 'Bearer ' + token);
       request = request.clone({headers});
-      return next.handle(request);
+      return next.handle(request).pipe(
+        catchError((error: HttpErrorResponse) => {
+          if (error.status === 500 && error.error?.data === 'OUT-OF-SYNC') {
+            this.apiService.setOutOfSync();
+          }
+          return throwError(() => error);
+        })
+      );
     }
     return throwError(() => ERROR_ANONYMOUS);
   }

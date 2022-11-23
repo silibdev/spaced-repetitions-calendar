@@ -99,7 +99,7 @@ export class SpacedRepService {
       switchMap(() => this.getAll().pipe(first())),
       switchMap(db => forkJoin(
         db.map(e => this.descriptionService.get(e.linkedSpacedRepId || e.id))
-      ))
+      ).pipe(defaultIfEmpty(undefined)))
     );
   }
 
@@ -210,19 +210,15 @@ export class SpacedRepService {
     if (!event) {
       return of(undefined);
     }
-    const eventsToRemove = [event.id as string];
-    const newDb = this.db.filter(e => {
-        if (event.linkedSpacedRepId === event.id) {
-          eventsToRemove.push(e.id as string);
-        }
-        return !(e.id === event.id || e.linkedSpacedRepId === event.id);
-      }
-    );
+    const newDb = this.db.filter(e => !(e.id === event.id || e.linkedSpacedRepId === event.id));
     this.setDb(newDb, true);
-    return forkJoin(eventsToRemove.map(id => ([
-      this.eventDetailService.delete(id),
-      this.descriptionService.delete(id)
-    ])).flat()).pipe(mapTo(undefined));
+    if (!event.linkedSpacedRepId) {
+      return forkJoin([
+        this.eventDetailService.delete(event.id),
+        this.descriptionService.delete(event.id)
+      ]).pipe(mapTo(undefined));
+    }
+    return this.spacedReps$.pipe(mapTo(undefined), first());
   }
 
   saveFirstMigration(eventToModify: SpacedRepModel): Observable<void> {
@@ -271,9 +267,10 @@ export class SpacedRepService {
       title: eventToModify.title
     };
 
+    const masterId = eventToModify.linkedSpacedRepId || eventToModify.id;
     return forkJoin([
-      this.descriptionService.save(eventToModify.id, eventToModify.description || ''),
-      this.eventDetailService.save(eventToModify.id, commonSpacedRepModel)
+      this.descriptionService.save(masterId, eventToModify.description || ''),
+      this.eventDetailService.save(masterId, commonSpacedRepModel)
     ])
       .pipe(mapTo(undefined));
   }

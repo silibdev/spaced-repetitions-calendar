@@ -11,6 +11,7 @@ import {
   of,
   OperatorFunction,
   shareReplay,
+  switchMap,
   tap,
   throwError
 } from 'rxjs';
@@ -35,20 +36,45 @@ const OLD_SHORT_DESCRIPTION_DB_NAME = 'src-short-desc-db';
 const DETAIL_DB_NAME_PREFIX = 'src-event-detail-db';
 const DETAIL_DB_NAME = (id: string) => DETAIL_DB_NAME_PREFIX + id;
 
+const LAST_UPDATE_DB_NAME = 'src-last-update-db';
+
 const DB_NAME = 'src-db';
 
 interface Extra {
   cacheKey: string,
   noCache?: boolean,
-  isString?: boolean
+  dontParse?: boolean
+}
+
+interface LastUpdateRemote {
+  eventList: string;
+  eventDescriptions: {id: string, updatedAt: string}[];
+  eventDetails: {id: string, updatedAt: string}[];
+}
+
+type LastUpdate = Record<string, string>; // cacheKey - iso_string
+
+function isAfter(dateA?: string, dateB?: string): boolean {
+  if (!dateA || !dateB) {
+    return true;
+  }
+  return new Date(dateA) > new Date(dateB);
 }
 
 @Injectable({
   providedIn: 'root'
 })
 export class ApiService {
-  private static MAP_DATA<T extends { data: string }, R>(isString?: boolean): OperatorFunction<T, R> {
-    return (obs) => obs.pipe(map(({data}) => (isString || !data) ? data : JSON.parse(data)));
+  private outOfSync$ = new BehaviorSubject(false);
+  private MAP_DATA<T extends { data: string, updatedAt?: string }, R>(cacheKey: string, dontParse?: boolean): OperatorFunction<T, R> {
+    return (obs) => obs.pipe(
+      map(({data, updatedAt}) => {
+        if (updatedAt) {
+          this.saveLastUpdateMap(cacheKey, updatedAt);
+        }
+        return (dontParse || !data) ? data : JSON.parse(data)
+      })
+    );
   }
 
   private static HANDLE_ANONYMOUS<R>(data: R): MonoTypeOperatorFunction<R> {
@@ -65,9 +91,23 @@ export class ApiService {
   private pendingChangesMap = new Map<string, Observable<unknown>>();
   private pendingChanges$ = new BehaviorSubject<number>(0);
 
+  private readonly lastUpdateMap: LastUpdate;
+  private saveLastUpdateMapTimeout?: number;
+
   constructor(
     private httpClient: HttpClient
   ) {
+    this.lastUpdateMap = JSON.parse(localStorage.getItem(LAST_UPDATE_DB_NAME) || '{}');
+  }
+
+  private saveLastUpdateMap(key: string, value: string): void {
+    this.lastUpdateMap[key] = value;
+    if (this.saveLastUpdateMapTimeout) {
+      clearTimeout(this.saveLastUpdateMapTimeout);
+    }
+    setTimeout(() => {
+      localStorage.setItem(LAST_UPDATE_DB_NAME, JSON.stringify(this.lastUpdateMap))
+    }, 250);
   }
 
   private addPendingChanges(url: string, request: any): void {
@@ -80,18 +120,23 @@ export class ApiService {
     this.notifyPendingChanges();
   }
 
+  private clearPendingChanges(): void {
+    this.pendingChangesMap.clear();
+    this.notifyPendingChanges();
+  }
+
   private notifyPendingChanges(): void {
     this.pendingChanges$.next(this.pendingChangesMap.size);
   }
 
-  private getLastUpdatesMap(): Observable<unknown> {
-    return this.httpClient.get<any>(ApiUrls.lastUpdates).pipe(ApiService.MAP_DATA());
+  private getLastUpdatesMap(): Observable<LastUpdateRemote> {
+    return this.httpClient.get<any>(ApiUrls.lastUpdates).pipe(this.MAP_DATA('', true));
   }
 
   private getWithCache<R>(url: string, extra: Extra): Observable<R> {
     const cachedItem = extra.cacheKey && localStorage.getItem(extra.cacheKey);
-    if (cachedItem || cachedItem === '') {
-      return extra.isString ? of(cachedItem) : of(JSON.parse(cachedItem));
+    if (!extra.noCache && cachedItem || cachedItem === '') {
+      return extra.dontParse ? of(cachedItem) : of(JSON.parse(cachedItem));
     }
     const cachedRequest = this.requestOptimizer.get(url);
     if (cachedRequest) {
@@ -99,7 +144,7 @@ export class ApiService {
     }
     const request = this.httpClient.get(url).pipe(
       tap(({data}: any) => localStorage.setItem(extra.cacheKey, data)),
-      ApiService.MAP_DATA<any, R>(extra.isString),
+      this.MAP_DATA<any, R>(extra.cacheKey, extra.dontParse),
       tap(() => this.requestOptimizer.delete(url)),
       shareReplay()
     );
@@ -108,11 +153,12 @@ export class ApiService {
   }
 
   private postWithCache<R>(url: string, data: R, extra: Extra): Observable<R> {
-    const itemToCache = extra.isString ? data as unknown as string : JSON.stringify(data);
+    const itemToCache = extra.dontParse ? data as unknown as string : JSON.stringify(data);
     localStorage.setItem(extra.cacheKey, itemToCache);
-    const request = this.httpClient.post(url, {data: itemToCache})
+    const lastUpdatedAt = this.lastUpdateMap[extra.cacheKey];
+    const request = this.httpClient.post(url, {data: itemToCache, lastUpdatedAt})
       .pipe(
-        ApiService.MAP_DATA<any, R>(extra.isString),
+        this.MAP_DATA<any, R>(extra.cacheKey, extra.dontParse),
         ApiService.HANDLE_ANONYMOUS(data)
       );
     return request.pipe(
@@ -124,10 +170,25 @@ export class ApiService {
   }
 
   private deleteWithCache<R>(url: string, extra: Extra): Observable<R> {
-    if (extra.cacheKey) {
-      localStorage.removeItem(extra.cacheKey);
-    }
-    return this.httpClient.delete(url).pipe(ApiService.MAP_DATA<any, R>());
+    const cachedItem = extra.cacheKey && localStorage.getItem(extra.cacheKey);
+    const data = extra.dontParse ? cachedItem : JSON.parse(cachedItem || 'null');
+    localStorage.removeItem(extra.cacheKey);
+    const lastUpdatedAt = this.lastUpdateMap[extra.cacheKey];
+    const request = this.httpClient.delete(url, {body: {lastUpdatedAt}})
+      .pipe(
+        this.MAP_DATA<any, R>(extra.cacheKey, extra.dontParse),
+        ApiService.HANDLE_ANONYMOUS(data)
+        );
+    return request.pipe(
+      catchError(() => {
+        this.addPendingChanges(url, request);
+        return of(data);
+      })
+    );
+  }
+
+  getOutOfSync$(): Observable<boolean> {
+    return this.outOfSync$.asObservable();
   }
 
   getPendingChanges$(): Observable<number> {
@@ -153,8 +214,8 @@ export class ApiService {
     );
   }
 
-  getSettings(): Observable<FullSettings | undefined> {
-    return this.getWithCache<FullSettings | undefined>(ApiUrls.settings, {cacheKey: OPTS_DB_NAME})
+  getSettings(noCache?: boolean): Observable<FullSettings | undefined> {
+    return this.getWithCache<FullSettings | undefined>(ApiUrls.settings, {cacheKey: OPTS_DB_NAME, noCache})
       .pipe(ApiService.HANDLE_ANONYMOUS<FullSettings | undefined>(undefined));
   }
 
@@ -163,31 +224,31 @@ export class ApiService {
   }
 
   setEventList(eventListCompressed: string): Observable<string> {
-    return this.postWithCache(ApiUrls.eventList, eventListCompressed, {cacheKey: DB_NAME, isString: true});
+    return this.postWithCache(ApiUrls.eventList, eventListCompressed, {cacheKey: DB_NAME, dontParse: true});
   }
 
-  getEventList(): Observable<string | undefined> {
-    return this.getWithCache<string | undefined>(ApiUrls.eventList, {cacheKey: DB_NAME, isString: true})
+  getEventList(noCache?: boolean): Observable<string | undefined> {
+    return this.getWithCache<string | undefined>(ApiUrls.eventList, {cacheKey: DB_NAME, dontParse: true, noCache})
       .pipe(ApiService.HANDLE_ANONYMOUS<string | undefined>(undefined));
   }
 
-  getEventDescription(id: string): Observable<string> {
-    return this.getWithCache(ApiUrls.description(id), {cacheKey: DESCRIPTIONS_DB_NAME(id), isString: true});
+  getEventDescription(id: string, noCache?: boolean): Observable<string> {
+    return this.getWithCache(ApiUrls.description(id), {cacheKey: DESCRIPTIONS_DB_NAME(id), dontParse: true, noCache});
   }
 
   setEventDescription(id: string, description: string): Observable<string> {
     return this.postWithCache(ApiUrls.description(id), description, {
       cacheKey: DESCRIPTIONS_DB_NAME(id),
-      isString: true
+      dontParse: true
     });
   }
 
   deleteEventDescription(id: string): Observable<string> {
-    return this.deleteWithCache(ApiUrls.description(id), {cacheKey: DESCRIPTIONS_DB_NAME(id)});
+    return this.deleteWithCache(ApiUrls.description(id), {cacheKey: DESCRIPTIONS_DB_NAME(id), dontParse: true});
   }
 
-  getEventDetail(id: string): Observable<CommonSpacedRepModel> {
-    return this.getWithCache(ApiUrls.detail(id), {cacheKey: DETAIL_DB_NAME(id)});
+  getEventDetail(id: string, noCache?: boolean): Observable<CommonSpacedRepModel> {
+    return this.getWithCache(ApiUrls.detail(id), {cacheKey: DETAIL_DB_NAME(id), noCache});
   }
 
   setEventDetail(id: string, detail: CommonSpacedRepModel): Observable<CommonSpacedRepModel> {
@@ -206,12 +267,42 @@ export class ApiService {
     //     -- if conflicts -> show conflicts
     //     Update storage
     //     Reload everything
+    this.clearPendingChanges();
+    this.resetOutOfSync();
     return this.getLastUpdatesMap().pipe(
       catchError(error => {
-        if (error === ERROR_ANONYMOUS || error.status === 404) {
-          return of(undefined);
+        if (error === ERROR_ANONYMOUS) {
+          return of({
+            eventList: '',
+            eventDescriptions: [],
+            eventDetails: []
+          });
         }
         return throwError(error);
+      }),
+      switchMap( (lastUpdateMap: LastUpdateRemote) => {
+        const requests: Observable<unknown>[] = [
+          this.getSettings(true)
+        ];
+
+        const {eventList: elTime, eventDescriptions: edesTime, eventDetails: edetTime} = lastUpdateMap;
+        if (isAfter(elTime, this.lastUpdateMap[DB_NAME])) {
+          requests.push(this.getEventList(true));
+        }
+
+        edetTime.forEach(({id, updatedAt}) => {
+          if (isAfter(updatedAt, this.lastUpdateMap[DETAIL_DB_NAME(id)])) {
+            requests.push(this.getEventDetail(id, true));
+          }
+        });
+
+        edesTime.forEach(({id, updatedAt}) => {
+          if (isAfter(updatedAt, this.lastUpdateMap[DESCRIPTIONS_DB_NAME(id)])) {
+            requests.push(this.getEventDescription(id, true));
+          }
+        });
+
+        return forkJoin(requests).pipe(defaultIfEmpty(undefined))
       })
     );
   }
@@ -260,5 +351,13 @@ export class ApiService {
   desync(): Observable<unknown> {
     localStorage.clear();
     return of(undefined);
+  }
+
+  setOutOfSync() {
+    this.outOfSync$.next(true);
+  }
+
+  resetOutOfSync() {
+    this.outOfSync$.next(false);
   }
 }
