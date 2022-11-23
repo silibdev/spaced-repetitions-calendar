@@ -46,6 +46,8 @@ interface Extra {
   dontParse?: boolean
 }
 
+type LastUpdateOp = 'U' | 'R' | 'none'
+
 interface LastUpdateRemote {
   eventList: string;
   eventDescriptions: {id: string, updatedAt: string}[];
@@ -66,13 +68,13 @@ function isAfter(dateA?: string, dateB?: string): boolean {
 })
 export class ApiService {
   private outOfSync$ = new BehaviorSubject(false);
-  private MAP_DATA<T extends { data: string, updatedAt?: string }, R>(cacheKey: string, dontParse?: boolean): OperatorFunction<T, R> {
+  private MAP_DATA<T extends { data: string, updatedAt?: string }, R>(cacheKey: string, extra: {dontParse?: boolean, lastUpdateOp: LastUpdateOp }): OperatorFunction<T, R> {
     return (obs) => obs.pipe(
       map(({data, updatedAt}) => {
         if (updatedAt) {
-          this.saveLastUpdateMap(cacheKey, updatedAt);
+          this.saveLastUpdateMap(cacheKey, updatedAt, extra.lastUpdateOp);
         }
-        return (dontParse || !data) ? data : JSON.parse(data)
+        return (extra.dontParse || !data) ? data : JSON.parse(data)
       })
     );
   }
@@ -91,17 +93,32 @@ export class ApiService {
   private pendingChangesMap = new Map<string, Observable<unknown>>();
   private pendingChanges$ = new BehaviorSubject<number>(0);
 
-  private readonly lastUpdateMap: LastUpdate;
+  private lastUpdateMap: LastUpdate = {};
   private saveLastUpdateMapTimeout?: number;
 
   constructor(
     private httpClient: HttpClient
   ) {
+    this.initLastUpdateMap();
+  }
+
+  private initLastUpdateMap(): void {
     this.lastUpdateMap = JSON.parse(localStorage.getItem(LAST_UPDATE_DB_NAME) || '{}');
   }
 
-  private saveLastUpdateMap(key: string, value: string): void {
-    this.lastUpdateMap[key] = value;
+  private saveLastUpdateMap(key: string, value: string, op: LastUpdateOp): void {
+    if (op === 'none') {
+      return;
+    }
+    switch (op) {
+      case 'U':
+        this.lastUpdateMap[key] = value;
+        break;
+      case 'R':
+        delete this.lastUpdateMap[key];
+        break;
+    }
+
     if (this.saveLastUpdateMapTimeout) {
       clearTimeout(this.saveLastUpdateMapTimeout);
     }
@@ -130,7 +147,7 @@ export class ApiService {
   }
 
   private getLastUpdatesMap(): Observable<LastUpdateRemote> {
-    return this.httpClient.get<any>(ApiUrls.lastUpdates).pipe(this.MAP_DATA('', true));
+    return this.httpClient.get<any>(ApiUrls.lastUpdates).pipe(this.MAP_DATA('', {dontParse: true, lastUpdateOp: 'none'}));
   }
 
   private getWithCache<R>(url: string, extra: Extra): Observable<R> {
@@ -144,7 +161,7 @@ export class ApiService {
     }
     const request = this.httpClient.get(url).pipe(
       tap(({data}: any) => localStorage.setItem(extra.cacheKey, data)),
-      this.MAP_DATA<any, R>(extra.cacheKey, extra.dontParse),
+      this.MAP_DATA<any, R>(extra.cacheKey, {dontParse: extra.dontParse, lastUpdateOp: 'U'}),
       tap(() => this.requestOptimizer.delete(url)),
       shareReplay()
     );
@@ -158,7 +175,7 @@ export class ApiService {
     const lastUpdatedAt = this.lastUpdateMap[extra.cacheKey];
     const request = this.httpClient.post(url, {data: itemToCache, lastUpdatedAt})
       .pipe(
-        this.MAP_DATA<any, R>(extra.cacheKey, extra.dontParse),
+        this.MAP_DATA<any, R>(extra.cacheKey, {dontParse: extra.dontParse, lastUpdateOp: 'U'}),
         ApiService.HANDLE_ANONYMOUS(data)
       );
     return request.pipe(
@@ -176,7 +193,7 @@ export class ApiService {
     const lastUpdatedAt = this.lastUpdateMap[extra.cacheKey];
     const request = this.httpClient.delete(url, {body: {lastUpdatedAt}})
       .pipe(
-        this.MAP_DATA<any, R>(extra.cacheKey, extra.dontParse),
+        this.MAP_DATA<any, R>(extra.cacheKey, {dontParse: extra.dontParse, lastUpdateOp: 'R'}),
         ApiService.HANDLE_ANONYMOUS(data)
         );
     return request.pipe(
@@ -350,6 +367,7 @@ export class ApiService {
 
   desync(): Observable<unknown> {
     localStorage.clear();
+    this.initLastUpdateMap();
     return of(undefined);
   }
 
