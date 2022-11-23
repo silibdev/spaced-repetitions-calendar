@@ -18,6 +18,7 @@ import { AuthService } from './home/services/auth.service';
 import { MenuModule } from 'primeng/menu';
 import { BadgeModule } from 'primeng/badge';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { ToastModule } from 'primeng/toast';
 
 @NgModule({
   declarations: [
@@ -41,7 +42,8 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
     }),
     MenuModule,
     BadgeModule,
-    ConfirmDialogModule
+    ConfirmDialogModule,
+    ToastModule
   ],
   providers: [
     {

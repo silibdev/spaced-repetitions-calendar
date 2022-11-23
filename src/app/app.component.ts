@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
-import { ConfirmationService, MenuItem } from 'primeng/api';
+import { ConfirmationService, MenuItem, MessageService } from 'primeng/api';
 import { AuthService } from './home/services/auth.service';
-import { combineLatest, map, Observable, shareReplay, tap } from 'rxjs';
+import { combineLatest, debounceTime, filter, map, Observable, shareReplay, tap } from 'rxjs';
 import { User } from './home/models/settings.model';
 import { ApiService } from './home/services/api.service';
 import { SpacedRepService } from './home/services/spaced-rep.service';
@@ -10,7 +10,7 @@ import { SpacedRepService } from './home/services/spaced-rep.service';
   selector: 'app-root',
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss'],
-  providers: [ConfirmationService]
+  providers: [ConfirmationService, MessageService]
 })
 export class AppComponent {
   private menu: MenuItem[] = [
@@ -51,6 +51,7 @@ export class AppComponent {
     private apiService: ApiService,
     private spacedRepService: SpacedRepService,
     private confirmationService: ConfirmationService,
+    private messageService: MessageService
   ) {
     this.user$ = authService.getUser$().pipe(
       shareReplay()
@@ -60,6 +61,18 @@ export class AppComponent {
       map(pendingChanges => pendingChanges ? pendingChanges > 9 ? '9+' : pendingChanges.toString() : ''),
       shareReplay()
     );
+
+    this.apiService.getPendingChanges$().pipe(
+      debounceTime(500),
+      filter(pendingChanges => pendingChanges > 0),
+      tap(() => this.messageService.add({
+        summary: 'Warning',
+        detail: 'Some changes have not been saved remotely',
+        severity: 'warn',
+        life: 3000,
+        closable: true
+      }))
+    ).subscribe();
 
     this.menu$ = this.user$.pipe(
       map(user => {
