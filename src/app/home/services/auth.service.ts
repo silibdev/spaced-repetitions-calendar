@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, firstValueFrom, Observable } from 'rxjs';
+import { BehaviorSubject, filter, firstValueFrom, fromEvent, Observable, of, switchMap } from 'rxjs';
 import * as netlifyIdentity from 'netlify-identity-widget';
 import { User } from '../models/settings.model';
 import { Router } from '@angular/router';
@@ -31,6 +31,18 @@ export class AuthService {
       console.log('Logged out');
       this.resetUser();
     });
+
+    this.user$.pipe(
+      switchMap( user => {
+        if (user?.token) {
+          return fromEvent(window, 'visibilitychange').pipe(
+            filter(() => document.visibilityState === 'visible'),
+            switchMap(() => this.spacedRepService.sync())
+          )
+        }
+        return of(undefined);
+      })
+    ).subscribe();
   }
 
   private setUser(user: User): void {
