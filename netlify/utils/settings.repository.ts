@@ -23,7 +23,7 @@ export const SettingsRepository = {
     }
     const result = await DB.execute(query, params);
     console.log('post settings', result);
-    return {data: 'ok', updatedAt};
+    return {data: '{"ok":"ok"}', updatedAt};
   },
 
   async deleteSettings(userId: string): Promise<RepositoryResult<string>> {
