@@ -197,8 +197,8 @@ export class SpacedRepService {
         this.eventDetailService.get(descId as string)
       ]).pipe(map(([srm, description, details]) => {
         return {
-          ...srm,
           ...details,
+          ...srm,
           description
         };
       }));
@@ -210,9 +210,10 @@ export class SpacedRepService {
     if (!event) {
       return of(undefined);
     }
-    const newDb = this.db.filter(e => !(e.id === event.id || e.linkedSpacedRepId === event.id));
+    const isMaster = !event.linkedSpacedRepId;
+    const newDb = this.db.filter(e => !(e.id === event.id || (isMaster && e.linkedSpacedRepId === event.id)));
     this.setDb(newDb, true);
-    if (!event.linkedSpacedRepId) {
+    if (isMaster) {
       return forkJoin([
         this.eventDetailService.delete(event.id),
         this.descriptionService.delete(event.id)
