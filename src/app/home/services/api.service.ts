@@ -52,6 +52,7 @@ interface LastUpdateRemote {
   eventList: string;
   eventDescriptions: {id: string, updatedAt: string}[];
   eventDetails: {id: string, updatedAt: string}[];
+  settings: string;
 }
 
 type LastUpdate = Record<string, string>; // cacheKey - iso_string
@@ -292,17 +293,21 @@ export class ApiService {
           return of({
             eventList: '',
             eventDescriptions: [],
-            eventDetails: []
+            eventDetails: [],
+            settings: ''
           });
         }
         return throwError(error);
       }),
       switchMap( (lastUpdateMap: LastUpdateRemote) => {
-        const requests: Observable<unknown>[] = [
-          this.getSettings(true)
-        ];
+        const requests: Observable<unknown>[] = [];
 
-        const {eventList: elTime, eventDescriptions: edesTime, eventDetails: edetTime} = lastUpdateMap;
+        const {eventList: elTime, eventDescriptions: edesTime, eventDetails: edetTime, settings: setTime} = lastUpdateMap;
+
+        if (isAfter(setTime, this.lastUpdateMap[OPTS_DB_NAME])) {
+          requests.push(this.getSettings(true));
+        }
+
         if (isAfter(elTime, this.lastUpdateMap[DB_NAME])) {
           requests.push(this.getEventList(true));
         }

@@ -1,12 +1,13 @@
 import { DB } from './db-connector';
-import { getUpdatedAtFromRow, RepositoryResult } from './utils';
+import { RepositoryResult } from './utils';
 
 export const LastUpdatesRepository = {
   async getLastUpdates(userId: string): Promise<RepositoryResult<any>> {
-    const evResult = await DB.execute("SELECT updated_at FROM EventList WHERE user=:userId", {userId});
-    const eventListUpdateRow: Record<string, any> = evResult.rows[0];
-    const eventListUpdate = getUpdatedAtFromRow(eventListUpdateRow);
-    console.log({eventListUpdate});
+    const result = await DB.execute("SELECT EL.updated_at as el_update, S.updated_at as s_update FROM EventList as EL JOIN Settings as S ON EL.user=S.user WHERE EL.user=:userId", {userId});
+    const row: Record<string, any> = result.rows[0];
+    const eventListUpdate = row['el_update'];
+    const settingsUpdate = row['s_update'];
+    console.log({eventListUpdate, settingsUpdate});
 
     const eventResult = await DB.execute("SELECT DET.id as id, DET.updated_at as det_update, DES.updated_at as des_update FROM EventDetail as DET JOIN EventDescription as DES ON DES.id=DET.id WHERE DET.user=:userId", {userId});
 
@@ -26,10 +27,9 @@ export const LastUpdatesRepository = {
     return {
       data: {
         eventList: eventListUpdate,
-        eventDescriptions:
-        desUpdates,
-        eventDetails:
-        detUpdates
+        eventDescriptions: desUpdates,
+        eventDetails: detUpdates,
+        settings: settingsUpdate
       },
       updatedAt: ''
     };
