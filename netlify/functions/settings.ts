@@ -1,6 +1,6 @@
 import { Handler, HandlerResponse } from "@netlify/functions";
 import { SettingsRepository } from "../utils/settings.repository";
-import { createHandler, createResponse } from '../utils/utils';
+import { createHandler, createResponse, RequestBody } from '../utils/utils';
 
 const handler: Handler = createHandler({
   getResource: getSettings,
@@ -12,8 +12,8 @@ async function getSettings(userId: string): Promise<HandlerResponse> {
   return createResponse(settings);
 }
 
-async function postSettings(userId: string, settingsToSave: string): Promise<HandlerResponse> {
-  const settings = await SettingsRepository.postSettings(userId, settingsToSave);
+async function postSettings(userId: string, body: RequestBody): Promise<HandlerResponse> {
+  const settings = await SettingsRepository.postSettings(userId, body);
   return createResponse(settings);
 }
 

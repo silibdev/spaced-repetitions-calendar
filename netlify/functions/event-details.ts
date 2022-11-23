@@ -1,5 +1,5 @@
 import { Handler, HandlerResponse } from "@netlify/functions";
-import { createHandler, createResponse } from '../utils/utils';
+import { createHandler, createResponse, RequestBody } from '../utils/utils';
 import { EventDetailRepository } from '../utils/event-detail.repository';
 
 const handler: Handler = createHandler({
@@ -13,8 +13,8 @@ async function getEventDetail(userId: string, {id}: {id: string}): Promise<Handl
   return createResponse(eventDetail);
 }
 
-async function postEventDetail(userId: string, eventDetailToSave: string, {id}: {id: string}): Promise<HandlerResponse> {
-  const eventDetail = await EventDetailRepository.postEventDetail(userId, id, eventDetailToSave);
+async function postEventDetail(userId: string, body: RequestBody, {id}: {id: string}): Promise<HandlerResponse> {
+  const eventDetail = await EventDetailRepository.postEventDetail(userId, id, body);
   return createResponse(eventDetail);
 }
 
