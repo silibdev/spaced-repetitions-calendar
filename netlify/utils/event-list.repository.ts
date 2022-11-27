@@ -4,10 +4,10 @@ import { checkLastUpdate, getUpdatedAtFromRow, RepositoryResult, RequestBody } f
 export const EventListRepository = {
   async getEventList(userId: string): Promise<RepositoryResult<string>> {
     const result = await DB.execute("SELECT list, updated_at FROM EventList WHERE user=:userId", {userId});
-    const settingsRow: Record<string, any> = result.rows[0];
-    const list: string = (settingsRow && settingsRow['list']) || '';
-    const updatedAt = getUpdatedAtFromRow(settingsRow);
-    console.log('get settings', list);
+    const eventListRow: Record<string, any> = result.rows[0];
+    const list: string = (eventListRow && eventListRow['list']) || '';
+    const updatedAt = getUpdatedAtFromRow(eventListRow);
+    console.log('get eventList', userId);
     return {data: list, updatedAt};
   },
 
@@ -22,7 +22,7 @@ export const EventListRepository = {
       updatedAt
     }
     const result = await DB.execute(query, params);
-    console.log('post list', result);
+    console.log('post list', result.insertId);
     return {data: 'ok', updatedAt};
   },
 

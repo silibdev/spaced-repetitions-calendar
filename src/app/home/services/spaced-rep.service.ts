@@ -8,6 +8,7 @@ import {
 import {
   BehaviorSubject,
   defaultIfEmpty,
+  delay,
   first,
   forkJoin,
   map,
@@ -81,7 +82,26 @@ export class SpacedRepService {
     );
   }
 
-  private loadDb(): Observable<unknown> {
+  syncLocal(): Observable<unknown> {
+    return forkJoin([
+      this.loadDb(true).pipe(
+        switchMap(() => this.getAll().pipe(first())),
+        switchMap(events => forkJoin(
+          events
+            .filter(e => !e.linkedSpacedRepId)
+            .map((e, i) =>
+              this.get(e.id).pipe(
+                delay(250*i),
+                switchMap(eventFull => this.save(eventFull)),
+              )
+            )
+        ).pipe(defaultIfEmpty(undefined)))
+      ),
+      this.settingsService.loadOpts().pipe(tap(() => this.settingsService.saveOpts()))
+    ]);
+  }
+
+  private loadDb(forceSave?: boolean): Observable<unknown> {
     return this.apiService.getEventList().pipe(
       tap(savedDb => {
         let db: any = [];
@@ -93,7 +113,7 @@ export class SpacedRepService {
           }
         }
         db.forEach((event: any) => event.start = new Date(event.start));
-        this.setDb(db);
+        this.setDb(db, forceSave);
       }),
       withLatestFrom(this.spacedReps$),
       switchMap(() => this.getAll().pipe(first())),
@@ -320,5 +340,9 @@ export class SpacedRepService {
 
   desync() {
     return this.apiService.desync();
+  }
+
+  isSomethingPresent(): boolean {
+    return this.apiService.isSomethingPresent();
   }
 }

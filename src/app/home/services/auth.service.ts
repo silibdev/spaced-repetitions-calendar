@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, filter, firstValueFrom, fromEvent, Observable, of, switchMap } from 'rxjs';
+import { BehaviorSubject, filter, firstValueFrom, fromEvent, iif, Observable, of, switchMap } from 'rxjs';
 import * as netlifyIdentity from 'netlify-identity-widget';
 import { User } from '../models/settings.model';
 import { Router } from '@angular/router';
@@ -13,10 +13,11 @@ const USER_DB_NAME = 'src-user-db';
 })
 export class AuthService {
   private user$ = new BehaviorSubject<User | undefined>(undefined);
+  private syncLocal?: boolean;
 
   constructor(
     private router: Router,
-    private spacedRepService: SpacedRepService,
+    private spacedRepService: SpacedRepService
   ) {
     netlifyIdentity.on('login', user => {
       netlifyIdentity.close();
@@ -33,7 +34,7 @@ export class AuthService {
     });
 
     this.user$.pipe(
-      switchMap( user => {
+      switchMap(user => {
         if (user?.token) {
           return fromEvent(window, 'visibilitychange').pipe(
             filter(() => document.visibilityState === 'visible'),
@@ -47,7 +48,11 @@ export class AuthService {
 
   private setUser(user: User): void {
     this.user$.next(user);
-    firstValueFrom(this.spacedRepService.sync())
+    firstValueFrom(iif(
+      () => !!this.syncLocal,
+      this.spacedRepService.syncLocal(),
+      this.spacedRepService.sync())
+    )
       .then(() => this.router.navigate(['home']));
   }
 
@@ -106,5 +111,10 @@ export class AuthService {
     };
     localStorage.setItem(USER_DB_NAME, JSON.stringify(localAnonymousUser));
     this.setUser(localAnonymousUser);
+  }
+
+  loginAndSyncLocal() {
+    this.syncLocal = true;
+    this.login();
   }
 }

@@ -4,6 +4,7 @@ import {
   BehaviorSubject,
   catchError,
   defaultIfEmpty,
+  delay,
   forkJoin,
   map,
   MonoTypeOperatorFunction,
@@ -12,6 +13,7 @@ import {
   OperatorFunction,
   shareReplay,
   switchMap,
+  switchMapTo,
   tap,
   throwError
 } from 'rxjs';
@@ -219,7 +221,9 @@ export class ApiService {
       map(() => ({done: true, url})),
       catchError(() => of({done: false, url}))
     )));
-    return forkJoin(requestMap).pipe(
+    return forkJoin(
+      requestMap.map( (r, i) => of(undefined).pipe(delay(250*i), switchMapTo(r)))
+    ).pipe(
       defaultIfEmpty([]),
       tap(results =>
         results
@@ -382,5 +386,9 @@ export class ApiService {
 
   resetOutOfSync() {
     this.outOfSync$.next(false);
+  }
+
+  isSomethingPresent(): boolean {
+    return !!localStorage.getItem(DB_NAME) && !!localStorage.getItem(OPTS_DB_NAME);
   }
 }

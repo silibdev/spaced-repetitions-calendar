@@ -8,7 +8,7 @@ export const EventDetailRepository = {
     console.log(settingsRow);
     const data: string = (settingsRow && settingsRow['detail']) || '';
     const updatedAt = getUpdatedAtFromRow(settingsRow);
-    console.log('get event detail', data);
+    console.log('get event detail', eventId);
     return {data, updatedAt};
   },
 
@@ -24,7 +24,7 @@ export const EventDetailRepository = {
       updatedAt
     }
     const result = await DB.execute(query, params);
-    console.log('post eventDetail', result);
+    console.log('post eventDetail', result.insertId);
     return {data: '{"ok":"ok"}', updatedAt};
   },
 

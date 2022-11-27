@@ -7,7 +7,7 @@ export const EventDescriptionRepository = {
     const settingsRow: Record<string, any> = result.rows[0];
     const data: string = (settingsRow && settingsRow['description']) || '';
     const updatedAt = getUpdatedAtFromRow(settingsRow);
-    console.log('get event description', data);
+    console.log('get event description', eventId);
     return {data, updatedAt};
   },
 
@@ -23,7 +23,7 @@ export const EventDescriptionRepository = {
       updatedAt
     }
     const result = await DB.execute(query, params);
-    console.log('post eventDescription', result);
+    console.log('post eventDescription', result.insertId);
     return {data: 'ok', updatedAt};
   },
 

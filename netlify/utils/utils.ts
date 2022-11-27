@@ -13,7 +13,7 @@ export function getUser(context: HandlerContext): { userId: string } | HandlerRe
 
 export function getBody(body: string | null): RequestBody | HandlerResponse {
   const {data, lastUpdatedAt} = JSON.parse(body || '{}');
-  if (!data) {
+  if (data === undefined || data === null) {
     return {
       statusCode: 500,
       body: "No data in body"
@@ -77,9 +77,6 @@ export interface RepositoryResult<D> {
 }
 
 export function getUpdatedAtFromRow(row: any | undefined): string {
-  console.log('extract updated at');
-  console.log(row);
-  console.log(typeof row?.updated_at);
   return row?.updated_at || '';
 }
 

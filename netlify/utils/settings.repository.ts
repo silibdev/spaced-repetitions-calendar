@@ -7,7 +7,7 @@ export const SettingsRepository = {
     const settingsRow: Record<string, any> = result.rows[0];
     const settings: string = (settingsRow && settingsRow['data']) || '';
     const updatedAt = getUpdatedAtFromRow(settingsRow);
-    console.log('get settings', settings);
+    console.log('get settings', userId);
     return {data: settings, updatedAt};
   },
 
@@ -22,7 +22,7 @@ export const SettingsRepository = {
       updatedAt
     }
     const result = await DB.execute(query, params);
-    console.log('post settings', result);
+    console.log('post settings', result.insertId);
     return {data: '{"ok":"ok"}', updatedAt};
   },
 
