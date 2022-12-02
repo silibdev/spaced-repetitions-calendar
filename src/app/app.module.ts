@@ -19,6 +19,7 @@ import { MenuModule } from 'primeng/menu';
 import { BadgeModule } from 'primeng/badge';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ToastModule } from 'primeng/toast';
+import { BULK_INTERCEPTOR_PROVIDER } from './home/services/bulk.interceptor';
 
 @NgModule({
   declarations: [
@@ -53,6 +54,7 @@ import { ToastModule } from 'primeng/toast';
       multi: true
     },
     DB_MIGRATOR_PROVIDER,
+    BULK_INTERCEPTOR_PROVIDER,
     (!environment.production && AUTH_INTERCEPTOR_PROVIDER) || {
       provide: '',
       useValue: ''

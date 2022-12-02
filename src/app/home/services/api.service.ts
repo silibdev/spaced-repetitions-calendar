@@ -4,7 +4,6 @@ import {
   BehaviorSubject,
   catchError,
   defaultIfEmpty,
-  delay,
   forkJoin,
   map,
   MonoTypeOperatorFunction,
@@ -13,7 +12,6 @@ import {
   OperatorFunction,
   shareReplay,
   switchMap,
-  switchMapTo,
   tap,
   throwError
 } from 'rxjs';
@@ -222,7 +220,7 @@ export class ApiService {
       catchError(() => of({done: false, url}))
     )));
     return forkJoin(
-      requestMap.map( (r, i) => of(undefined).pipe(delay(250*i), switchMapTo(r)))
+      requestMap
     ).pipe(
       defaultIfEmpty([]),
       tap(results =>
