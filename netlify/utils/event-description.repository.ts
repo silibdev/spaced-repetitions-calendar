@@ -34,5 +34,22 @@ export const EventDescriptionRepository = {
     const updatedAt = getUpdatedAtFromRow(eventDescriptionRow)
     console.log('delete eventDescription', data);
     return {data, updatedAt};
+  },
+
+  async bulkGetEventDescription(userId: string, ids: string[]): Promise<RepositoryResult<Record<string, RepositoryResult<string>>>> {
+    const result = await DB.execute("SELECT id, description, updated_at FROM EventDescription WHERE user=:userId AND id IN (:ids)", {userId, ids});
+    const returnData = result.rows.reduce<Record<string, RepositoryResult<string>>>( (acc, row: any) => {
+      const id: string = row['id'];
+      acc[id] = {
+        data: row['description'],
+        updatedAt: getUpdatedAtFromRow(row)
+      };
+      return acc;
+    }, {});
+    return {data: returnData, updatedAt: new Date().toISOString()};
+  },
+
+  async bulkPostEventDescription(userId: string, data: any): Promise<RepositoryResult<Record<string, RepositoryResult<string>>>> {
+    return Promise.resolve({} as any);
   }
 }

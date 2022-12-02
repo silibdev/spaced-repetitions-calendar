@@ -4,10 +4,10 @@ import { checkLastUpdate, getUpdatedAtFromRow, RepositoryResult, RequestBody } f
 export const EventDetailRepository = {
   async getEventDetail(userId: string, eventId: string): Promise<RepositoryResult<string>> {
     const result = await DB.execute("SELECT detail, updated_at FROM EventDetail WHERE user=:userId AND id=:id", {userId, id: eventId});
-    const settingsRow: Record<string, any> = result.rows[0];
-    console.log(settingsRow);
-    const data: string = (settingsRow && settingsRow['detail']) || '';
-    const updatedAt = getUpdatedAtFromRow(settingsRow);
+    const row: Record<string, any> = result.rows[0];
+    console.log(row);
+    const data: string = (row && row['detail']) || '';
+    const updatedAt = getUpdatedAtFromRow(row);
     console.log('get event detail', eventId);
     return {data, updatedAt};
   },
@@ -35,5 +35,22 @@ export const EventDetailRepository = {
     const updatedAt = getUpdatedAtFromRow(eventDetailRow);
     console.log('delete eventDetail', eventDetail);
     return {data: eventDetail, updatedAt};
+  },
+
+  async bulkGetEventDetail(userId: string, ids: string[]): Promise<RepositoryResult<Record<string, RepositoryResult<string>>>> {
+    const result = await DB.execute("SELECT id, detail, updated_at FROM EventDetail WHERE user=:userId AND id IN (:ids)", {userId, ids});
+    const returnData = result.rows.reduce<Record<string, RepositoryResult<string>>>( (acc, row: any) => {
+      const id: string = row['id'];
+      acc[id] = {
+        data: row['detail'],
+        updatedAt: getUpdatedAtFromRow(row)
+      };
+      return acc;
+    }, {});
+    return {data: returnData, updatedAt: new Date().toISOString()};
+  },
+
+  async bulkPostEventDetail(userId: string, data: any): Promise<RepositoryResult<Record<string, RepositoryResult<string>>>> {
+    return Promise.resolve({} as any);
   }
 }

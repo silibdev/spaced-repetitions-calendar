@@ -12,28 +12,32 @@ export function getUser(context: HandlerContext): { userId: string } | HandlerRe
 }
 
 export function getBody(body: string | null): RequestBody | HandlerResponse {
-  const {data, lastUpdatedAt} = JSON.parse(body || '{}');
+  const {data, lastUpdatedAt, method} = JSON.parse(body || '{}');
   if (data === undefined || data === null) {
     return {
       statusCode: 500,
       body: "No data in body"
     }
   }
-  return {data, lastUpdatedAt};
+  return {data, lastUpdatedAt, method};
 }
 
-export interface RequestBody {
-  data: string,
-  lastUpdatedAt?: string
+export interface RequestBody<D = string> {
+  data: D,
+  lastUpdatedAt?: string,
+  method?: 'GET' | 'POST'
 }
+
+export type BulkRequestBody = RequestBody<any>
 
 export interface ResourceHandler {
   getResource?: (userId: string, queryParams?: any) => Promise<HandlerResponse>;
   postResource?: (userId: string, body: RequestBody, queryParams?: any) => Promise<HandlerResponse>;
-  deleteResource?: (userID: string, queryParams?: any) => Promise<HandlerResponse>;
+  deleteResource?: (userId: string, queryParams?: any) => Promise<HandlerResponse>;
+  bulkResource?: (userId: string, body: BulkRequestBody) => Promise<HandlerResponse>;
 }
 
-export function createHandler({getResource, postResource, deleteResource}: ResourceHandler): Handler {
+export function createHandler({getResource, postResource, deleteResource, bulkResource}: ResourceHandler): Handler {
   return async (event, context) => {
     let response: HandlerResponse | undefined;
     const userOrError = getUser(context);
@@ -50,12 +54,28 @@ export function createHandler({getResource, postResource, deleteResource}: Resou
         }
         break;
       case "POST":
-        if (postResource) {
-          const bodyOrError = getBody(event.body);
-          if (!('data' in bodyOrError)) {
-            return bodyOrError;
+        const bodyOrError = getBody(event.body);
+        if (!('data' in bodyOrError)) {
+          return bodyOrError;
+        }
+        if (queryParams && 'bulk' in queryParams) {
+          const bulkBody = bodyOrError as RequestBody<any>;
+          if (!('data' in bulkBody) || !('method' in bulkBody)) {
+            response = {
+              statusCode: 500,
+              body: "Bulk body is not correct"
+            }
+          } else {
+            if (bulkResource) {
+              response = await bulkResource(userId, bulkBody);
+            } else {
+              response = {statusCode: 500, body: "Bulk operation not allowed"}
+            }
           }
-          response = await postResource(userId, bodyOrError, queryParams);
+        } else {
+          if (postResource) {
+            response = await postResource(userId, bodyOrError, queryParams);
+          }
         }
         break;
       case "DELETE":
