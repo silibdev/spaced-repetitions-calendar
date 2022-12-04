@@ -55,10 +55,7 @@ import { BULK_INTERCEPTOR_PROVIDER } from './home/services/bulk.interceptor';
     },
     DB_MIGRATOR_PROVIDER,
     BULK_INTERCEPTOR_PROVIDER,
-    (!environment.production && AUTH_INTERCEPTOR_PROVIDER) || {
-      provide: '',
-      useValue: ''
-    }
+    AUTH_INTERCEPTOR_PROVIDER
   ],
   bootstrap: [AppComponent]
 })
