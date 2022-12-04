@@ -21,7 +21,7 @@
           "builder": "@angular-builders/custom-webpack:browser",
           "options": {
             "customWebpackConfig": {
-              "path": "webpack.config.js"
+              "path": "webpack.config.cjs"
             },
             "outputPath": "dist/spaced-repetitions-calendar",
             "index": "src/index.html",
