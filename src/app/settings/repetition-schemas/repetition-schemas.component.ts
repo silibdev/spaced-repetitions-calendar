@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
-import { EventFormService } from '../../home/services/event-form.service';
 import { FormArray, FormBuilder } from '@angular/forms';
 import { ConfirmationService, MessageService } from 'primeng/api';
+import { SettingsService } from '../../home/services/settings.service';
 
 @Component({
   selector: 'app-repetition-schemas',
@@ -15,12 +15,12 @@ export class RepetitionSchemasComponent implements OnInit {
   addingNew = false;
 
   constructor(
-    private eventFormService: EventFormService,
+    private settingsService: SettingsService,
     private formBuilder: FormBuilder,
     private messageService: MessageService,
     private confirmationService: ConfirmationService
   ) {
-    this.repSchemasForm = formBuilder.array(this.eventFormService.repetitionSchemaOpts.map(rs => ([{
+    this.repSchemasForm = formBuilder.array(this.settingsService.repetitionSchemaOpts.map(rs => ([{
       value: rs.value,
       disabled: true
     }])));
@@ -45,7 +45,7 @@ export class RepetitionSchemasComponent implements OnInit {
 
   edit(index: number): void {
     const repSchema = this.repSchemasForm.at(index).value;
-    const success = this.eventFormService.editRepetitionSchema(index, repSchema);
+    const success = this.settingsService.editRepetitionSchema(index, repSchema);
     if (success) {
       this.messageService.add({
         summary: 'Saved!',
@@ -63,7 +63,7 @@ export class RepetitionSchemasComponent implements OnInit {
 
   cancel(index: number): void {
     // prevent "index out of bound"
-    const oldSchema = this.eventFormService.repetitionSchemaOpts[index]?.value;
+    const oldSchema = this.settingsService.repetitionSchemaOpts[index]?.value;
     if (oldSchema) {
       this.repSchemasForm.at(index).setValue(oldSchema);
     }
@@ -82,7 +82,7 @@ export class RepetitionSchemasComponent implements OnInit {
   }
 
   delete(index: number): void {
-    this.eventFormService.deleteRepetitionSchema(index);
+    this.settingsService.deleteRepetitionSchema(index);
     this.repSchemasForm.removeAt(index);
     this.messageService.add({
       summary: 'Deleted!',

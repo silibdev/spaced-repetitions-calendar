@@ -1,27 +1,26 @@
 import { Injectable } from '@angular/core';
 import { Observable, of } from 'rxjs';
-
-export const DESCRIPTIONS_DB_NAME = 'src-desc-db';
+import { ApiService } from './api.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class DescriptionsService {
 
-  constructor() {
-  }
-
-  private static getInternalId(id: string): string {
-    return DESCRIPTIONS_DB_NAME + id;
+  constructor(
+    private apiService: ApiService
+  ) {
   }
 
   get(id: string): Observable<string> {
-    const description = localStorage.getItem(DescriptionsService.getInternalId(id))
-    return of(description || '');
+    return this.apiService.getEventDescription(id);
   }
 
   save(id: string, description: string): Observable<string> {
-    localStorage.setItem(DescriptionsService.getInternalId(id), description);
-    return of(description);
+    return this.apiService.setEventDescription(id, description);
+  }
+
+  delete(id: string): Observable<string> {
+    return this.apiService.deleteEventDescription(id);
   }
 }

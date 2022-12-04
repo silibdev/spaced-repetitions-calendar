@@ -1,8 +1,8 @@
 import { Component, OnInit } from '@angular/core';
-import { EventFormService } from '../../home/services/event-form.service';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { MessageService } from 'primeng/api';
 import { distinctUntilChanged, map, Observable, startWith } from 'rxjs';
+import { SettingsService } from '../../home/services/settings.service';
 
 
 @Component({
@@ -17,11 +17,11 @@ export class GeneralComponent implements OnInit {
   autoSavingMinutes$?: Observable<string>;
 
   constructor(
-    private eventFormService: EventFormService,
+    private settingsService: SettingsService,
     private messageService: MessageService,
     fb: FormBuilder
   ) {
-    const {autoSavingTimer} = this.eventFormService.generalOptions;
+    const {autoSavingTimer} = this.settingsService.generalOptions;
     this.generalForm = fb.group({
       autoSavingTimer: [autoSavingTimer]
     });
@@ -41,7 +41,7 @@ export class GeneralComponent implements OnInit {
 
   save(): void {
     const formValue = this.generalForm.value;
-    const saved = this.eventFormService.saveGeneralOptions({
+    const saved = this.settingsService.saveGeneralOptions({
       autoSavingTimer: formValue.autoSavingTimer
     });
     if (saved) {

@@ -1,13 +1,14 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CalendarEvent, CalendarView } from 'angular-calendar';
 import { EventFormService } from '../services/event-form.service';
 import { SpacedRepService } from '../services/spaced-rep.service';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
-import { finalize, map, Observable, tap } from 'rxjs';
+import { debounce, debounceTime, finalize, map, Observable, of, Subscription, switchMap, tap } from 'rxjs';
 import { SpacedRepModel } from '../models/spaced-rep.model';
 import { isSameDay, isSameMonth } from 'date-fns';
 import { ConfirmationService } from 'primeng/api';
 import { ExtendedCalendarView, SRCCalendarView } from '../calendar-header/calendar-header.component';
+import { SettingsService } from '../services/settings.service';
 
 @UntilDestroy()
 @Component({
@@ -16,7 +17,7 @@ import { ExtendedCalendarView, SRCCalendarView } from '../calendar-header/calend
   styleUrls: ['./home.component.scss'],
   providers: [ConfirmationService]
 })
-export class HomeComponent implements OnInit {
+export class HomeComponent implements OnInit, OnDestroy {
   view: ExtendedCalendarView = CalendarView.Month;
   CalendarView = CalendarView;
   SRCCalendarView = SRCCalendarView;
@@ -31,30 +32,36 @@ export class HomeComponent implements OnInit {
   eventToModify?: SpacedRepModel;
   openEdit?: boolean;
   editEventModel?: SpacedRepModel;
-  autoSavingInterval?: number;
+  autoSaveSub?: Subscription;
   autoSavingState?: 'saving' | 'saved' | undefined;
   lastAutoSave?: Date;
 
   constructor(
     public eventFormService: EventFormService,
+    private settingsService: SettingsService,
     private spacedRepService: SpacedRepService,
     private confirmationService: ConfirmationService
   ) {
     this.events$ = this.spacedRepService.getAll().pipe(
       map( events => events.map( srModel => {
-        srModel.cssClass = '';
-        if (srModel.boldTitle) {
-          srModel.cssClass += 'src-bold-title ';
+        const calendarEvent: CalendarEvent & SpacedRepModel = srModel;
+        calendarEvent.cssClass = '';
+        if (calendarEvent.boldTitle) {
+          calendarEvent.cssClass += 'src-bold-title ';
         }
-        if (srModel.highlightTitle) {
-          srModel.cssClass += 'src-highlight-title';
+        if (calendarEvent.highlightTitle) {
+          calendarEvent.cssClass += 'src-highlight-title';
         }
-        return srModel;
+        return calendarEvent;
       }))
     );
   }
 
   ngOnInit(): void {
+  }
+
+  ngOnDestroy() {
+    this.removeAutoSaving();
   }
 
   createSpacedRep(): void {
@@ -86,18 +93,22 @@ export class HomeComponent implements OnInit {
         this.eventToModify = fullEvent;
         this.openEdit = true;
 
-        const autoSavingTimer = this.eventFormService.generalOptions.autoSavingTimer;
+        const autoSavingTimer = this.settingsService.generalOptions.autoSavingTimer;
         if (autoSavingTimer) {
-          this.autoSavingInterval = window.setInterval(() => this.saveEvent(true), autoSavingTimer * 1000);
+          this.removeAutoSaving();
+          this.autoSaveSub = this.eventFormService.onEditedSpacedRep().pipe(
+            debounceTime(autoSavingTimer * 1000),
+            tap( () => this.saveEvent(true))
+          ).subscribe();
         }
+
       })
     ).subscribe()
   }
 
   removeAutoSaving(): void {
-    if (this.autoSavingInterval) {
-      window.clearInterval(this.autoSavingInterval);
-      this.autoSavingInterval = undefined;
+    if (this.autoSaveSub) {
+      this.autoSaveSub.unsubscribe();
     }
   }
 
@@ -108,6 +119,7 @@ export class HomeComponent implements OnInit {
   closeEditEvent(): void {
     this.eventToModify = undefined;
     this.editEventModel = undefined;
+    this.removeAutoSaving();
   }
 
   confirmDeleteEvent(): void {
@@ -119,7 +131,6 @@ export class HomeComponent implements OnInit {
   }
 
   deleteEvent(): void {
-    this.removeAutoSaving();
     this.loading = true;
     this.spacedRepService.deleteEvent(this.eventToModify).pipe(
       untilDestroyed(this),
