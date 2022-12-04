@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import {
   BehaviorSubject,
   catchError,
@@ -128,7 +128,7 @@ export class ApiService {
     }, 250);
   }
 
-  private addPendingChanges(url: string, request: any): void {
+  private addPendingChanges(url: string, request: Observable<unknown>): void {
     this.pendingChangesMap.set(url, request);
     this.notifyPendingChanges();
   }
@@ -280,18 +280,14 @@ export class ApiService {
   }
 
   sync(): Observable<unknown> {
-    // Create map of last changes
-    // Ask BE to get diff
-    //  -- if anonymous or network problem, continue
-    //  -- it'll answer with the data that changed
-    //     -- if conflicts -> show conflicts
-    //     Update storage
-    //     Reload everything
     this.clearPendingChanges();
     this.resetOutOfSync();
     return this.getLastUpdatesMap().pipe(
-      catchError(error => {
-        if (error === ERROR_ANONYMOUS) {
+      catchError((error: string | HttpErrorResponse) => {
+        // No network
+        if ((error instanceof HttpErrorResponse && error.status === 504)
+          // Anonymous login
+          || error === ERROR_ANONYMOUS) {
           return of({
             eventList: '',
             eventDescriptions: [],
@@ -299,18 +295,18 @@ export class ApiService {
             settings: ''
           });
         }
-        return throwError(error);
+        return throwError(() => error);
       }),
       switchMap( (lastUpdateMap: LastUpdateRemote) => {
         const requests: Observable<unknown>[] = [];
 
         const {eventList: elTime, eventDescriptions: edesTime, eventDetails: edetTime, settings: setTime} = lastUpdateMap;
 
-        if (isAfter(setTime, this.lastUpdateMap[OPTS_DB_NAME])) {
+        if (setTime && isAfter(setTime, this.lastUpdateMap[OPTS_DB_NAME])) {
           requests.push(this.getSettings(true));
         }
 
-        if (isAfter(elTime, this.lastUpdateMap[DB_NAME])) {
+        if (elTime && isAfter(elTime, this.lastUpdateMap[DB_NAME])) {
           requests.push(this.getEventList(true));
         }
 
