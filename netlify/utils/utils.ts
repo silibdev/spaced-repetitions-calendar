@@ -122,3 +122,34 @@ export async function checkLastUpdate(query: Promise<ExecutedQuery>, lastUpdated
   }
   return ({data: 'OUT-OF-SYNC', statusCode: 500, updatedAt: lastUpdateFromDb});
 }
+
+// Undefined means everything is ok
+export async function bulkCheckLastUpdate(query: Promise<ExecutedQuery>, idColumn: string, lastUpdatedAt?: string[]): Promise<RepositoryResult<Record<string, RepositoryResult<string>>> | undefined> {
+  if (!lastUpdatedAt) {
+    return undefined;
+  }
+  const updatedAtResult = await query;
+  if (!updatedAtResult.rows.length) {
+    return undefined;
+  }
+
+  const rowsOutOfSync = updatedAtResult.rows
+    .filter((row, i) => lastUpdatedAt[i] && getUpdatedAtFromRow(row) !== lastUpdatedAt[i])
+    .map((row: Record<string, any>) => ({
+      id: row[idColumn],
+      result: {data: 'OUT-OF-SYNC', statusCode: 500, updatedAt: getUpdatedAtFromRow(row)} as RepositoryResult<string>
+    }));
+
+  if (!rowsOutOfSync.length) {
+    return undefined;
+  }
+  const errors = rowsOutOfSync.reduce((acc, err) => {
+      acc[err.id] = {
+        data: err.result.data,
+        updatedAt: err.result.updatedAt,
+        statusCode: err.result.statusCode
+      };
+      return acc;
+    }, {} as Record<string, RepositoryResult<string>>);
+  return {data: errors, statusCode: 500, updatedAt: new Date().toISOString()};
+}

@@ -1,4 +1,4 @@
-import { connect } from '@planetscale/database';
+import { connect, format } from '@planetscale/database';
 import fetch, { Headers, Request, Response } from 'node-fetch';
 
 // @ts-ignore
@@ -17,3 +17,4 @@ const config = {
 }
 
 export const DB = connect(config);
+export const db_formatter = format;

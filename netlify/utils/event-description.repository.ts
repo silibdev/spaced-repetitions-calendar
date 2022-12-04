@@ -1,5 +1,5 @@
-import { DB } from './db-connector';
-import { checkLastUpdate, getUpdatedAtFromRow, RepositoryResult, RequestBody } from './utils';
+import { DB, db_formatter } from './db-connector';
+import { bulkCheckLastUpdate, checkLastUpdate, getUpdatedAtFromRow, RepositoryResult, RequestBody } from './utils';
 
 export const EventDescriptionRepository = {
   async getEventDescription(userId: string, eventId: string): Promise<RepositoryResult<string>> {
@@ -49,7 +49,28 @@ export const EventDescriptionRepository = {
     return {data: returnData, updatedAt: new Date().toISOString()};
   },
 
-  async bulkPostEventDescription(userId: string, data: any): Promise<RepositoryResult<Record<string, RepositoryResult<string>>>> {
-    return Promise.resolve({} as any);
+  async bulkPostEventDescription(userId: string, bulkData: { id: string, data: RequestBody }[]): Promise<RepositoryResult<Record<string, RepositoryResult<string>>>> {
+    const ids = bulkData.map(bd => bd.id);
+    const bulkLastUpdates = bulkData.map(bd => bd.data.lastUpdatedAt!);
+
+    const checkErrors = await bulkCheckLastUpdate(DB.execute("SELECT id, updated_at FROM EventDescription WHERE user=:userId AND id IN (:ids)", {userId, ids}), 'id', bulkLastUpdates);
+    if (checkErrors) return checkErrors;
+
+    // CREATE QUERY
+    const updatedAt = new Date().toISOString();
+    // CREATE VALUES FOR QUERY
+    const values = bulkData
+      .map( bd => db_formatter('(?,?,?,?)', [userId, bd.id, bd.data.data, updatedAt]))
+      .join(',');
+    const query = `INSERT INTO EventDescription (user, id, description, updated_at) VALUES ${values} ON DUPLICATE KEY UPDATE description=VALUES(description), updated_at=VALUES(updated_at)`;
+
+    const result = await DB.execute(query);
+    console.log('post eventDescription', result.insertId);
+
+    const returnData = bulkData.reduce( (acc, bd) => {
+      acc[bd.id] = {data: '{"ok":"ok"}', updatedAt};
+      return acc;
+    }, {} as Record<string, RepositoryResult<string>>);
+    return {data: returnData, updatedAt};
   }
 }
