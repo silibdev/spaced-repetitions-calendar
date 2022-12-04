@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, filter, firstValueFrom, fromEvent, iif, Observable, of, switchMap } from 'rxjs';
+import { BehaviorSubject, filter, firstValueFrom, from, fromEvent, iif, Observable, of, switchMap } from 'rxjs';
 import * as netlifyIdentity from 'netlify-identity-widget';
 import { User } from '../models/settings.model';
 import { Router } from '@angular/router';
@@ -103,6 +103,10 @@ export class AuthService {
 
   login(): void {
     netlifyIdentity.open();
+  }
+
+  getToken$(): Observable<string> {
+    return from(netlifyIdentity.refresh());
   }
 
   anonymousLogin() {

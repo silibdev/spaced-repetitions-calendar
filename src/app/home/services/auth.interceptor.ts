@@ -7,7 +7,7 @@ import {
   HttpInterceptor,
   HttpRequest
 } from '@angular/common/http';
-import { catchError, Observable, throwError } from 'rxjs';
+import { catchError, Observable, switchMap, throwError } from 'rxjs';
 import { AuthService } from './auth.service';
 import { ApiService } from './api.service';
 
@@ -28,14 +28,18 @@ export class AuthInterceptor implements HttpInterceptor {
     }
     const token = this.authService.getUser()?.token;
     if (token) {
-      const headers = request.headers.append('Authorization', 'Bearer ' + token);
-      request = request.clone({headers});
-      return next.handle(request).pipe(
-        catchError((error: HttpErrorResponse) => {
-          if (error.status === 500 && error.error?.data === 'OUT-OF-SYNC') {
-            this.apiService.setOutOfSync();
-          }
-          return throwError(() => error);
+      return this.authService.getToken$().pipe( 
+        switchMap( refreshedToken => {
+          const headers = request.headers.append('Authorization', 'Bearer ' + refreshedToken);
+          request = request.clone({headers});
+          return next.handle(request).pipe(
+            catchError((error: HttpErrorResponse) => {
+              if (error.status === 500 && error.error?.data === 'OUT-OF-SYNC') {
+                this.apiService.setOutOfSync();
+              }
+              return throwError(() => error);
+            })
+          );
         })
       );
     }
