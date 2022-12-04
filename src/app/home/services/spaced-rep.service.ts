@@ -8,7 +8,6 @@ import {
 import {
   BehaviorSubject,
   defaultIfEmpty,
-  delay,
   first,
   forkJoin,
   map,
@@ -89,9 +88,8 @@ export class SpacedRepService {
         switchMap(events => forkJoin(
           events
             .filter(e => !e.linkedSpacedRepId)
-            .map((e, i) =>
+            .map(e =>
               this.get(e.id).pipe(
-                delay(250*i),
                 switchMap(eventFull => this.save(eventFull)),
               )
             )
