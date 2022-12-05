@@ -285,7 +285,7 @@ export class ApiService {
     return this.getLastUpdatesMap().pipe(
       catchError((error: string | HttpErrorResponse) => {
         // No network
-        if ((error instanceof HttpErrorResponse && error.status === 504)
+        if ((error instanceof HttpErrorResponse && [504, 0].includes(error.status))
           // Anonymous login
           || error === ERROR_ANONYMOUS) {
           return of({

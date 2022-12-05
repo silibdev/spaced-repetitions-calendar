@@ -7,7 +7,7 @@ import {
   HttpInterceptor,
   HttpRequest
 } from '@angular/common/http';
-import { catchError, Observable, switchMap, throwError } from 'rxjs';
+import { catchError, Observable, of, switchMap, throwError } from 'rxjs';
 import { AuthService } from './auth.service';
 import { ApiService } from './api.service';
 
@@ -28,7 +28,14 @@ export class AuthInterceptor implements HttpInterceptor {
     }
     const token = this.authService.getUser()?.token;
     if (token) {
-      return this.authService.getToken$().pipe( 
+      return this.authService.getToken$().pipe(
+        catchError( (error: HttpErrorResponse) => {
+          // If no connection, return expired token, it's ok
+          if ([504, 0].includes(error.status)) {
+            return of(token);
+          }
+          return throwError(() => error);
+        }),
         switchMap( refreshedToken => {
           const headers = request.headers.append('Authorization', 'Bearer ' + refreshedToken);
           request = request.clone({headers});
