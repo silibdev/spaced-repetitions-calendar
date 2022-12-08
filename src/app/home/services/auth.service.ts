@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, filter, firstValueFrom, from, fromEvent, iif, Observable, of, switchMap } from 'rxjs';
+import { BehaviorSubject, concat, filter, firstValueFrom, from, fromEvent, iif, Observable, of, switchMap } from 'rxjs';
 import * as netlifyIdentity from 'netlify-identity-widget';
 import { User } from '../models/settings.model';
 import { Router } from '@angular/router';
@@ -13,6 +13,8 @@ const USER_DB_NAME = 'src-user-db';
 })
 export class AuthService {
   private user$ = new BehaviorSubject<User | undefined>(undefined);
+
+  // It means save on remote everything local
   private syncLocal?: boolean;
 
   constructor(
@@ -38,7 +40,7 @@ export class AuthService {
         if (user?.token) {
           return fromEvent(window, 'visibilitychange').pipe(
             filter(() => document.visibilityState === 'visible'),
-            switchMap(() => this.spacedRepService.sync())
+            switchMap(() => concat(this.spacedRepService.syncPendingChanges(), this.spacedRepService.sync()))
           )
         }
         return of(undefined);
@@ -51,14 +53,14 @@ export class AuthService {
     firstValueFrom(iif(
       () => !!this.syncLocal,
       this.spacedRepService.syncLocal(),
-      this.spacedRepService.sync())
+      concat(this.spacedRepService.desyncLocal(), this.spacedRepService.sync()))
     )
       .then(() => this.router.navigate(['home']));
   }
 
   private resetUser(): void {
     this.user$.next(undefined);
-    firstValueFrom(this.spacedRepService.desync())
+    firstValueFrom(this.spacedRepService.desyncLocal())
       .then(() => this.router.navigate(['login']));
   }
 
@@ -102,6 +104,7 @@ export class AuthService {
   }
 
   login(): void {
+    this.syncLocal = false;
     netlifyIdentity.open();
   }
 

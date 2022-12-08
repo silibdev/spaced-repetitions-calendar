@@ -23,7 +23,7 @@ export class BulkInterceptor implements HttpInterceptor {
   }
 
   intercept(request: HttpRequest<unknown>, next: HttpHandler): Observable<HttpEvent<unknown>> {
-    if (!BulkUrls.some(url => request.url.startsWith(url))) {
+    if (!BulkUrls.some(url => request.url.startsWith(url)) || !['GET', 'POST'].includes(request.method)) {
       return next.handle(request);
     }
 

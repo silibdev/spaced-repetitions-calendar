@@ -124,7 +124,7 @@ export class ApiService {
     if (this.saveLastUpdateMapTimeout) {
       clearTimeout(this.saveLastUpdateMapTimeout);
     }
-    setTimeout(() => {
+    this.saveLastUpdateMapTimeout = setTimeout(() => {
       localStorage.setItem(LAST_UPDATE_DB_NAME, JSON.stringify(this.lastUpdateMap))
     }, 250);
   }
