@@ -20,6 +20,8 @@ import { BadgeModule } from 'primeng/badge';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ToastModule } from 'primeng/toast';
 import { BULK_INTERCEPTOR_PROVIDER } from './home/services/bulk.interceptor';
+import { ProgressBarModule } from 'primeng/progressbar';
+import { LOADER_INTERCEPTOR_PROVIDER } from './home/services/loader.interceptor';
 
 @NgModule({
   declarations: [
@@ -44,7 +46,8 @@ import { BULK_INTERCEPTOR_PROVIDER } from './home/services/bulk.interceptor';
     MenuModule,
     BadgeModule,
     ConfirmDialogModule,
-    ToastModule
+    ToastModule,
+    ProgressBarModule
   ],
   providers: [
     {
@@ -54,6 +57,7 @@ import { BULK_INTERCEPTOR_PROVIDER } from './home/services/bulk.interceptor';
       multi: true
     },
     DB_MIGRATOR_PROVIDER,
+    LOADER_INTERCEPTOR_PROVIDER,
     BULK_INTERCEPTOR_PROVIDER,
     AUTH_INTERCEPTOR_PROVIDER
   ],

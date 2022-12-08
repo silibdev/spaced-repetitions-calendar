@@ -1,5 +1,15 @@
 <p-confirmDialog icon="pi pi-exclamation-triangle"></p-confirmDialog>
 <p-toast></p-toast>
+<!--<button (click)="loaderService.startLoading()">Start</button>-->
+<div class="p-component loader-container" *ngIf="loadingValuePerc$ | async as progressPerc">
+  <div class="loader-content"><span class="loader">Loading</span></div>
+  <p-progressBar [style.width]="'90vw'" [mode]="'determinate'"
+                 [value]="progressPerc"></p-progressBar>
+<!--  <div [style.z-index]="0">-->
+<!--    <button (click)="loaderService.startLoading()">Start</button>-->
+<!--    <button (click)="loaderService.stopLoading()">Stop</button>-->
+<!--  </div>-->
+</div>
 <div>
   <p-menubar [model]="(menu$ | async) || []">
     <ng-template pTemplate="start">

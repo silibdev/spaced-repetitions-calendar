@@ -1,10 +1,26 @@
 import { Component } from '@angular/core';
 import { ConfirmationService, MenuItem, MessageService } from 'primeng/api';
 import { AuthService } from './home/services/auth.service';
-import { combineLatest, debounceTime, filter, map, Observable, shareReplay, tap } from 'rxjs';
+import {
+  combineLatest,
+  concat,
+  debounce,
+  debounceTime,
+  filter,
+  map,
+  mapTo,
+  Observable,
+  of,
+  pairwise,
+  shareReplay,
+  switchMap,
+  tap,
+  timer
+} from 'rxjs';
 import { User } from './home/models/settings.model';
 import { ApiService } from './home/services/api.service';
 import { SpacedRepService } from './home/services/spaced-rep.service';
+import { LoaderService } from './home/services/loader.service';
 
 @Component({
   selector: 'app-root',
@@ -45,13 +61,15 @@ export class AppComponent {
   menu$: Observable<MenuItem[]>;
   userMenu$: Observable<MenuItem[]>;
   pendingChanges$: Observable<string>;
+  loadingValuePerc$: Observable<string>;
 
   constructor(
     private authService: AuthService,
     private apiService: ApiService,
     private spacedRepService: SpacedRepService,
     private confirmationService: ConfirmationService,
-    private messageService: MessageService
+    private messageService: MessageService,
+    public loaderService: LoaderService
   ) {
     this.user$ = authService.getUser$().pipe(
       shareReplay()
@@ -60,6 +78,31 @@ export class AppComponent {
     this.pendingChanges$ = this.apiService.getPendingChanges$().pipe(
       map(pendingChanges => pendingChanges ? pendingChanges > 9 ? '9+' : pendingChanges.toString() : ''),
       shareReplay()
+    );
+
+    this.loadingValuePerc$ = this.loaderService.loadingStatus$.pipe(
+      // Wait 250ms before showing the loader
+      debounce(loadingStatus => {
+        if (loadingStatus.total === 1) {
+          return timer(250);
+        }
+        return of(undefined);
+      }),
+      pairwise(),
+      // Since I receive delayed status, maybe I receive a status of done
+      // (when total === current) after another status of done
+      // So I need to check that the previous status was actually a loading otherwise
+      // I don't have to show the loader at all
+      switchMap(([prevLoadingStatus, loadingStatus]) => {
+        if (prevLoadingStatus.total !== 0 && loadingStatus.total === loadingStatus.current) {
+          // Pass 100 and wait 250ms before removing loader
+          return concat(of('100'), timer(250).pipe(mapTo('')));
+        } else {
+          return of(loadingStatus.total
+            ? (loadingStatus.current * 100 / loadingStatus.total).toFixed(2)
+            : '');
+        }
+      })
     );
 
     this.apiService.getPendingChanges$().pipe(
