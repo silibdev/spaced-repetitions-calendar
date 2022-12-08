@@ -336,11 +336,21 @@ export class SpacedRepService {
     );
   }
 
-  desync() {
-    return this.apiService.desync();
+  desyncLocal() {
+    return this.apiService.desyncLocal();
+  }
+
+  deleteAllData(): Observable<unknown> {
+    return this.apiService.deleteAllData().pipe(
+      switchMap(() => this.desyncLocal())
+    );
   }
 
   isSomethingPresent(): boolean {
     return this.apiService.isSomethingPresent();
+  }
+
+  syncPendingChanges(): Observable<number> {
+    return this.apiService.syncPendingChanges();
   }
 }

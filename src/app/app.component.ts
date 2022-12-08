@@ -139,9 +139,9 @@ export class AppComponent {
             {
               label: pendingChanges ? `Changes to sync (${pendingChanges})` : 'No changes to sync',
               disabled: !pendingChanges,
-              command: () => this.apiService.syncPendingChanges().subscribe()
+              command: () => this.spacedRepService.syncPendingChanges().subscribe()
             },
-            { separator: true}
+            {separator: true}
           ];
 
           if (!user.token) {
@@ -162,8 +162,8 @@ export class AppComponent {
     );
 
     this.apiService.getOutOfSync$().pipe(
-      tap( outOfSync => {
-        if(outOfSync) {
+      tap(outOfSync => {
+        if (outOfSync) {
           this.confirmationService.confirm({
             header: 'ATTENTION',
             message: 'You have modified stale data. You need to synchronize your data: this operation will cancel all the current changes. Are you ok with this?',

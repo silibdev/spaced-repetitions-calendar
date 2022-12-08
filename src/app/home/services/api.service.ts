@@ -22,6 +22,7 @@ import { CommonSpacedRepModel } from '../models/spaced-rep.model';
 const ApiUrls = {
   settings: '/api/settings',
   eventList: '/api/event-list',
+  deleteAllData: '/api/data',
   description: (id: string) => `/api/event-descriptions?id=${id}`,
   detail: (id: string) => `/api/event-details?id=${id}`,
   lastUpdates: '/api/last-updates'
@@ -368,7 +369,7 @@ export class ApiService {
     return of(shortDescription || '');
   }
 
-  desync(): Observable<unknown> {
+  desyncLocal(): Observable<unknown> {
     localStorage.clear();
     this.initLastUpdateMap();
     return of(undefined);
@@ -384,5 +385,9 @@ export class ApiService {
 
   isSomethingPresent(): boolean {
     return !!localStorage.getItem(DB_NAME) && !!localStorage.getItem(OPTS_DB_NAME);
+  }
+
+  deleteAllData() {
+    return this.httpClient.delete(ApiUrls.deleteAllData);
   }
 }

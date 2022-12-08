@@ -14,6 +14,8 @@ import { HttpClientModule } from '@angular/common/http';
 import { MessageModule } from 'primeng/message';
 import { GeneralComponent } from './general/general.component';
 import { InputNumberModule } from 'primeng/inputnumber';
+import { FieldsetModule } from 'primeng/fieldset';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
 
 
 @NgModule({
@@ -33,7 +35,9 @@ import { InputNumberModule } from 'primeng/inputnumber';
     FileUploadModule,
     HttpClientModule,
     MessageModule,
-    InputNumberModule
+    InputNumberModule,
+    FieldsetModule,
+    ConfirmDialogModule
   ]
 })
 export class SettingsModule { }
