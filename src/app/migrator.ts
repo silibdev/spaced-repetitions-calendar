@@ -91,7 +91,8 @@ class Migrator {
       this.setVersion(3);
       return of(undefined);
     }
-    return this.switchToSecondMigration(true).pipe(
+    return this.spacedRepsService.loadDbThirdMigration().pipe(
+      switchMap(() => this.switchToSecondMigration(true)),
       switchMap(() => this.spacedRepsService.purgeDB()),
       tap(() => this.setVersion(3))
     );
