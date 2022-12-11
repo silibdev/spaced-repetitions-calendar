@@ -119,6 +119,19 @@ export class SpacedRepService {
     );
   }
 
+  public loadDbThirdMigration(): Observable<unknown> {
+    const savedDb = localStorage.getItem('src-db') || '';
+    let db;
+    try {
+      db = JSON.parse(savedDb);
+    } catch (e) {
+      db = JSON.parse(LZString.decompressFromUTF16(savedDb) || '[]');
+    }
+    db.forEach((event: any) => event.start = new Date(event.start));
+    this.setDb(db);
+    return of(undefined);
+  }
+
   create(createSpacedRep: CreateSpacedReps): Observable<void> {
     const repSchema: number[] = createSpacedRep.repetitionSchema.split(';').map(rep => +rep);
 
