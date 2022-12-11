@@ -1,108 +1,145 @@
 import { Injectable } from '@angular/core';
-import { CreateSpacedReps, SpacedRepModel } from '../models/spaced-rep.model';
+import {
+  CommonSpacedRepModel,
+  CreateSpacedReps,
+  SpacedRepModel,
+  SpecificSpacedRepModel
+} from '../models/spaced-rep.model';
 import {
   BehaviorSubject,
   defaultIfEmpty,
+  first,
   forkJoin,
   map,
   mapTo,
   Observable,
   of,
-  shareReplay,
   switchMap,
   tap,
-  throwError
+  throwError,
+  withLatestFrom
 } from 'rxjs';
-import { addDays } from 'date-fns';
+import { addDays, isEqual } from 'date-fns';
 import { EventFormService } from './event-form.service';
 import { DescriptionsService } from './descriptions.service';
-import { ShortDescriptionsService } from './short-descriptions.service';
+import { EventDetailService } from './event-detail.service';
 import LZString from 'lz-string';
+import { SettingsService } from './settings.service';
+import { ApiService } from './api.service';
 
-export const DB_NAME = 'src-db';
 
 @Injectable({
   providedIn: 'root'
 })
 export class SpacedRepService {
-  private spacedReps = new BehaviorSubject<SpacedRepModel[]>([]);
-  private readonly spacedReps$: Observable<SpacedRepModel[]>;
-  private _db: SpacedRepModel[] = [];
-  private get db(): SpacedRepModel[] {
-    return this._db;
+  private spacedReps = new BehaviorSubject<SpecificSpacedRepModel[]>([]);
+  private readonly spacedReps$: Observable<SpecificSpacedRepModel[]>;
+  private remoteSaveTimer?: number;
+
+  private get db(): SpecificSpacedRepModel[] {
+    return this.spacedReps.value;
   }
 
-  private set db(newDb: SpacedRepModel[]) {
-    this._db = newDb;
+  private setDb(newDb: SpecificSpacedRepModel[], remoteSave?: boolean) {
+    if (remoteSave) {
+      const dbToSave = newDb.map(event => {
+        const toDb: any = {...event};
+        toDb.start = toDb.start.toISOString();
+        return toDb;
+      });
+      if (this.remoteSaveTimer) {
+        clearTimeout(this.remoteSaveTimer);
+      }
+      this.remoteSaveTimer = setTimeout(() => {
+        const newCompressedDb = LZString.compressToUTF16(JSON.stringify(dbToSave));
+        this.apiService.setEventList(newCompressedDb).subscribe();
+      }, 250);
+    }
     this.spacedReps.next(newDb);
   }
 
   constructor(
     private eventFormService: EventFormService,
+    private settingsService: SettingsService,
     private descriptionService: DescriptionsService,
-    private shortDescriptionService: ShortDescriptionsService
+    private eventDetailService: EventDetailService,
+    private apiService: ApiService
   ) {
-    const db = localStorage.getItem(DB_NAME);
-    if (db) {
-      let oldDb;
-      try {
-        oldDb = JSON.parse(db);
-      } catch (e) {
-        oldDb = JSON.parse(LZString.decompressFromUTF16(db) || '[]');
-      }
-      oldDb.forEach((event: any) => event.start = new Date(event.start));
-      this.db = oldDb;
-    }
+    this.spacedReps$ = this.spacedReps.asObservable();
+  }
 
-    let timer: number;
-    this.spacedReps$ = this.spacedReps.pipe(
-      tap(db => {
-        const dbToSave = db.map(event => {
-          const toDb: any = {
-            ...event
-          };
-          toDb.start = toDb.start.toISOString();
-          return toDb;
-        })
-        if (timer) {
-          clearTimeout(timer);
+  sync(): Observable<unknown> {
+    return this.apiService.sync().pipe(
+      switchMap(() =>
+        forkJoin([
+          this.loadDb(),
+          this.settingsService.loadOpts()
+        ])
+      )
+    );
+  }
+
+  syncLocal(): Observable<unknown> {
+    return forkJoin([
+      this.loadDb(true).pipe(
+        switchMap(() => this.getAll().pipe(first())),
+        switchMap(events => forkJoin(
+          events
+            .filter(e => !e.linkedSpacedRepId)
+            .map(e =>
+              this.get(e.id).pipe(
+                switchMap(eventFull => this.save(eventFull))
+              )
+            )
+        ).pipe(defaultIfEmpty(undefined)))
+      ),
+      this.settingsService.loadOpts().pipe(tap(() => this.settingsService.saveOpts()))
+    ]);
+  }
+
+  private loadDb(forceSave?: boolean): Observable<unknown> {
+    return this.apiService.getEventList().pipe(
+      tap(savedDb => {
+        let db: any = [];
+        if (savedDb) {
+          try {
+            db = JSON.parse(savedDb);
+          } catch (e) {
+            db = JSON.parse(LZString.decompressFromUTF16(savedDb) || '[]');
+          }
         }
-        timer = setTimeout(() => {
-          const newDb = LZString.compressToUTF16(JSON.stringify(dbToSave));
-          localStorage.setItem(DB_NAME, newDb)
-        }, 250);
+        db.forEach((event: any) => event.start = new Date(event.start));
+        this.setDb(db, forceSave);
       }),
-      shareReplay(1)
-    )
+      withLatestFrom(this.spacedReps$),
+      switchMap(() => this.getAll().pipe(first())),
+      switchMap(db => forkJoin(
+        db.map(e => this.descriptionService.get(e.linkedSpacedRepId || e.id))
+      ).pipe(defaultIfEmpty(undefined)))
+    );
   }
 
   create(createSpacedRep: CreateSpacedReps): Observable<void> {
     const repSchema: number[] = createSpacedRep.repetitionSchema.split(';').map(rep => +rep);
 
-    this.eventFormService.saveNewRepetitionSchema(createSpacedRep.repetitionSchema);
+    this.settingsService.saveNewRepetitionSchema(createSpacedRep.repetitionSchema);
 
     const id = Math.random().toString();
-    const firstSR: SpacedRepModel = {
+    createSpacedRep.spacedRep.id = id;
+
+    const specificSpacedRepModel: SpecificSpacedRepModel = {
       id,
-      title: createSpacedRep.spacedRep.title,
       start: createSpacedRep.startDate,
-      color: createSpacedRep.spacedRep.color,
-      allDay: true,
-      done: false,
-      shortDescription: '',
-      repetitionNumber: 0,
-      boldTitle: createSpacedRep.spacedRep.boldTitle,
-      highlightTitle: createSpacedRep.spacedRep.highlightTitle
+      repetitionNumber: 0
     }
 
-    const newSpacedReps = [firstSR];
+    const newSpacedReps = [specificSpacedRepModel];
 
     repSchema.forEach((rep) => {
-      const spacedRep: SpacedRepModel = {
-        ...firstSR,
+      const spacedRep: SpecificSpacedRepModel = {
         id: Math.random().toString(),
-        linkedSpacedRepId: firstSR.id,
-        start: addDays(firstSR.start, rep),
+        linkedSpacedRepId: specificSpacedRepModel.id,
+        start: addDays(specificSpacedRepModel.start, rep),
         repetitionNumber: rep
       }
       newSpacedReps.push(spacedRep);
@@ -110,21 +147,34 @@ export class SpacedRepService {
 
     const currentSR = this.db;
 
-    this.db = [...currentSR, ...newSpacedReps];
+    const {description, ...commonSpacedRepModel} = createSpacedRep.spacedRep;
 
     return forkJoin([
-      of(undefined),
-      this.descriptionService.save(id, createSpacedRep.spacedRep.description as string),
-      this.shortDescriptionService.save(id, createSpacedRep.spacedRep.shortDescription)
+      this.descriptionService.save(id, description || ''),
+      this.eventDetailService.save(id, commonSpacedRepModel)
     ]).pipe(
-      mapTo(undefined)
+      mapTo(undefined),
+      tap(() => this.setDb([...currentSR, ...newSpacedReps], true))
     );
   }
 
   getAll(): Observable<SpacedRepModel[]> {
     return this.spacedReps$.pipe(
       switchMap(events => forkJoin(
-        events.map(e => this.shortDescriptionService.get((e.linkedSpacedRepId || e.id) as string).pipe(
+        events.map(e => this.eventDetailService.get(e.linkedSpacedRepId || e.id).pipe(
+          map(details => ({
+            ...details,
+            ...e
+          }))
+        ))
+      ).pipe(defaultIfEmpty([])))
+    );
+  }
+
+  getAllSecondMigration(): Observable<SpacedRepModel[]> {
+    return (this.spacedReps$ as Observable<any[]>).pipe(
+      switchMap(events => forkJoin(
+        events.map(e => this.apiService.getSecondMigrationEventDetail((e.linkedSpacedRepId || e.id) as string).pipe(
           map(sd => ({
             ...e,
             shortDescription: sd
@@ -134,14 +184,14 @@ export class SpacedRepService {
     );
   }
 
-  get(id: string): Observable<SpacedRepModel> {
-    const event = this.db.find(sr => sr.id === id);
+  getSecondMigration(id: string): Observable<SpacedRepModel> {
+    const event = this.db.find(sr => sr.id === id) as any;
     if (event) {
       const descId = event.linkedSpacedRepId || event.id;
       return forkJoin([
         of(event),
         this.descriptionService.get(descId as string),
-        this.shortDescriptionService.get(descId as string)
+        this.apiService.getSecondMigrationEventDetail(descId as string)
       ]).pipe(map(([srm, description, shortDescription]) => {
         return {
           ...srm,
@@ -153,18 +203,39 @@ export class SpacedRepService {
     return throwError(() => 'Error');
   }
 
-  deleteEvent(event: SpacedRepModel | undefined): Observable<void> {
+  get(id: string): Observable<SpacedRepModel> {
+    const event = this.db.find(sr => sr.id === id);
     if (event) {
-      const newDb = this.db.filter(e => {
-        let toRemove = e.id !== event.id;
-        if (!event.linkedSpacedRepId && toRemove) {
-          return e.linkedSpacedRepId !== event.id;
-        }
-        return toRemove;
-      });
-      this.db = newDb;
+      const descId = event.linkedSpacedRepId || event.id;
+      return forkJoin([
+        of(event),
+        this.descriptionService.get(descId as string),
+        this.eventDetailService.get(descId as string)
+      ]).pipe(map(([srm, description, details]) => {
+        return {
+          ...details,
+          ...srm,
+          description
+        };
+      }));
     }
-    return of(undefined);
+    return throwError(() => 'Error');
+  }
+
+  deleteEvent(event: SpacedRepModel | undefined): Observable<void> {
+    if (!event) {
+      return of(undefined);
+    }
+    const isMaster = !event.linkedSpacedRepId;
+    const newDb = this.db.filter(e => !(e.id === event.id || (isMaster && e.linkedSpacedRepId === event.id)));
+    this.setDb(newDb, true);
+    if (isMaster) {
+      return forkJoin([
+        this.eventDetailService.delete(event.id),
+        this.descriptionService.delete(event.id)
+      ]).pipe(mapTo(undefined));
+    }
+    return this.spacedReps$.pipe(mapTo(undefined), first());
   }
 
   saveFirstMigration(eventToModify: SpacedRepModel): Observable<void> {
@@ -181,7 +252,7 @@ export class SpacedRepService {
       const description = eventToModify.description || '';
       eventToModify.description = undefined;
 
-      db.forEach(event => {
+      (db as any[]).forEach(event => {
         if (event.linkedSpacedRepId === masterId || event.id === masterId) {
           event.color = eventToModify.color;
           event.title = eventToModify.title || '';
@@ -192,7 +263,7 @@ export class SpacedRepService {
         }
       })
 
-      this.db = [...db];
+      this.setDb([...db]);
 
       return this.descriptionService.save(masterId as string, description)
         .pipe(mapTo(undefined));
@@ -202,58 +273,62 @@ export class SpacedRepService {
   }
 
   save(eventToModify: SpacedRepModel): Observable<void> {
-    const db = this.db;
-    const index = db.findIndex(event => event.id === eventToModify.id);
-    if (index > -1) {
-      const oldEvent = db[index];
-      db[index] = {
-        ...oldEvent,
-        ...eventToModify
-      };
-
-      const masterId = eventToModify.linkedSpacedRepId || eventToModify.id;
-      const description = eventToModify.description || '';
-      eventToModify.description = undefined;
-      const shortDescription = eventToModify.shortDescription || '';
-      eventToModify.shortDescription = '';
-
-      db.forEach(event => {
-        if (event.linkedSpacedRepId === masterId || event.id === masterId) {
-          event.color = eventToModify.color;
-          event.title = eventToModify.title || '';
-          event.description = eventToModify.description;
-          event.shortDescription = eventToModify.shortDescription;
-          event.boldTitle = eventToModify.boldTitle;
-          event.highlightTitle = eventToModify.highlightTitle;
-        }
-      })
-
-      this.db = [...db];
-
-      return forkJoin([
-        this.descriptionService.save(masterId as string, description),
-        this.shortDescriptionService.save(masterId as string, shortDescription)
-      ])
-        .pipe(mapTo(undefined));
-    } else {
-      return of(undefined);
+    const currentEventIndex = this.db.findIndex(e => eventToModify.id === e.id);
+    const currentEvent = this.db[currentEventIndex];
+    if (!isEqual(currentEvent?.start, eventToModify.start)) {
+      currentEvent.start = eventToModify.start;
+      this.setDb(this.db);
     }
+
+    const commonSpacedRepModel: CommonSpacedRepModel = {
+      id: eventToModify.id,
+      allDay: eventToModify.allDay,
+      done: eventToModify.done,
+      shortDescription: eventToModify.shortDescription,
+      boldTitle: eventToModify.boldTitle,
+      highlightTitle: eventToModify.highlightTitle,
+      color: eventToModify.color,
+      title: eventToModify.title
+    };
+
+    this.setDb(this.db, false);
+
+    const masterId = eventToModify.linkedSpacedRepId || eventToModify.id;
+    return forkJoin([
+      this.descriptionService.save(masterId, eventToModify.description || ''),
+      this.eventDetailService.save(masterId, commonSpacedRepModel)
+    ])
+      .pipe(mapTo(undefined));
+  }
+
+  purgeDB(): Observable<unknown> {
+    this.setDb(this.db.map(e => ({
+      id: e.id,
+      linkedSpacedRepId: e.linkedSpacedRepId,
+      repetitionNumber: e.repetitionNumber,
+      start: e.start
+    })), true);
+    const ids = new Set(this.db.map(e => e.id));
+    return forkJoin([
+      this.apiService.purgeDescriptions(ids),
+      this.apiService.purgeDetails(ids)
+    ]);
   }
 
   search(query: string): Observable<SpacedRepModel[]> {
     const regex = new RegExp(query, 'i');
     return forkJoin(this.db
-      .filter( sr => !sr.linkedSpacedRepId)
+      .filter(sr => !sr.linkedSpacedRepId)
       .map(sr =>
         forkJoin([
           this.descriptionService.get(sr.id as string),
-          this.shortDescriptionService.get(sr.id as string)
+          this.eventDetailService.get(sr.id as string)
         ])
           .pipe(
-            map(([description, shortDescription]) => ({
+            map(([description, details]) => ({
                 ...sr,
-                description,
-                shortDescription
+                ...details,
+                description
               })
             )
           )
@@ -266,5 +341,23 @@ export class SpacedRepService {
         || sr.description?.match(regex)
       ))
     );
+  }
+
+  desyncLocal() {
+    return this.apiService.desyncLocal();
+  }
+
+  deleteAllData(): Observable<unknown> {
+    return this.apiService.deleteAllData().pipe(
+      switchMap(() => this.desyncLocal())
+    );
+  }
+
+  isSomethingPresent(): boolean {
+    return this.apiService.isSomethingPresent();
+  }
+
+  syncPendingChanges(): Observable<number> {
+    return this.apiService.syncPendingChanges();
   }
 }

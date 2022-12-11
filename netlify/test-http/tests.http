@@ -1,0 +1,41 @@
+### Get Settings
+GET http://localhost:9999/.netlify/functions/settings
+
+### Save settings
+POST http://localhost:9999/.netlify/functions/settings
+Content-Type: application/json
+
+{
+  "data": "{\"repetitionSchemaOpts\":[{\"label\":\"1;7;30;90\",\"value\":\"1;7;30;90\"},{\"label\":\"1;5;15;30\",\"value\":\"1;5;15;30\"}],\"autoSavingTimer\":15}"
+}
+
+
+### Bulk get details
+POST http://localhost:9999/.netlify/functions/event-details?bulk
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2Njk5OTcyNjksInN1YiI6Ijg1ODZlNmZlLTMyMmUtNDA4OC1iZTdhLTU3ODZlMDM0N2VlNiIsImVtYWlsIjoiemlscHJpbW9AZ21haWwuY29tIiwiYXBwX21ldGFkYXRhIjp7InByb3ZpZGVyIjoiZW1haWwifSwidXNlcl9tZXRhZGF0YSI6eyJmdWxsX25hbWUiOiJaaWwgUHJpbW8ifX0.n2OpcCc4Idhs3bdHPIsl9zlFK0seawlezzTZpgm1tgU
+Content-Type: application/json
+
+{
+  "data": ["0.0034015985907536184","0.005671522298878795"],
+  "method": "GET"
+}
+
+### Bulk get description
+POST http://localhost:9999/.netlify/functions/event-descriptions?bulk
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2Njk5OTcyNjksInN1YiI6Ijg1ODZlNmZlLTMyMmUtNDA4OC1iZTdhLTU3ODZlMDM0N2VlNiIsImVtYWlsIjoiemlscHJpbW9AZ21haWwuY29tIiwiYXBwX21ldGFkYXRhIjp7InByb3ZpZGVyIjoiZW1haWwifSwidXNlcl9tZXRhZGF0YSI6eyJmdWxsX25hbWUiOiJaaWwgUHJpbW8ifX0.n2OpcCc4Idhs3bdHPIsl9zlFK0seawlezzTZpgm1tgU
+Content-Type: application/json
+
+{
+  "data": ["0.0034015985907536184","0.005671522298878795"],
+  "method": "GET"
+}
+
+### Confirm Email
+POST https://silibcloud-spaced-reps-calendar.netlify.app/.netlify/identity/verify
+Content-Type: application/json
+
+{
+  "type": "signup",
+  "token": "IBN3XOzq4C79HdRlUjVqng",
+  "password": "MyTest"
+}

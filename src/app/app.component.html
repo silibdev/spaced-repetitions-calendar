@@ -1,10 +1,43 @@
+<p-confirmDialog icon="pi pi-exclamation-triangle"></p-confirmDialog>
+<p-toast></p-toast>
+<!--<button (click)="loaderService.startLoading()">Start</button>-->
+<div class="p-component loader-container" *ngIf="loadingValuePerc$ | async as progressPerc">
+  <div class="loader-content"><span class="loader">Loading</span></div>
+  <p-progressBar [style.width]="'90vw'" [mode]="'determinate'"
+                 [value]="progressPerc"></p-progressBar>
+<!--  <div [style.z-index]="0">-->
+<!--    <button (click)="loaderService.startLoading()">Start</button>-->
+<!--    <button (click)="loaderService.stopLoading()">Stop</button>-->
+<!--  </div>-->
+</div>
 <div>
-  <p-menubar [model]="menu">
+  <p-menubar [model]="(menu$ | async) || []">
     <ng-template pTemplate="start">
-      <button pButton class="py-0 px-2 p-button-text p-button-plain" routerLink="home">
-        <span class="pi pi-calendar pr-2"></span>
-        <span class="lg:text-xl md:text-lg">Spaced Repetition Calendar</span>
-      </button>
+      <p-button styleClass="py-0 px-2 p-button-text p-button-plain" routerLink="home">
+        <ng-template pTemplate="content">
+          <span class="pi pi-calendar pr-2"></span>
+          <span class="lg:text-xl md:text-lg">Spaced Repetition Calendar</span>
+        </ng-template>
+      </p-button>
+    </ng-template>
+    <ng-template pTemplate="end">
+      <p-button
+        *ngIf="(user$ | async) as user"
+        [styleClass]="'p-button-text p-button-plain'"
+        (click)="menu.toggle($event)"
+      >
+        <ng-template pTemplate="content">
+          <span class="pi pi-user md:pr-2"></span>
+          <span class="hidden md:block">{{user.name}}</span>
+          <p-badge
+            *ngIf="pendingChanges$ | async as pendingChanges"
+            [value]="pendingChanges"
+            styleClass="ml-2 mb-1"
+            severity="info"
+          ></p-badge>
+        </ng-template>
+      </p-button>
+      <p-menu #menu [popup]="true" [model]="(userMenu$ | async) || []"></p-menu>
     </ng-template>
   </p-menubar>
 </div>

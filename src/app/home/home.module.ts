@@ -28,6 +28,7 @@ import { SearchComponent } from './search/search.component';
 import { AutoCompleteModule } from 'primeng/autocomplete';
 import { ListViewComponent } from './list-view/list-view.component';
 import { TableModule } from 'primeng/table';
+import { LoginComponent } from './login/login.component';
 
 
 @NgModule({
@@ -37,7 +38,8 @@ import { TableModule } from 'primeng/table';
     EventViewComponent,
     DialogMaximizedDirective,
     SearchComponent,
-    ListViewComponent
+    ListViewComponent,
+    LoginComponent
   ],
   imports: [
     CommonModule,
