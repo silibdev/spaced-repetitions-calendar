@@ -146,7 +146,8 @@ export class AppComponent {
 
           if (!user.token) {
             userMenu.push({
-              label: "Login and sync"
+              label: "Login and sync",
+              command: () => this.authService.loginAndSyncLocal()
             });
           } else {
             userMenu.push({
