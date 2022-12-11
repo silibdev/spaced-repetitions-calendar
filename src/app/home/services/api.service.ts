@@ -51,8 +51,8 @@ type LastUpdateOp = 'U' | 'R' | 'none'
 
 interface LastUpdateRemote {
   eventList: string;
-  eventDescriptions: {id: string, updatedAt: string}[];
-  eventDetails: {id: string, updatedAt: string}[];
+  eventDescriptions: { id: string, updatedAt: string }[];
+  eventDetails: { id: string, updatedAt: string }[];
   settings: string;
 }
 
@@ -70,7 +70,8 @@ function isAfter(dateA?: string, dateB?: string): boolean {
 })
 export class ApiService {
   private outOfSync$ = new BehaviorSubject(false);
-  private MAP_DATA<T extends { data: string, updatedAt?: string }, R>(cacheKey: string, extra: {dontParse?: boolean, lastUpdateOp: LastUpdateOp }): OperatorFunction<T, R> {
+
+  private MAP_DATA<T extends { data: string, updatedAt?: string }, R>(cacheKey: string, extra: { dontParse?: boolean, lastUpdateOp: LastUpdateOp }): OperatorFunction<T, R> {
     return (obs) => obs.pipe(
       map(({data, updatedAt}) => {
         if (updatedAt) {
@@ -149,7 +150,10 @@ export class ApiService {
   }
 
   private getLastUpdatesMap(): Observable<LastUpdateRemote> {
-    return this.httpClient.get<any>(ApiUrls.lastUpdates).pipe(this.MAP_DATA('', {dontParse: true, lastUpdateOp: 'none'}));
+    return this.httpClient.get<any>(ApiUrls.lastUpdates).pipe(this.MAP_DATA('', {
+      dontParse: true,
+      lastUpdateOp: 'none'
+    }));
   }
 
   private getWithCache<R>(url: string, extra: Extra): Observable<R> {
@@ -197,7 +201,7 @@ export class ApiService {
       .pipe(
         this.MAP_DATA<any, R>(extra.cacheKey, {dontParse: extra.dontParse, lastUpdateOp: 'R'}),
         ApiService.HANDLE_ANONYMOUS(data)
-        );
+      );
     return request.pipe(
       catchError(() => {
         this.addPendingChanges(url, request);
@@ -298,10 +302,15 @@ export class ApiService {
         }
         return throwError(() => error);
       }),
-      switchMap( (lastUpdateMap: LastUpdateRemote) => {
+      switchMap((lastUpdateMap: LastUpdateRemote) => {
         const requests: Observable<unknown>[] = [];
 
-        const {eventList: elTime, eventDescriptions: edesTime, eventDetails: edetTime, settings: setTime} = lastUpdateMap;
+        const {
+          eventList: elTime,
+          eventDescriptions: edesTime,
+          eventDetails: edetTime,
+          settings: setTime
+        } = lastUpdateMap;
 
         if (setTime && isAfter(setTime, this.lastUpdateMap[OPTS_DB_NAME])) {
           requests.push(this.getSettings(true));
@@ -370,7 +379,9 @@ export class ApiService {
   }
 
   desyncLocal(): Observable<unknown> {
-    localStorage.clear();
+    Object.keys(localStorage)
+      .filter(k => k.startsWith('src-'))
+      .forEach(k => localStorage.removeItem(k));
     this.initLastUpdateMap();
     return of(undefined);
   }

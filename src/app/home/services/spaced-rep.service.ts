@@ -19,7 +19,7 @@ import {
   throwError,
   withLatestFrom
 } from 'rxjs';
-import { addDays } from 'date-fns';
+import { addDays, isEqual } from 'date-fns';
 import { EventFormService } from './event-form.service';
 import { DescriptionsService } from './descriptions.service';
 import { EventDetailService } from './event-detail.service';
@@ -41,22 +41,20 @@ export class SpacedRepService {
   }
 
   private setDb(newDb: SpecificSpacedRepModel[], remoteSave?: boolean) {
-    const dbToSave = newDb.map(event => {
-      const toDb: any = {
-        ...event
-      };
-      toDb.start = toDb.start.toISOString();
-      return toDb;
-    });
-    if (this.remoteSaveTimer) {
-      clearTimeout(this.remoteSaveTimer);
-    }
-    this.remoteSaveTimer = setTimeout(() => {
-      const newCompressedDb = LZString.compressToUTF16(JSON.stringify(dbToSave));
-      if (remoteSave) {
-        this.apiService.setEventList(newCompressedDb).subscribe();
+    if (remoteSave) {
+      const dbToSave = newDb.map(event => {
+        const toDb: any = {...event};
+        toDb.start = toDb.start.toISOString();
+        return toDb;
+      });
+      if (this.remoteSaveTimer) {
+        clearTimeout(this.remoteSaveTimer);
       }
-    }, 250);
+      this.remoteSaveTimer = setTimeout(() => {
+        const newCompressedDb = LZString.compressToUTF16(JSON.stringify(dbToSave));
+        this.apiService.setEventList(newCompressedDb).subscribe();
+      }, 250);
+    }
     this.spacedReps.next(newDb);
   }
 
@@ -90,7 +88,7 @@ export class SpacedRepService {
             .filter(e => !e.linkedSpacedRepId)
             .map(e =>
               this.get(e.id).pipe(
-                switchMap(eventFull => this.save(eventFull)),
+                switchMap(eventFull => this.save(eventFull))
               )
             )
         ).pipe(defaultIfEmpty(undefined)))
@@ -275,6 +273,13 @@ export class SpacedRepService {
   }
 
   save(eventToModify: SpacedRepModel): Observable<void> {
+    const currentEventIndex = this.db.findIndex(e => eventToModify.id === e.id);
+    const currentEvent = this.db[currentEventIndex];
+    if (!isEqual(currentEvent?.start, eventToModify.start)) {
+      currentEvent.start = eventToModify.start;
+      this.setDb(this.db);
+    }
+
     const commonSpacedRepModel: CommonSpacedRepModel = {
       id: eventToModify.id,
       allDay: eventToModify.allDay,
@@ -285,6 +290,8 @@ export class SpacedRepService {
       color: eventToModify.color,
       title: eventToModify.title
     };
+
+    this.setDb(this.db, false);
 
     const masterId = eventToModify.linkedSpacedRepId || eventToModify.id;
     return forkJoin([

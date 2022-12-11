@@ -1,5 +1,17 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, concat, filter, firstValueFrom, from, fromEvent, iif, Observable, of, switchMap } from 'rxjs';
+import {
+  BehaviorSubject,
+  concat,
+  EMPTY,
+  filter,
+  firstValueFrom,
+  from,
+  fromEvent,
+  iif,
+  Observable,
+  of,
+  switchMap
+} from 'rxjs';
 import * as netlifyIdentity from 'netlify-identity-widget';
 import { User } from '../models/settings.model';
 import { Router } from '@angular/router';
@@ -16,6 +28,7 @@ export class AuthService {
 
   // It means save on remote everything local
   private syncLocal?: boolean;
+  private clearLocal?: boolean;
 
   constructor(
     private router: Router,
@@ -53,7 +66,7 @@ export class AuthService {
     firstValueFrom(iif(
       () => !!this.syncLocal,
       this.spacedRepService.syncLocal(),
-      concat(this.spacedRepService.desyncLocal(), this.spacedRepService.sync()))
+      concat(this.clearLocal ? this.spacedRepService.desyncLocal() : EMPTY, this.spacedRepService.sync()))
     )
       .then(() => this.router.navigate(['home']));
   }
@@ -104,7 +117,7 @@ export class AuthService {
   }
 
   login(): void {
-    this.syncLocal = false;
+    this.clearLocal = true;
     netlifyIdentity.open();
   }
 
