@@ -27,6 +27,7 @@ import LZString from 'lz-string';
 import { SettingsService } from './settings.service';
 import { ApiService } from './api.service';
 import { Migrator } from '../../migrator';
+import * as LZUTF8 from 'lzutf8';
 
 
 @Injectable({
@@ -52,7 +53,7 @@ export class SpacedRepService {
         clearTimeout(this.remoteSaveTimer);
       }
       this.remoteSaveTimer = setTimeout(() => {
-        const newCompressedDb = LZString.compressToUTF16(JSON.stringify(dbToSave));
+        const newCompressedDb = LZUTF8.compress(JSON.stringify(dbToSave), {outputEncoding: 'Base64'});
         this.apiService.setEventList(newCompressedDb).subscribe();
       }, 250);
     }
@@ -102,7 +103,11 @@ export class SpacedRepService {
           try {
             db = JSON.parse(savedDb);
           } catch (e) {
-            db = JSON.parse(LZString.decompressFromUTF16(savedDb) || '[]');
+            try {
+              db = JSON.parse(LZUTF8.decompress(savedDb, {outputEncoding: 'String', inputEncoding: 'Base64'}));
+            } catch (e) {
+              db = JSON.parse(LZString.decompressFromUTF16(savedDb) || '[]');
+            }
           }
         }
         db.forEach((event: any) => event.start = new Date(event.start));
