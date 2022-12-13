@@ -1,22 +1,25 @@
-import { APP_INITIALIZER, FactoryProvider } from '@angular/core';
 import { first, from, mergeMap, Observable, of, reduce, switchMap, tap } from 'rxjs';
 import { SpacedRepService } from './home/services/spaced-rep.service';
 
 const CURRENT_VERSION_KEY = 'src-cv-k';
 
-class Migrator {
+export class Migrator {
   private secondMigrationRun = false;
+
+  static LATEST_VERSION = 4;
 
   constructor(
     private spacedRepsService: SpacedRepService
   ) {
   }
 
-  setVersion(version: number): void {
+  static setVersion(newVersion: number | undefined): void {
+    // From version 3+ we manage the saving of the version on remote too
+    const version = newVersion || Migrator.getVersion() || 3;
     localStorage.setItem(CURRENT_VERSION_KEY, version.toString());
   }
 
-  getVersion(): number {
+  static getVersion(): number {
     return +(localStorage.getItem(CURRENT_VERSION_KEY) || 0);
   }
 
@@ -24,15 +27,16 @@ class Migrator {
     return () => of(undefined).pipe(
       switchMap(() => this.switchToFirstMigration()),
       switchMap(() => this.switchToSecondMigration()),
-      switchMap(() => this.switchToThirdMigration())
+      switchMap(() => this.switchToThirdMigration()),
+      switchMap(() => this.switchToFourthMigration())
     )
   }
 
   /**
    * Extract description from src-db
    */
-  switchToFirstMigration(): Observable<unknown> {
-    if (this.getVersion() >= 1) {
+  private switchToFirstMigration(): Observable<unknown> {
+    if (Migrator.getVersion() >= 1) {
       return of(undefined);
     }
     const eventsDone = new Set();
@@ -48,15 +52,15 @@ class Migrator {
         return of(undefined);
       }),
       reduce((acc, _) => acc, undefined), // wait for all mergeMap to complete
-      tap(() => this.setVersion(1))
+      tap(() => Migrator.setVersion(1))
     );
   }
 
   /**
    * Extract shortDescription from src-db
    */
-  switchToSecondMigration(skipCheck?: boolean): Observable<unknown> {
-    if (!skipCheck && this.getVersion() >= 2) {
+  private switchToSecondMigration(skipCheck?: boolean): Observable<unknown> {
+    if (!skipCheck && Migrator.getVersion() >= 2) {
       return of(undefined);
     }
     const eventsDone = new Set();
@@ -68,14 +72,14 @@ class Migrator {
         const id = event.linkedSpacedRepId || event.id;
         if (id && !eventsDone.has(id)) {
           eventsDone.add(id);
-          return this.spacedRepsService.save(event);
+          return this.spacedRepsService.saveSecondMigration(event);
         }
         return of(undefined);
       }),
       reduce((acc, _) => acc, undefined), // wait for all mergeMap to complete
       tap(() => {
         this.secondMigrationRun = true;
-        this.setVersion(2);
+        Migrator.setVersion(2);
       })
     );
   }
@@ -83,25 +87,31 @@ class Migrator {
   /**
    * Extract everything from db
    */
-  switchToThirdMigration(): Observable<unknown> {
-    if (this.getVersion() >= 3) {
+  private switchToThirdMigration(): Observable<unknown> {
+    if (Migrator.getVersion() >= 3) {
       return of(undefined);
     }
     if (this.secondMigrationRun) {
-      this.setVersion(3);
+      Migrator.setVersion(3);
       return of(undefined);
     }
     return this.spacedRepsService.loadDbThirdMigration().pipe(
       switchMap(() => this.switchToSecondMigration(true)),
       switchMap(() => this.spacedRepsService.purgeDB()),
-      tap(() => this.setVersion(3))
+      tap(() => Migrator.setVersion(3))
     );
   }
-}
 
-export const DB_MIGRATOR_PROVIDER: FactoryProvider = {
-  multi: true,
-  provide: APP_INITIALIZER,
-  useFactory: (srs: SpacedRepService) => new Migrator(srs).migrate(),
-  deps: [SpacedRepService]
+  /**
+   * Move 'done' to specific model from common
+   * @private
+   */
+  private switchToFourthMigration(): Observable<unknown>{
+    if (Migrator.getVersion() >= 4) {
+      return of(undefined);
+    }
+    return this.spacedRepsService.fourthMigration().pipe(
+      tap(() => Migrator.setVersion(4))
+    );
+  }
 }

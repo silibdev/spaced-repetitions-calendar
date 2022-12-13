@@ -1,6 +1,6 @@
 {
   "name": "spaced-repetitions-calendar",
-  "version": "2.0.2",
+  "version": "2.1.0",
   "scripts": {
     "ng": "ng",
     "start": "ng serve --proxy-config proxy.json",
@@ -32,6 +32,7 @@
     "dotenv": "^16.0.3",
     "js-file-download": "^0.4.12",
     "lz-string": "^1.4.4",
+    "lzutf8": "^0.6.3",
     "netlify-cli": "^12.2.0",
     "netlify-identity-widget": "^1.9.2",
     "node-fetch": "^3.3.0",

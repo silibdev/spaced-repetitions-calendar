@@ -51,7 +51,10 @@ export const EventDescriptionRepository = {
 
   async bulkPostEventDescription(userId: string, bulkData: { id: string, data: RequestBody }[]): Promise<RepositoryResult<Record<string, RepositoryResult<string>>>> {
     const ids = bulkData.map(bd => bd.id);
-    const bulkLastUpdates = bulkData.map(bd => bd.data.lastUpdatedAt!);
+    const bulkLastUpdates = bulkData.reduce((acc, bd) => {
+      acc[bd.id] = bd.data.lastUpdatedAt!;
+      return acc;
+    }, {} as Record<string, string>);
 
     const checkErrors = await bulkCheckLastUpdate(DB.execute("SELECT id, updated_at FROM EventDescription WHERE user=:userId AND id IN (:ids)", {userId, ids}), 'id', bulkLastUpdates);
     if (checkErrors) return checkErrors;
