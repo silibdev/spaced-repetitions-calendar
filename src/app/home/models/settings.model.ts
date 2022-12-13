@@ -5,6 +5,7 @@ export interface RepetitionSchema {
 
 export interface FullSettings extends Options {
   repetitionSchemaOpts: RepetitionSchema[];
+  currentVersion: number | undefined;
 }
 
 export interface Options {

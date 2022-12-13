@@ -8,7 +8,7 @@ export interface SpacedRepModel {
   boldTitle?: boolean;
   color?: EventColor;
   description?: string;
-  done: boolean;
+  done?: boolean;
   highlightTitle?: boolean;
   id: string;
   linkedSpacedRepId?: string;
@@ -18,12 +18,12 @@ export interface SpacedRepModel {
   title: string;
 }
 
-export type CommonSpacedRepModel = Pick<SpacedRepModel, 'id' | 'allDay' | 'done' | 'title' | 'color' | 'shortDescription' | 'boldTitle' | 'highlightTitle'>;
+export type CommonSpacedRepModel = Pick<SpacedRepModel, 'id' | 'allDay' | 'title' | 'color' | 'shortDescription' | 'boldTitle' | 'highlightTitle'>;
 
-export type SpecificSpacedRepModel = Pick<SpacedRepModel, 'id' | 'repetitionNumber' | 'start' | 'linkedSpacedRepId'>
+export type SpecificSpacedRepModel = Pick<SpacedRepModel, 'id' | 'repetitionNumber' | 'start' | 'linkedSpacedRepId' | 'done'>
 
 export interface CreateSpacedReps {
-  spacedRep: CommonSpacedRepModel & { description?: string };
+  spacedRep: CommonSpacedRepModel & { description?: string, done?: boolean };
   startDate: Date;
   repetitionSchema: string;
 }

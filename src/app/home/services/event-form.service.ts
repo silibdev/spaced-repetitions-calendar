@@ -74,7 +74,6 @@ export class EventFormService {
         boldTitle: value.boldTitle,
         highlightTitle: value.highlightTitle,
         id: '',
-        done: false,
         allDay: true
       },
       repetitionSchema: value.repetitionSchema,

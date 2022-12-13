@@ -19,13 +19,14 @@ import {
   throwError,
   withLatestFrom
 } from 'rxjs';
-import { addDays, isEqual } from 'date-fns';
+import { addDays, isAfter, isEqual } from 'date-fns';
 import { EventFormService } from './event-form.service';
 import { DescriptionsService } from './descriptions.service';
 import { EventDetailService } from './event-detail.service';
 import LZString from 'lz-string';
 import { SettingsService } from './settings.service';
 import { ApiService } from './api.service';
+import { Migrator } from '../../migrator';
 
 
 @Injectable({
@@ -70,36 +71,32 @@ export class SpacedRepService {
 
   sync(): Observable<unknown> {
     return this.apiService.sync().pipe(
-      switchMap(() =>
-        forkJoin([
-          this.loadDb(),
-          this.settingsService.loadOpts()
-        ])
+      switchMap(() => this.settingsService.loadOpts()),
+      switchMap(() => this.loadDb()
       )
     );
   }
 
   syncLocal(): Observable<unknown> {
-    return forkJoin([
-      this.loadDb(true).pipe(
-        switchMap(() => this.getAll().pipe(first())),
-        switchMap(events => forkJoin(
-          events
-            .filter(e => !e.linkedSpacedRepId)
-            .map(e =>
-              this.get(e.id).pipe(
-                switchMap(eventFull => this.save(eventFull))
-              )
+    return this.settingsService.loadOpts().pipe(
+      tap(() => this.settingsService.saveOpts()),
+      switchMap(() => this.loadDb(true)),
+      switchMap(() => this.getAll().pipe(first())),
+      switchMap(events => forkJoin(
+        events
+          .filter(e => !e.linkedSpacedRepId)
+          .map(e =>
+            this.get(e.id).pipe(
+              switchMap(eventFull => this.save(eventFull))
             )
-        ).pipe(defaultIfEmpty(undefined)))
-      ),
-      this.settingsService.loadOpts().pipe(tap(() => this.settingsService.saveOpts()))
-    ]);
+          )
+      ).pipe(defaultIfEmpty(undefined)))
+    );
   }
 
   private loadDb(forceSave?: boolean): Observable<unknown> {
     return this.apiService.getEventList().pipe(
-      tap(savedDb => {
+      tap((savedDb) => {
         let db: any = [];
         if (savedDb) {
           try {
@@ -112,6 +109,8 @@ export class SpacedRepService {
         this.setDb(db, forceSave);
       }),
       withLatestFrom(this.spacedReps$),
+      switchMap(() => new Migrator(this).migrate()()),
+      tap(() => this.settingsService.saveOpts()),
       switchMap(() => this.getAll().pipe(first())),
       switchMap(db => forkJoin(
         db.map(e => this.descriptionService.get(e.linkedSpacedRepId || e.id))
@@ -285,7 +284,7 @@ export class SpacedRepService {
     }
   }
 
-  save(eventToModify: SpacedRepModel): Observable<void> {
+  saveSecondMigration(eventToModify: SpacedRepModel): Observable<void> {
     const currentEventIndex = this.db.findIndex(e => eventToModify.id === e.id);
     const currentEvent = this.db[currentEventIndex];
     if (!isEqual(currentEvent?.start, eventToModify.start)) {
@@ -293,7 +292,7 @@ export class SpacedRepService {
       this.setDb(this.db);
     }
 
-    const commonSpacedRepModel: CommonSpacedRepModel = {
+    const commonSpacedRepModel: any = {
       id: eventToModify.id,
       allDay: eventToModify.allDay,
       done: eventToModify.done,
@@ -312,6 +311,31 @@ export class SpacedRepService {
       this.eventDetailService.save(masterId, commonSpacedRepModel)
     ])
       .pipe(mapTo(undefined));
+  }
+
+  save(eventToModify: SpacedRepModel): Observable<void> {
+    const currentEventIndex = this.db.findIndex(e => eventToModify.id === e.id);
+    const currentEvent = this.db[currentEventIndex];
+    let specificIsChanged = false;
+    if (!isEqual(currentEvent?.start, eventToModify.start)) {
+      currentEvent.start = eventToModify.start;
+      specificIsChanged = true;
+    }
+    if (currentEvent.done !== eventToModify.done) {
+      currentEvent.done = eventToModify.done;
+      specificIsChanged = true;
+    }
+
+    const {masterId, common} = this.extractCommonModel(eventToModify);
+
+    return forkJoin([
+      this.descriptionService.save(masterId, eventToModify.description || ''),
+      this.eventDetailService.save(masterId, common)
+    ])
+      .pipe(
+        tap(() => this.setDb(this.db, specificIsChanged)),
+        mapTo(undefined)
+      );
   }
 
   purgeDB(): Observable<unknown> {
@@ -356,6 +380,20 @@ export class SpacedRepService {
     );
   }
 
+  private extractCommonModel(sr: SpacedRepModel): {masterId: string, common: CommonSpacedRepModel} {
+    const masterId = sr.linkedSpacedRepId || sr.id;
+    const common: CommonSpacedRepModel = {
+      id: masterId,
+      allDay: sr.allDay,
+      shortDescription: sr.shortDescription,
+      boldTitle: sr.boldTitle,
+      highlightTitle: sr.highlightTitle,
+      color: sr.color,
+      title: sr.title
+    };
+    return {masterId, common};
+  }
+
   desyncLocal() {
     return this.apiService.desyncLocal();
   }
@@ -372,5 +410,40 @@ export class SpacedRepService {
 
   syncPendingChanges(): Observable<number> {
     return this.apiService.syncPendingChanges();
+  }
+
+  fourthMigration(): Observable<unknown> {
+    const today = new Date();
+    return this.getAll().pipe(
+      first(),
+      switchMap(spacedReps => {
+        const alreadyProcessed = new Set<string>();
+        return forkJoin(
+          spacedReps.map(sr => {
+            if (sr.done) {
+              sr.done = isAfter(sr.start, today) ? false : true;
+
+              // UPDATE SPECIFIC MODEL IF NEEDED
+              const currentEventIndex = this.db.findIndex(e => sr.id === e.id);
+              const currentEvent = this.db[currentEventIndex];
+              if (currentEvent.done !== sr.done) {
+                currentEvent.done = sr.done;
+                this.setDb(this.db, true);
+              }
+
+              // UPDATE COMMON MODEL
+              const {masterId, common} = this.extractCommonModel(sr);
+              if (!alreadyProcessed.has(masterId)) {
+                alreadyProcessed.add(masterId);
+                return this.apiService.setEventDetail(masterId, common);
+              } else {
+                return undefined;
+              }
+            }
+            return undefined;
+          }).filter(el => !!el)
+        ).pipe(defaultIfEmpty(undefined))
+      })
+    );
   }
 }

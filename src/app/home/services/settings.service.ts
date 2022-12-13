@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { FullSettings, Options, RepetitionSchema } from '../models/settings.model';
 import { ApiService } from './api.service';
 import { Observable, tap } from 'rxjs';
+import { Migrator } from '../../migrator';
 
 
 @Injectable({
@@ -29,7 +30,8 @@ export class SettingsService {
       {label: '1;7;30;90', value: '1;7;30;90'},
       {label: '1;5;15;30', value: '1;5;15;30'}
     ],
-    autoSavingTimer: 15
+    autoSavingTimer: 15,
+    currentVersion: Migrator.LATEST_VERSION
   };
 
   constructor(
@@ -42,6 +44,10 @@ export class SettingsService {
       (opts) => {
         if (opts) {
           this.opts = opts;
+          Migrator.setVersion(this.opts.currentVersion);
+          if (!this.opts.currentVersion) {
+            this.saveOpts();
+          }
         } else {
           // it'll save the default options
           this.saveOpts();
@@ -51,6 +57,7 @@ export class SettingsService {
   }
 
   saveOpts(): void {
+    this.opts.currentVersion = Migrator.getVersion();
     this.apiService.setSettings(this.opts).subscribe({
       next: resp => {
         console.log('opts saved', resp);

@@ -8,7 +8,6 @@ import { MenubarModule } from 'primeng/menubar';
 import { SharedModule } from 'primeng/api';
 import { ReactiveFormsModule } from '@angular/forms';
 import { AboutComponent } from './about/about.component';
-import { DB_MIGRATOR_PROVIDER } from './migrator';
 import { ButtonModule } from 'primeng/button';
 import { ServiceWorkerModule } from '@angular/service-worker';
 import { environment } from '../environments/environment';
@@ -56,7 +55,6 @@ import { LOADER_INTERCEPTOR_PROVIDER } from './home/services/loader.interceptor'
       deps: [AuthService],
       multi: true
     },
-    DB_MIGRATOR_PROVIDER,
     LOADER_INTERCEPTOR_PROVIDER,
     BULK_INTERCEPTOR_PROVIDER,
     AUTH_INTERCEPTOR_PROVIDER
