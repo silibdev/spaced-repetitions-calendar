@@ -105,6 +105,7 @@ export class AuthService {
 
   login(): void {
     this.clearLocal = true;
+    this.syncLocal = false;
     netlifyIdentity.open();
   }
 
@@ -114,6 +115,7 @@ export class AuthService {
 
   anonymousLogin() {
     this.clearLocal = false;
+    this.syncLocal = false;
     const localAnonymousUser = {
       name: 'Local Anonymous'
     };
