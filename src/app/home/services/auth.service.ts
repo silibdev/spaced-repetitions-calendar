@@ -1,17 +1,5 @@
 import { Injectable } from '@angular/core';
-import {
-  BehaviorSubject,
-  concat,
-  EMPTY,
-  filter,
-  firstValueFrom,
-  from,
-  fromEvent,
-  iif,
-  Observable,
-  of,
-  switchMap
-} from 'rxjs';
+import { BehaviorSubject, concat, filter, firstValueFrom, from, fromEvent, Observable, of, switchMap } from 'rxjs';
 import * as netlifyIdentity from 'netlify-identity-widget';
 import { User } from '../models/settings.model';
 import { Router } from '@angular/router';
@@ -63,12 +51,11 @@ export class AuthService {
 
   private setUser(user: User): void {
     this.user$.next(user);
-    firstValueFrom(iif(
-      () => !!this.syncLocal,
-      this.spacedRepService.syncLocal(),
-      concat(this.clearLocal ? this.spacedRepService.desyncLocal() : EMPTY, this.spacedRepService.sync()))
-    )
-      .then(() => this.router.navigate(['home']));
+    const doSyncLocal = (this.clearLocal ? this.spacedRepService.desyncLocal() : of(undefined))
+      .pipe(switchMap(() => this.spacedRepService.sync()));
+    firstValueFrom(
+      this.syncLocal ? this.spacedRepService.syncLocal() : doSyncLocal
+    ).then(() => this.router.navigate(['home']));
   }
 
   private resetUser(): void {
