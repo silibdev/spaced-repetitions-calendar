@@ -3,7 +3,7 @@
 <!--<button (click)="loaderService.startLoading()">Start</button>-->
 <div class="p-component loader-container" *ngIf="loadingValuePerc$ | async as progressPerc">
   <div class="loader-bkg">
-    <img class="loader h-6rem md:h-10rem" src="assets/loader.svg"/>
+    <img class="loader h-6rem md:h-10rem" alt="Loading" src="assets/{{loaderAsset$ | async}}"/>
     <div class="loader-text">Loading</div>
   </div>
   <p-progressBar [style.width]="'90vw'" [mode]="'determinate'"

@@ -63,6 +63,7 @@ export class AppComponent {
   userMenu$: Observable<MenuItem[]>;
   pendingChanges$: Observable<string>;
   loadingValuePerc$: Observable<string>;
+  loaderAsset$: Observable<string>;
 
   constructor(
     private authService: AuthService,
@@ -73,6 +74,10 @@ export class AppComponent {
     public loaderService: LoaderService,
     private swUpdate: SwUpdate
   ) {
+    this.loaderAsset$ = this.authService.getUser$().pipe(
+      map(user => user?.name.startsWith('Altea')),
+      map( isAlty => isAlty ? 'love-loader.svg' : 'loader.svg')
+    );
 
     this.swUpdate.versionUpdates.pipe(
       tap(updateEvent => {
