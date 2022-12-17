@@ -96,8 +96,7 @@ export class AppComponent {
               header: 'New version is ready to install',
               message: 'Update app to new version :)',
               rejectVisible: false,
-              accept: () =>
-                this.swUpdate.activateUpdate().then(() => alert('Updated successfully!'))
+              accept: () => location.reload()
             });
             break;
         }

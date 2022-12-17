@@ -5,6 +5,7 @@ import { User } from '../models/settings.model';
 import { Router } from '@angular/router';
 import { environment } from '../../../environments/environment';
 import { SpacedRepService } from './spaced-rep.service';
+import { SwUpdate } from '@angular/service-worker';
 
 const USER_DB_NAME = 'src-user-db';
 
@@ -20,7 +21,8 @@ export class AuthService {
 
   constructor(
     private router: Router,
-    private spacedRepService: SpacedRepService
+    private spacedRepService: SpacedRepService,
+    private swUpdate: SwUpdate
   ) {
     netlifyIdentity.on('login', user => {
       netlifyIdentity.close();
@@ -41,7 +43,12 @@ export class AuthService {
         if (user?.token) {
           return fromEvent(window, 'visibilitychange').pipe(
             filter(() => document.visibilityState === 'visible'),
-            switchMap(() => concat(this.spacedRepService.syncPendingChanges(), this.spacedRepService.sync()))
+            switchMap(() => concat(
+              this.spacedRepService.syncPendingChanges(),
+              this.spacedRepService.sync(),
+              this.swUpdate.checkForUpdate()
+              )
+            )
           )
         }
         return of(undefined);
