@@ -21,6 +21,7 @@ import { User } from './home/models/settings.model';
 import { ApiService } from './home/services/api.service';
 import { SpacedRepService } from './home/services/spaced-rep.service';
 import { LoaderService } from './home/services/loader.service';
+import { SwUpdate } from '@angular/service-worker';
 
 @Component({
   selector: 'app-root',
@@ -69,8 +70,35 @@ export class AppComponent {
     private spacedRepService: SpacedRepService,
     private confirmationService: ConfirmationService,
     private messageService: MessageService,
-    public loaderService: LoaderService
+    public loaderService: LoaderService,
+    private swUpdate: SwUpdate
   ) {
+
+    this.swUpdate.versionUpdates.pipe(
+      tap(updateEvent => {
+        switch (updateEvent.type) {
+          case 'VERSION_DETECTED':
+            this.confirmationService.confirm({
+              header: 'New version is available!',
+              message: 'Wait for the download and update :)',
+              rejectVisible: false,
+              accept: () => this.loaderService.startLoading()
+            });
+            break;
+          case 'VERSION_READY':
+            this.loaderService.stopLoading();
+            this.confirmationService.confirm({
+              header: 'New version is ready to install',
+              message: 'Update app to new version :)',
+              rejectVisible: false,
+              accept: () =>
+                this.swUpdate.activateUpdate().then(() => alert('Updated successfully!'))
+            });
+            break;
+        }
+      })
+    ).subscribe();
+
     this.user$ = authService.getUser$().pipe(
       shareReplay()
     );
