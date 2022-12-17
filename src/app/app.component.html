@@ -2,7 +2,10 @@
 <p-toast></p-toast>
 <!--<button (click)="loaderService.startLoading()">Start</button>-->
 <div class="p-component loader-container" *ngIf="loadingValuePerc$ | async as progressPerc">
-  <div class="loader-content"><span class="loader">Loading</span></div>
+  <div class="loader-bkg">
+    <img class="loader h-6rem md:h-10rem" src="assets/loader.svg"/>
+    <div class="loader-text">Loading</div>
+  </div>
   <p-progressBar [style.width]="'90vw'" [mode]="'determinate'"
                  [value]="progressPerc"></p-progressBar>
 <!--  <div [style.z-index]="0">-->
