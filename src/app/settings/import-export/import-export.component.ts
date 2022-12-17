@@ -5,6 +5,7 @@ import { AuthService } from '../../home/services/auth.service';
 import { map, Observable, shareReplay, tap } from 'rxjs';
 import { SpacedRepService } from '../../home/services/spaced-rep.service';
 import { ConfirmationService } from 'primeng/api';
+import { LAST_UPDATE_DB_NAME } from '../../home/services/api.service';
 
 
 @Component({
@@ -60,7 +61,7 @@ export class ImportExportComponent implements OnInit {
       localStorage.clear();
       const newStore = JSON.parse(content);
       for (const key in newStore) {
-        if (!key.startsWith('src')) {
+        if (!key.startsWith('src') || key === LAST_UPDATE_DB_NAME) {
           continue;
         }
         localStorage.setItem(key, newStore[key]);
