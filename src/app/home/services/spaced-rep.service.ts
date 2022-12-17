@@ -80,7 +80,6 @@ export class SpacedRepService {
 
   syncLocal(): Observable<unknown> {
     return this.settingsService.loadOpts().pipe(
-      tap(() => this.settingsService.saveOpts()),
       switchMap(() => this.loadDb(true)),
       switchMap(() => this.getAll().pipe(first())),
       switchMap(events => forkJoin(
@@ -115,7 +114,7 @@ export class SpacedRepService {
       }),
       withLatestFrom(this.spacedReps$),
       switchMap(() => new Migrator(this).migrate()()),
-      tap(() => this.settingsService.saveOpts()),
+      tap(migrationApplied => migrationApplied && this.settingsService.saveOpts()),
       switchMap(() => this.getAll().pipe(first())),
       switchMap(db => forkJoin(
         db.map(e => this.descriptionService.get(e.linkedSpacedRepId || e.id))
