@@ -37,7 +37,7 @@ const OLD_SHORT_DESCRIPTION_DB_NAME = 'src-short-desc-db';
 const DETAIL_DB_NAME_PREFIX = 'src-event-detail-db';
 const DETAIL_DB_NAME = (id: string) => DETAIL_DB_NAME_PREFIX + id;
 
-const LAST_UPDATE_DB_NAME = 'src-last-update-db';
+export const LAST_UPDATE_DB_NAME = 'src-last-update-db';
 
 const DB_NAME = 'src-db';
 

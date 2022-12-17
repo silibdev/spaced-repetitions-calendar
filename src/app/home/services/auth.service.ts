@@ -8,6 +8,10 @@ import { SpacedRepService } from './spaced-rep.service';
 import { SwUpdate } from '@angular/service-worker';
 
 const USER_DB_NAME = 'src-user-db';
+const LOGIN_STATE_KEY = 'src-login-state';
+
+// 'SYNC_LOCAL' means save on remote everything local
+type LoginState = 'SYNC_LOCAL' | 'CLEAR_LOCAL' | 'ANONYM';
 
 @Injectable({
   providedIn: 'root'
@@ -15,9 +19,13 @@ const USER_DB_NAME = 'src-user-db';
 export class AuthService {
   private user$ = new BehaviorSubject<User | undefined>(undefined);
 
-  // It means save on remote everything local
-  private syncLocal?: boolean;
-  private clearLocal?: boolean;
+  get loginState(): LoginState {
+    return sessionStorage.getItem(LOGIN_STATE_KEY) as LoginState || 'ANONYM';
+  }
+
+  set loginState(state: LoginState) {
+    sessionStorage.setItem(LOGIN_STATE_KEY, state);
+  }
 
   constructor(
     private router: Router,
@@ -58,10 +66,10 @@ export class AuthService {
 
   private setUser(user: User): void {
     this.user$.next(user);
-    const doSyncLocal = (this.clearLocal ? this.spacedRepService.desyncLocal() : of(undefined))
+    const doSyncLocal = (this.loginState === 'CLEAR_LOCAL' ? this.spacedRepService.desyncLocal() : of(undefined))
       .pipe(switchMap(() => this.spacedRepService.sync()));
     firstValueFrom(
-      this.syncLocal ? this.spacedRepService.syncLocal() : doSyncLocal
+      this.loginState === 'SYNC_LOCAL' ? this.spacedRepService.syncLocal() : doSyncLocal
     ).then(() => this.router.navigate(['home']));
   }
 
@@ -111,8 +119,7 @@ export class AuthService {
   }
 
   login(): void {
-    this.clearLocal = true;
-    this.syncLocal = false;
+    this.loginState = 'CLEAR_LOCAL';
     netlifyIdentity.open();
   }
 
@@ -121,8 +128,7 @@ export class AuthService {
   }
 
   anonymousLogin() {
-    this.clearLocal = false;
-    this.syncLocal = false;
+    this.loginState = 'ANONYM';
     const localAnonymousUser = {
       name: 'Local Anonymous'
     };
@@ -131,8 +137,7 @@ export class AuthService {
   }
 
   loginAndSyncLocal() {
-    this.clearLocal = false;
-    this.syncLocal = true;
+    this.loginState = 'SYNC_LOCAL';
     netlifyIdentity.open();
   }
 }
