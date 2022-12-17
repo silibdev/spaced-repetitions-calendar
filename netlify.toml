@@ -4,11 +4,11 @@
   status = 200
 
 [[redirects]]
-  from = "/.netlify/*"
-  to = "/.netlify/:splat"
+  from = "/[home,login,about,settings]"
+  to = "/index.html"
   status = 200
 
 [[redirects]]
-  from = "/*"
+  from = "/"
   to = "/index.html"
   status = 200
