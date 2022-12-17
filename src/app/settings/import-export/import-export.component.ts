@@ -60,6 +60,9 @@ export class ImportExportComponent implements OnInit {
       localStorage.clear();
       const newStore = JSON.parse(content);
       for (const key in newStore) {
+        if (!key.startsWith('src')) {
+          continue;
+        }
         localStorage.setItem(key, newStore[key]);
       }
 
