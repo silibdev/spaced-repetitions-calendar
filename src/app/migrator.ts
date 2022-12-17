@@ -1,10 +1,11 @@
-import { first, from, mergeMap, Observable, of, reduce, switchMap, tap } from 'rxjs';
+import { first, from, map, mergeMap, Observable, of, reduce, switchMap, tap } from 'rxjs';
 import { SpacedRepService } from './home/services/spaced-rep.service';
 
 const CURRENT_VERSION_KEY = 'src-cv-k';
 
 export class Migrator {
   private secondMigrationRun = false;
+  private migrationApplied = false;
 
   static LATEST_VERSION = 4;
 
@@ -23,12 +24,14 @@ export class Migrator {
     return +(localStorage.getItem(CURRENT_VERSION_KEY) || 0);
   }
 
-  migrate(): () => Observable<unknown> {
+  migrate(): () => Observable<boolean> {
+    this.migrationApplied = false;
     return () => of(undefined).pipe(
       switchMap(() => this.switchToFirstMigration()),
       switchMap(() => this.switchToSecondMigration()),
       switchMap(() => this.switchToThirdMigration()),
-      switchMap(() => this.switchToFourthMigration())
+      switchMap(() => this.switchToFourthMigration()),
+      map(() => this.migrationApplied)
     )
   }
 
@@ -39,6 +42,7 @@ export class Migrator {
     if (Migrator.getVersion() >= 1) {
       return of(undefined);
     }
+    this.migrationApplied = true;
     const eventsDone = new Set();
     return this.spacedRepsService.getAll().pipe(
       first(),
@@ -63,6 +67,7 @@ export class Migrator {
     if (!skipCheck && Migrator.getVersion() >= 2) {
       return of(undefined);
     }
+    this.migrationApplied = true;
     const eventsDone = new Set();
     return this.spacedRepsService.getAllSecondMigration().pipe(
       first(),
@@ -95,6 +100,7 @@ export class Migrator {
       Migrator.setVersion(3);
       return of(undefined);
     }
+    this.migrationApplied = true;
     return this.spacedRepsService.loadDbThirdMigration().pipe(
       switchMap(() => this.switchToSecondMigration(true)),
       switchMap(() => this.spacedRepsService.purgeDB()),
@@ -110,6 +116,7 @@ export class Migrator {
     if (Migrator.getVersion() >= 4) {
       return of(undefined);
     }
+    this.migrationApplied = true;
     return this.spacedRepsService.fourthMigration().pipe(
       tap(() => Migrator.setVersion(4))
     );
