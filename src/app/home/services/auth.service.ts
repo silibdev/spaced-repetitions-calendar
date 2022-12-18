@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, concat, filter, firstValueFrom, from, fromEvent, Observable, of, switchMap } from 'rxjs';
+import { BehaviorSubject, concat, filter, firstValueFrom, from, fromEvent, Observable, of, switchMap, tap } from 'rxjs';
 import * as netlifyIdentity from 'netlify-identity-widget';
 import { User } from '../models/settings.model';
 import { Router } from '@angular/router';
@@ -11,16 +11,19 @@ const USER_DB_NAME = 'src-user-db';
 const LOGIN_STATE_KEY = 'src-login-state';
 
 // 'SYNC_LOCAL' means save on remote everything local
-type LoginState = 'SYNC_LOCAL' | 'CLEAR_LOCAL' | 'ANONYM';
+type LoginState = 'SYNC_LOCAL' | 'CLEAR_LOCAL' | 'ANONYM' | 'NONE';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
   private user$ = new BehaviorSubject<User | undefined>(undefined);
+  private _isReady$ = new BehaviorSubject<boolean>(false);
+
+  isReady$: Observable<boolean>;
 
   get loginState(): LoginState {
-    return sessionStorage.getItem(LOGIN_STATE_KEY) as LoginState || 'ANONYM';
+    return sessionStorage.getItem(LOGIN_STATE_KEY) as LoginState || 'NONE';
   }
 
   set loginState(state: LoginState) {
@@ -32,6 +35,12 @@ export class AuthService {
     private spacedRepService: SpacedRepService,
     private swUpdate: SwUpdate
   ) {
+    this.isReady$ = this._isReady$.asObservable();
+
+    this.user$.pipe(
+      tap((user) => !user && this._isReady$.next(false))
+    ).subscribe();
+
     netlifyIdentity.on('login', user => {
       netlifyIdentity.close();
       console.log('login', user);
@@ -52,9 +61,9 @@ export class AuthService {
           return fromEvent(window, 'visibilitychange').pipe(
             filter(() => document.visibilityState === 'visible'),
             switchMap(() => concat(
-              this.spacedRepService.syncPendingChanges(),
-              this.spacedRepService.sync(),
-              this.swUpdate.checkForUpdate()
+                this.spacedRepService.syncPendingChanges(),
+                this.spacedRepService.sync(),
+                this.swUpdate.checkForUpdate().catch(err => console.log('checkUpdateError', err))
               )
             )
           )
@@ -70,7 +79,14 @@ export class AuthService {
       .pipe(switchMap(() => this.spacedRepService.sync()));
     firstValueFrom(
       this.loginState === 'SYNC_LOCAL' ? this.spacedRepService.syncLocal() : doSyncLocal
-    ).then(() => this.router.navigate(['home']));
+    )
+      .then(() => {
+        this._isReady$.next(true);
+        if (this.loginState !== 'NONE') {
+          this.loginState = 'NONE';
+          this.router.navigate(['home'])
+        }
+      });
   }
 
   private resetUser(): void {
