@@ -6,6 +6,12 @@ export interface RepetitionSchema {
 export interface FullSettings extends Options {
   repetitionSchemaOpts: RepetitionSchema[];
   currentVersion: number | undefined;
+  colors: Color[];
+}
+
+export interface Color {
+  label: string;
+  value: string;
 }
 
 export interface Options {

@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
-import { FullSettings, Options, RepetitionSchema } from '../models/settings.model';
+import { Color, FullSettings, Options, RepetitionSchema } from '../models/settings.model';
 import { ApiService } from './api.service';
-import { Observable, tap } from 'rxjs';
+import { Observable, Observer, of, tap } from 'rxjs';
 import { Migrator } from '../../migrator';
 
 
@@ -23,6 +23,37 @@ export class SettingsService {
     };
   }
 
+  get colors(): Color[] {
+    return this.opts.colors;
+  }
+
+  private defaultColors = [
+    {
+      label: 'Blue',
+      value: '#0072c3'
+    },
+    {
+      label: 'Green',
+      value: '#00d011'
+    },
+    {
+      label: 'Yellow',
+      value: '#ffe016'
+    },
+    {
+      label: 'Red',
+      value: '#da1e28'
+    },
+    {
+      label: 'Purple',
+      value: '#8a3ffc'
+    },
+    {
+      label: 'Orange',
+      value: '#ff7605'
+    },
+  ];
+
   // This default are merged with the already present ones
   // it is a shallow merge so be careful in using nested objects!
   private opts: FullSettings = {
@@ -31,7 +62,8 @@ export class SettingsService {
       {label: '1;5;15;30', value: '1;5;15;30'}
     ],
     autoSavingTimer: 15,
-    currentVersion: Migrator.LATEST_VERSION
+    currentVersion: Migrator.LATEST_VERSION,
+    colors: this.defaultColors,
   };
 
   constructor(
@@ -56,14 +88,20 @@ export class SettingsService {
     ));
   }
 
-  saveOpts(): void {
+  saveOpts(subscriber?: Partial<Observer<any>>): void {
     this.opts.currentVersion = Migrator.getVersion();
+
     this.apiService.setSettings(this.opts).subscribe({
       next: resp => {
         console.log('opts saved', resp);
+        subscriber?.next && subscriber.next(resp);
       },
       error: (error) => {
         console.error('opts not saved', error);
+        subscriber?.error && subscriber.error(error);
+      },
+      complete: () => {
+        subscriber?.complete && subscriber.complete();
       }
     });
   }
@@ -100,10 +138,10 @@ export class SettingsService {
         repSchemaOpt.value = repSchema;
         repSchemaOpt.label = repSchema;
         this.saveOpts();
+        return true;
       } else {
-        this.saveNewRepetitionSchema(repSchema);
+        return this.saveNewRepetitionSchema(repSchema);
       }
-      return true;
     } else {
       return false;
     }
@@ -112,6 +150,49 @@ export class SettingsService {
   deleteRepetitionSchema(index: number): void {
     const repSchema = this.repetitionSchemaOpts[index].value;
     this.opts.repetitionSchemaOpts = this.repetitionSchemaOpts.filter(rs => rs.value !== repSchema);
+    this.saveOpts();
+  }
+
+  fifthMigration() {
+    if (this.opts.colors) {
+      return of(undefined);
+    }
+    this.opts.colors = this.defaultColors;
+    this.saveOpts();
+    return new Observable<undefined>(subscriber => {
+      this.saveOpts(subscriber);
+    });
+  }
+
+  editColor(index: number, editedColor: Color) {
+    // index can be in range or +1 respect the size (if a new color)
+    if (index >= this.colors.length + 1) {
+      return false;
+    }
+    const color = this.colors[index];
+    if (!color) {
+      return this.saveNewColor(editedColor);
+    } else {
+      color.value = editedColor.value;
+      color.label = editedColor.label;
+      this.saveOpts();
+      return true;
+    }
+  }
+
+  private saveNewColor(color: Color) {
+    if (!this.colors.find(cl => cl.value === color.value)) {
+      this.opts.colors.push({...color});
+      this.saveOpts();
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  deleteColor(index: number) {
+    const color = this.colors[index].value;
+    this.opts.colors = this.colors.filter(cl => cl.value !== color);
     this.saveOpts();
   }
 }

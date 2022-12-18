@@ -47,6 +47,10 @@ export class AppComponent {
           routerLink: 'settings/rep-schemas'
         },
         {
+          label: 'Manage colors',
+          routerLink: 'settings/colors'
+        },
+        {
           label: 'Import/Export',
           routerLink: 'settings/import-export'
         }
@@ -116,7 +120,7 @@ export class AppComponent {
       // Wait 250ms before showing the loader
       debounce(loadingStatus => {
         if (loadingStatus.total === 1) {
-          return timer(250);
+          return timer(300);
         }
         return of(undefined);
       }),

@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { ActivatedRouteSnapshot, CanActivate, Router, RouterStateSnapshot, UrlTree } from '@angular/router';
-import { Observable } from 'rxjs';
+import { filter, first, Observable } from 'rxjs';
 import { AuthService } from './auth.service';
 
 @Injectable({
@@ -18,7 +18,10 @@ export class AuthGuard implements CanActivate {
     if (!this.authService.getUser()) {
       return this.router.createUrlTree(['/login']);
     }
-    return true;
+    return this.authService.isReady$.pipe(
+      filter(ready => ready),
+      first()
+    );
   }
 
 }

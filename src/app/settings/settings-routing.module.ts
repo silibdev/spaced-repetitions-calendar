@@ -3,6 +3,7 @@ import { RouterModule, Routes } from '@angular/router';
 import { RepetitionSchemasComponent } from './repetition-schemas/repetition-schemas.component';
 import { ImportExportComponent } from './import-export/import-export.component';
 import { GeneralComponent } from './general/general.component';
+import { ColorsComponent } from './colors/colors.component';
 
 const routes: Routes = [
   {
@@ -13,6 +14,9 @@ const routes: Routes = [
   },
   {
     path: 'general', component: GeneralComponent,
+  },
+  {
+    path: 'colors', component: ColorsComponent
   }
 ];
 
