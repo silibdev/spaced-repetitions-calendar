@@ -6,6 +6,7 @@ import { FormControl } from '@angular/forms';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { distinctUntilChanged, Observable, startWith, tap } from 'rxjs';
 import { SettingsService } from '../services/settings.service';
+import { Color } from '../models/settings.model';
 
 @UntilDestroy()
 @Component({
@@ -22,37 +23,8 @@ export class EventViewComponent implements OnInit, BlockableUI {
     label: 'Custom',
     value: '#ffffff'
   };
-  private defaultColorOpts = [
-    {
-      label: 'Blue',
-      value: '#0072c3'
-    },
-    {
-      label: 'Green',
-      value: '#00d011'
-    },
-    {
-      label: 'Yellow',
-      value: '#ffe016'
-    },
-    {
-      label: 'Red',
-      value: '#da1e28'
-    },
-    {
-      label: 'Purple',
-      value: '#8a3ffc'
-    },
-    {
-      label: 'Orange',
-      value: '#ff7605'
-    },
-  ];
 
-  colorOpts = [
-    ...this.defaultColorOpts,
-    this.customColor
-  ]
+  colorOpts: Color[];
 
   customColorControl: FormControl;
 
@@ -70,6 +42,10 @@ export class EventViewComponent implements OnInit, BlockableUI {
     public settingsService: SettingsService
   ) {
     this.customColorControl = new FormControl();
+    this.colorOpts = [
+      ...this.settingsService.colors,
+      this.customColor
+    ]
   }
 
   ngOnInit(): void {

@@ -450,4 +450,8 @@ export class SpacedRepService {
       })
     );
   }
+
+  fifthMigration() {
+    return this.settingsService.fifthMigration();
+  }
 }

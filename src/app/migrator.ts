@@ -31,6 +31,7 @@ export class Migrator {
       switchMap(() => this.switchToSecondMigration()),
       switchMap(() => this.switchToThirdMigration()),
       switchMap(() => this.switchToFourthMigration()),
+      switchMap(() => this.switchToFifthMigration()),
       map(() => this.migrationApplied)
     )
   }
@@ -119,6 +120,16 @@ export class Migrator {
     this.migrationApplied = true;
     return this.spacedRepsService.fourthMigration().pipe(
       tap(() => Migrator.setVersion(4))
+    );
+  }
+
+  private switchToFifthMigration(): Observable<unknown> {
+    if (Migrator.getVersion() >= 5) {
+      return of(undefined);
+    }
+    this.migrationApplied = true;
+    return this.spacedRepsService.fifthMigration().pipe(
+      tap(() => Migrator.setVersion(5))
     );
   }
 }

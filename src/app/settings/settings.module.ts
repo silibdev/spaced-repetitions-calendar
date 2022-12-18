@@ -16,13 +16,16 @@ import { GeneralComponent } from './general/general.component';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { FieldsetModule } from 'primeng/fieldset';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { ColorsComponent } from './colors/colors.component';
+import { ColorPickerModule } from 'primeng/colorpicker';
 
 
 @NgModule({
   declarations: [
     RepetitionSchemasComponent,
     ImportExportComponent,
-    GeneralComponent
+    GeneralComponent,
+    ColorsComponent
   ],
   imports: [
     CommonModule,
@@ -37,7 +40,8 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
     MessageModule,
     InputNumberModule,
     FieldsetModule,
-    ConfirmDialogModule
+    ConfirmDialogModule,
+    ColorPickerModule
   ]
 })
 export class SettingsModule { }

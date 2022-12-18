@@ -47,6 +47,10 @@ export class AppComponent {
           routerLink: 'settings/rep-schemas'
         },
         {
+          label: 'Manage colors',
+          routerLink: 'settings/colors'
+        },
+        {
           label: 'Import/Export',
           routerLink: 'settings/import-export'
         }
