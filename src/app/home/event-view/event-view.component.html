@@ -51,14 +51,26 @@
     ></p-editor>
   </div>
 
+  <div class="col-6 sm:col-7 md:col-4 lg:col-3 xl:col-2 p-field">
+    <label>Category</label>
+    <p-dropdown
+      [options]="settingsService.categories"
+      [formControlName]="'category'"
+      appendTo="body"
+      [styleClass]="'w-full'"
+    ></p-dropdown>
+  </div>
+
   <div class="col-5 sm:col-3 md:col-2 p-field">
     <label>Date</label>
     <p-calendar [formControlName]="'start'" appendTo="body"></p-calendar>
   </div>
 
-  <div class="col-7 sm:col-6 md:col-5 lg:col-4 p-field">
+  <div class="col-6 md:col-5 lg:col-4 p-field">
     <label>Color</label>
-    <p-dropdown [options]="colorOpts" [formControl]="customColorControl" appendTo="body">
+    <p-dropdown [options]="colorOpts" [formControl]="customColorControl" appendTo="body"
+      [styleClass]="'w-8'"
+    >
       <ng-template let-item pTemplate="selectedItem">
         <div class="flex align-items-center">
           <span class="color inline-block" [style.background-color]="item.value"></span>
@@ -75,13 +87,14 @@
     <p-colorPicker class="pl-2" [formControlName]="'color'" appendTo="body"></p-colorPicker>
   </div>
 
-  <div class="col-6 md:col-4 p-field" *ngIf="!isEdit">
+  <div class="col-6 md:col-4 lg:col-3 p-field" *ngIf="!isEdit">
     <label>RepetitionSchema</label>
     <p-dropdown
       appendTo="body"
       [editable]="true"
       [options]="settingsService.repetitionSchemaOpts"
       [formControlName]="'repetitionSchema'"
+      [styleClass]="'w-full'"
     ></p-dropdown>
   </div>
 
