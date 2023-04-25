@@ -4,6 +4,7 @@ import { RepetitionSchemasComponent } from './repetition-schemas/repetition-sche
 import { ImportExportComponent } from './import-export/import-export.component';
 import { GeneralComponent } from './general/general.component';
 import { ColorsComponent } from './colors/colors.component';
+import { CategoriesComponent } from './categories/categories.component';
 
 const routes: Routes = [
   {
@@ -17,6 +18,9 @@ const routes: Routes = [
   },
   {
     path: 'colors', component: ColorsComponent
+  },
+  {
+    path: 'categories', component: CategoriesComponent
   }
 ];
 

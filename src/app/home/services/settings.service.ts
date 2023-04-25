@@ -230,4 +230,33 @@ export class SettingsService {
     this.opts.category.current = category;
     this.saveOpts();
   }
+
+  editCategory(index: number, editedCategory: Category) {
+    // index can be in range or +1 respect the size (if a new color)
+    if (index >= this.categories.length + 1) {
+      return false;
+    }
+    const category = this.categories[index];
+    if (!category) {
+      return this.saveNewCategory(editedCategory);
+    } else {
+      if (category.value !== editedCategory.value) {
+        // This should never happen
+        return false;
+      }
+      category.label = editedCategory.label;
+      this.saveOpts();
+      return true;
+    }
+  }
+
+  private saveNewCategory(category: Category) {
+    if (!this.categories.find(cat => cat.value === category.value)) {
+      this.opts.category.opts.push({...category});
+      this.saveOpts();
+      return true;
+    } else {
+      return false;
+    }
+  }
 }

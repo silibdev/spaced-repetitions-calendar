@@ -47,6 +47,10 @@ export class AppComponent {
           routerLink: 'settings/rep-schemas'
         },
         {
+          label: 'Manage categories',
+          routerLink: 'settings/categories'
+        },
+        {
           label: 'Manage colors',
           routerLink: 'settings/colors'
         },
