@@ -3,12 +3,13 @@ import { CalendarEvent, CalendarView } from 'angular-calendar';
 import { EventFormService } from '../services/event-form.service';
 import { SpacedRepService } from '../services/spaced-rep.service';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
-import { debounce, debounceTime, finalize, map, Observable, of, Subscription, switchMap, tap } from 'rxjs';
+import { debounceTime, finalize, map, Observable, Subscription, tap } from 'rxjs';
 import { SpacedRepModel } from '../models/spaced-rep.model';
 import { isSameDay, isSameMonth } from 'date-fns';
 import { ConfirmationService } from 'primeng/api';
 import { ExtendedCalendarView, SRCCalendarView } from '../calendar-header/calendar-header.component';
 import { SettingsService } from '../services/settings.service';
+import { Category } from '../models/settings.model';
 
 @UntilDestroy()
 @Component({
@@ -35,6 +36,8 @@ export class HomeComponent implements OnInit, OnDestroy {
   autoSaveSub?: Subscription;
   autoSavingState?: 'saving' | 'saved' | undefined;
   lastAutoSave?: Date;
+  categoryOpts: Category[];
+  initialCategory: string;
 
   constructor(
     public eventFormService: EventFormService,
@@ -43,7 +46,7 @@ export class HomeComponent implements OnInit, OnDestroy {
     private confirmationService: ConfirmationService
   ) {
     this.events$ = this.spacedRepService.getAll().pipe(
-      map( events => events.map( srModel => {
+      map(events => events.map(srModel => {
         const calendarEvent: CalendarEvent & SpacedRepModel = srModel;
         calendarEvent.cssClass = '';
         if (calendarEvent.boldTitle) {
@@ -55,6 +58,9 @@ export class HomeComponent implements OnInit, OnDestroy {
         return calendarEvent;
       }))
     );
+
+    this.categoryOpts = this.settingsService.categories;
+    this.initialCategory = this.settingsService.currentCategory;
   }
 
   ngOnInit(): void {
@@ -62,6 +68,10 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this.removeAutoSaving();
+  }
+
+  changeCategory(category: string) {
+    this.spacedRepService.changeCategory(category);
   }
 
   createSpacedRep(): void {
@@ -98,7 +108,7 @@ export class HomeComponent implements OnInit, OnDestroy {
           this.removeAutoSaving();
           this.autoSaveSub = this.eventFormService.onEditedSpacedRep().pipe(
             debounceTime(autoSavingTimer * 1000),
-            tap( () => this.saveEvent(true))
+            tap(() => this.saveEvent(true))
           ).subscribe();
         }
 
