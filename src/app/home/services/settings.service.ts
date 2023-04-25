@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Color, FullSettings, Options, RepetitionSchema } from '../models/settings.model';
+import { Category, Color, DEFAULT_CATEGORY, FullSettings, Options, RepetitionSchema } from '../models/settings.model';
 import { ApiService } from './api.service';
 import { Observable, Observer, of, tap } from 'rxjs';
 import { Migrator } from '../../migrator';
@@ -25,6 +25,14 @@ export class SettingsService {
 
   get colors(): Color[] {
     return this.opts.colors;
+  }
+
+  get categories(): Category[] {
+    return this.opts.category.opts;
+  }
+
+  get currentCategory(): string {
+    return this.opts.category.current
   }
 
   private defaultColors = [
@@ -54,6 +62,11 @@ export class SettingsService {
     },
   ];
 
+  private defaultCategories = [
+    {label: 'Default', value: DEFAULT_CATEGORY},
+    {label: 'Category 1', value: 'cod1'}
+  ]
+
   // This default are merged with the already present ones
   // it is a shallow merge so be careful in using nested objects!
   private opts: FullSettings = {
@@ -64,6 +77,10 @@ export class SettingsService {
     autoSavingTimer: 15,
     currentVersion: Migrator.LATEST_VERSION,
     colors: this.defaultColors,
+    category: {
+      opts: this.defaultCategories,
+      current: DEFAULT_CATEGORY
+    }
   };
 
   constructor(
@@ -164,6 +181,19 @@ export class SettingsService {
     });
   }
 
+  sixthMigration() {
+    if (this.opts.category) {
+      return of(undefined);
+    }
+    this.opts.category = {
+      opts: this.defaultCategories,
+      current: DEFAULT_CATEGORY
+    }
+    return new Observable<undefined>(subscriber => {
+      this.saveOpts(subscriber);
+    });
+  }
+
   editColor(index: number, editedColor: Color) {
     // index can be in range or +1 respect the size (if a new color)
     if (index >= this.colors.length + 1) {
@@ -193,6 +223,11 @@ export class SettingsService {
   deleteColor(index: number) {
     const color = this.colors[index].value;
     this.opts.colors = this.colors.filter(cl => cl.value !== color);
+    this.saveOpts();
+  }
+
+  changeCurrentCategory(category: string) {
+    this.opts.category.current = category;
     this.saveOpts();
   }
 }

@@ -454,4 +454,8 @@ export class SpacedRepService {
   fifthMigration() {
     return this.settingsService.fifthMigration();
   }
+
+  sixthMigration() {
+    return this.settingsService.sixthMigration();
+  }
 }
