@@ -36,8 +36,8 @@ export class HomeComponent implements OnInit, OnDestroy {
   autoSaveSub?: Subscription;
   autoSavingState?: 'saving' | 'saved' | undefined;
   lastAutoSave?: Date;
-  categoryOpts: Category[];
-  initialCategory: string;
+  categoryOpts: Category[] = [];
+  initialCategory: string = '';
 
   constructor(
     public eventFormService: EventFormService,
@@ -46,6 +46,10 @@ export class HomeComponent implements OnInit, OnDestroy {
     private confirmationService: ConfirmationService
   ) {
     this.events$ = this.spacedRepService.getAll().pipe(
+      tap(() => {
+        this.categoryOpts = this.settingsService.categories;
+        this.initialCategory = this.settingsService.currentCategory;
+      }),
       map(events => events.map(srModel => {
         const calendarEvent: CalendarEvent & SpacedRepModel = srModel;
         calendarEvent.cssClass = '';
@@ -59,8 +63,6 @@ export class HomeComponent implements OnInit, OnDestroy {
       }))
     );
 
-    this.categoryOpts = this.settingsService.categories;
-    this.initialCategory = this.settingsService.currentCategory;
   }
 
   ngOnInit(): void {
