@@ -3,6 +3,7 @@ import { AbstractControl, FormArray, FormBuilder, FormGroup, Validators } from '
 import { CreateSpacedReps, SpacedRepModel } from '../models/spaced-rep.model';
 import { SettingsService } from './settings.service';
 import { filter, Observable } from 'rxjs';
+import { DEFAULT_CATEGORY } from '../models/settings.model';
 
 @Injectable({
   providedIn: 'root'
@@ -28,7 +29,8 @@ export class EventFormService {
       done: [],
       repetitionNumber: [],
       boldTitle: [],
-      highlightTitle: []
+      highlightTitle: [],
+      category: [undefined, Validators.required]
     })
     this.reset();
   }
@@ -55,7 +57,8 @@ export class EventFormService {
       shortDescription: '',
       repetitionNumber: null,
       boldTitle: false,
-      highlightTitle: false
+      highlightTitle: false,
+      category: this.settingsService.currentCategory
     });
     this.loaded = false;
   }
@@ -74,7 +77,8 @@ export class EventFormService {
         boldTitle: value.boldTitle,
         highlightTitle: value.highlightTitle,
         id: '',
-        allDay: true
+        allDay: true,
+        category: value.category
       },
       repetitionSchema: value.repetitionSchema,
       startDate: value.start
@@ -99,6 +103,7 @@ export class EventFormService {
       repetitionNumber: value.repetitionNumber,
       boldTitle: value.boldTitle,
       highlightTitle: value.highlightTitle,
+      category: value.category
     }
   }
 
@@ -138,7 +143,8 @@ export class EventFormService {
         done: event.done,
         repetitionNumber: event.repetitionNumber,
         boldTitle: event.boldTitle,
-        highlightTitle: event.highlightTitle
+        highlightTitle: event.highlightTitle,
+        category: event.category || DEFAULT_CATEGORY
       });
       this.loaded = true;
     }

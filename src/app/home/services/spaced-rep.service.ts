@@ -7,6 +7,7 @@ import {
 } from '../models/spaced-rep.model';
 import {
   BehaviorSubject,
+  combineLatestWith,
   defaultIfEmpty,
   first,
   forkJoin,
@@ -14,6 +15,7 @@ import {
   mapTo,
   Observable,
   of,
+  ReplaySubject,
   switchMap,
   tap,
   throwError,
@@ -28,6 +30,7 @@ import { SettingsService } from './settings.service';
 import { ApiService } from './api.service';
 import { Migrator } from '../../migrator';
 import * as LZUTF8 from 'lzutf8';
+import { DEFAULT_CATEGORY } from '../models/settings.model';
 
 
 @Injectable({
@@ -37,6 +40,7 @@ export class SpacedRepService {
   private spacedReps = new BehaviorSubject<SpecificSpacedRepModel[]>([]);
   private readonly spacedReps$: Observable<SpecificSpacedRepModel[]>;
   private remoteSaveTimer?: number;
+  private category = new ReplaySubject<string>(1);
 
   private get db(): SpecificSpacedRepModel[] {
     return this.spacedReps.value;
@@ -73,6 +77,7 @@ export class SpacedRepService {
   sync(): Observable<unknown> {
     return this.apiService.sync().pipe(
       switchMap(() => this.settingsService.loadOpts()),
+      tap(() => this.category.next(this.settingsService.currentCategory)),
       switchMap(() => this.loadDb()
       )
     );
@@ -81,7 +86,7 @@ export class SpacedRepService {
   syncLocal(): Observable<unknown> {
     return this.settingsService.loadOpts().pipe(
       switchMap(() => this.loadDb(true)),
-      switchMap(() => this.getAll().pipe(first())),
+      switchMap(() => this.getAll(true).pipe(first())),
       switchMap(events => forkJoin(
         events
           .filter(e => !e.linkedSpacedRepId)
@@ -115,7 +120,7 @@ export class SpacedRepService {
       withLatestFrom(this.spacedReps$),
       switchMap(() => new Migrator(this).migrate()()),
       tap(migrationApplied => migrationApplied && this.settingsService.saveOpts()),
-      switchMap(() => this.getAll().pipe(first())),
+      switchMap(() => this.getAll(true).pipe(first())),
       switchMap(db => forkJoin(
         db.map(e => this.descriptionService.get(e.linkedSpacedRepId || e.id))
       ).pipe(defaultIfEmpty(undefined)))
@@ -174,16 +179,34 @@ export class SpacedRepService {
     );
   }
 
-  getAll(): Observable<SpacedRepModel[]> {
+  changeCategory(category: string) {
+    this.settingsService.changeCurrentCategory(category);
+    this.category.next(category);
+  }
+
+  getAll(noCategoryFilter?: boolean): Observable<SpacedRepModel[]> {
     return this.spacedReps$.pipe(
-      switchMap(events => forkJoin(
-        events.map(e => this.eventDetailService.get(e.linkedSpacedRepId || e.id).pipe(
-          map(details => ({
-            ...details,
-            ...e
-          }))
-        ))
-      ).pipe(defaultIfEmpty([])))
+      combineLatestWith(this.category),
+      switchMap(([events, category]) => forkJoin(
+          events
+            .map(e => this.eventDetailService.get(e.linkedSpacedRepId || e.id).pipe(
+              map(details => ({
+                ...details,
+                ...e
+              }))
+            ))
+        ).pipe(defaultIfEmpty([]),
+          map(spacedReps =>
+            spacedReps.filter((e: SpacedRepModel) => {
+              if (noCategoryFilter) {
+                return true;
+              }
+              if (!e.category && category === DEFAULT_CATEGORY) {
+                return true;
+              }
+              return e.category === category;
+            })))
+      )
     );
   }
 
@@ -393,7 +416,8 @@ export class SpacedRepService {
       boldTitle: sr.boldTitle,
       highlightTitle: sr.highlightTitle,
       color: sr.color,
-      title: sr.title
+      title: sr.title,
+      category: sr.category
     };
     return {masterId, common};
   }
@@ -418,7 +442,7 @@ export class SpacedRepService {
 
   fourthMigration(): Observable<unknown> {
     const today = new Date();
-    return this.getAll().pipe(
+    return this.getAll(true).pipe(
       first(),
       switchMap(spacedReps => {
         const alreadyProcessed = new Set<string>();
@@ -453,5 +477,9 @@ export class SpacedRepService {
 
   fifthMigration() {
     return this.settingsService.fifthMigration();
+  }
+
+  sixthMigration() {
+    return this.settingsService.sixthMigration();
   }
 }

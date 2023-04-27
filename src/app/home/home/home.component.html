@@ -1,9 +1,27 @@
 <div class="mb-8">
 
-  <app-search
-    [class.hidden]="view === SRCCalendarView.List"
-    (eventClicked)="editEvent($event)"
-  ></app-search>
+  <div class="grid lg:justify-content-between">
+    <div class="col-12 sm:col-8 md:col-5 lg:col-4 xl:col-3">
+      <div class="field grid mb-0">
+        <label class="col-fixed">Category</label>
+        <p-dropdown
+          [options]="categoryOpts"
+          [styleClass]="'w-full'"
+          class="col"
+          [ngModel]="initialCategory"
+          (onChange)="changeCategory($event.value)"
+        ></p-dropdown>
+      </div>
+    </div>
+    <div class="col-12 md:col-7 lg:col-6 xl:col-4">
+      <app-search
+        [class.hidden]="view === SRCCalendarView.List"
+        (eventClicked)="editEvent($event)"
+      ></app-search>
+    </div>
+  </div>
+
+
 
   <app-calendar-header [(view)]="view" [(viewDate)]="viewDate">
   </app-calendar-header>

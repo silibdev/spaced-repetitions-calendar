@@ -18,6 +18,7 @@ import { FieldsetModule } from 'primeng/fieldset';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ColorsComponent } from './colors/colors.component';
 import { ColorPickerModule } from 'primeng/colorpicker';
+import { CategoriesComponent } from './categories/categories.component';
 
 
 @NgModule({
@@ -25,7 +26,8 @@ import { ColorPickerModule } from 'primeng/colorpicker';
     RepetitionSchemasComponent,
     ImportExportComponent,
     GeneralComponent,
-    ColorsComponent
+    ColorsComponent,
+    CategoriesComponent
   ],
   imports: [
     CommonModule,

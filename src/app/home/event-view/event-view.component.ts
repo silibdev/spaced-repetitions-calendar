@@ -45,7 +45,7 @@ export class EventViewComponent implements OnInit, BlockableUI {
     this.colorOpts = [
       ...this.settingsService.colors,
       this.customColor
-    ]
+    ];
   }
 
   ngOnInit(): void {
