@@ -77,9 +77,7 @@ export class SpacedRepService {
   sync(): Observable<unknown> {
     return this.apiService.sync().pipe(
       switchMap(() => this.settingsService.loadOpts()),
-      tap(() => this.category.next(this.settingsService.currentCategory)),
-      switchMap(() => this.loadDb()
-      )
+      switchMap(() => this.loadDb())
     );
   }
 
@@ -119,6 +117,7 @@ export class SpacedRepService {
       }),
       withLatestFrom(this.spacedReps$),
       switchMap(() => new Migrator(this).migrate()()),
+      tap(() => this.category.next(this.settingsService.currentCategory)),
       tap(migrationApplied => migrationApplied && this.settingsService.saveOpts()),
       switchMap(() => this.getAll(true).pipe(first())),
       switchMap(db => forkJoin(
