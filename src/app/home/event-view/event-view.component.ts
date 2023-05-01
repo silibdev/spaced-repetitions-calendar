@@ -21,7 +21,7 @@ export class EventViewComponent implements OnInit, BlockableUI {
 
   private customColor = {
     label: 'Custom',
-    value: '#ffffff'
+    value: 'custom'
   };
 
   colorOpts: Color[];
@@ -58,14 +58,19 @@ export class EventViewComponent implements OnInit, BlockableUI {
         untilDestroyed(this),
         distinctUntilChanged(),
         startWith(colorControl.value),
-        tap(color => {
+        tap((color: string) => {
           const colorOpt = this.colorOpts.find( c => c.value === color);
           if (colorOpt && colorOpt.label !== 'Custom') {
             this.customColorControl.setValue(colorOpt.value);
             this.eventFormService.disableColorControl();
           } else {
-            this.customColor.value = color;
-            this.customColorControl.setValue(color);
+            let randomColor: string | undefined;
+            while (!randomColor || this.colorOpts.find(c => c.value === randomColor) ) {
+              randomColor = '#' + Math.floor(Math.random()*16777215).toString(16);
+            }
+            const colorToSet = color === 'custom' ? randomColor : color;
+            this.customColor.value = colorToSet;
+            this.customColorControl.setValue(colorToSet);
             this.eventFormService.enableColorControl();
           }
         })
