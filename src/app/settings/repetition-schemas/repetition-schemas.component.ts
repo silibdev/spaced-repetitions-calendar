@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { FormArray, FormBuilder } from '@angular/forms';
+import { UntypedFormArray, UntypedFormBuilder } from '@angular/forms';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { SettingsService } from '../../home/services/settings.service';
 
@@ -11,12 +11,12 @@ import { SettingsService } from '../../home/services/settings.service';
 })
 export class RepetitionSchemasComponent implements OnInit {
 
-  repSchemasForm: FormArray;
+  repSchemasForm: UntypedFormArray;
   addingNew = false;
 
   constructor(
     private settingsService: SettingsService,
-    private formBuilder: FormBuilder,
+    private formBuilder: UntypedFormBuilder,
     private messageService: MessageService,
     private confirmationService: ConfirmationService
   ) {

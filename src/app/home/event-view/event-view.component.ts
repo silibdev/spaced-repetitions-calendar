@@ -2,7 +2,7 @@ import { Component, ElementRef, Input, OnInit, ViewChild } from '@angular/core';
 import { EventFormService } from '../services/event-form.service';
 import { BlockableUI } from 'primeng/api';
 import { SpacedRepModel } from '../models/spaced-rep.model';
-import { FormControl } from '@angular/forms';
+import { UntypedFormControl } from '@angular/forms';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { distinctUntilChanged, Observable, startWith, tap } from 'rxjs';
 import { SettingsService } from '../services/settings.service';
@@ -26,7 +26,7 @@ export class EventViewComponent implements OnInit, BlockableUI {
 
   colorOpts: Color[];
 
-  customColorControl: FormControl;
+  customColorControl: UntypedFormControl;
 
   titleOptions$?: Observable<{ boldTitle?: boolean, highlightTitle?: boolean}>;
 
@@ -41,7 +41,7 @@ export class EventViewComponent implements OnInit, BlockableUI {
     public eventFormService: EventFormService,
     public settingsService: SettingsService
   ) {
-    this.customColorControl = new FormControl();
+    this.customColorControl = new UntypedFormControl();
     this.colorOpts = [
       ...this.settingsService.colors,
       this.customColor
