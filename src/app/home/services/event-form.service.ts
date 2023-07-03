@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { AbstractControl, FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { AbstractControl, UntypedFormArray, UntypedFormBuilder, UntypedFormGroup, Validators } from '@angular/forms';
 import { CreateSpacedReps, SpacedRepModel } from '../models/spaced-rep.model';
 import { SettingsService } from './settings.service';
 import { filter, Observable } from 'rxjs';
@@ -9,11 +9,11 @@ import { DEFAULT_CATEGORY } from '../models/settings.model';
   providedIn: 'root'
 })
 export class EventFormService {
-  form: FormGroup;
+  form: UntypedFormGroup;
   private loaded = false;
 
   constructor(
-    fb: FormBuilder,
+    fb: UntypedFormBuilder,
     private settingsService: SettingsService,
   ) {
     this.form = fb.group({
@@ -118,11 +118,11 @@ export class EventFormService {
 
   private markAllControlsAsDirty(abstractControl: AbstractControl): void {
     abstractControl.markAsDirty({onlySelf: true});
-    if (abstractControl instanceof FormGroup) {
-      Object.values((abstractControl as FormGroup).controls)
+    if (abstractControl instanceof UntypedFormGroup) {
+      Object.values((abstractControl as UntypedFormGroup).controls)
         .forEach(control => this.markAllControlsAsDirty(control))
-    } else if (abstractControl instanceof FormArray) {
-      (abstractControl as FormArray).controls
+    } else if (abstractControl instanceof UntypedFormArray) {
+      (abstractControl as UntypedFormArray).controls
         .forEach(control => this.markAllControlsAsDirty(control))
     }
   }

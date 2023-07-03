@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { FormArray, FormBuilder } from '@angular/forms';
+import { UntypedFormArray, UntypedFormBuilder } from '@angular/forms';
 import { SettingsService } from '../../home/services/settings.service';
 import { MessageService } from 'primeng/api';
 import { Category } from '../../home/models/settings.model';
@@ -12,12 +12,12 @@ import { Category } from '../../home/models/settings.model';
 export class CategoriesComponent implements OnInit {
 
 //Array of group label-value
-  categoriesForm: FormArray;
+  categoriesForm: UntypedFormArray;
   addingNew = false;
 
   constructor(
     private settingsService: SettingsService,
-    private formBuilder: FormBuilder,
+    private formBuilder: UntypedFormBuilder,
     private messageService: MessageService
   ) {
     this.categoriesForm = formBuilder.array(this.settingsService.categories.map(category =>

@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { FormArray, FormBuilder } from '@angular/forms';
+import { UntypedFormArray, UntypedFormBuilder } from '@angular/forms';
 import { SettingsService } from '../../home/services/settings.service';
 import { ConfirmationService, MessageService } from 'primeng/api';
 
@@ -12,12 +12,12 @@ import { ConfirmationService, MessageService } from 'primeng/api';
 export class ColorsComponent implements OnInit {
 
   //Array of group label-value
-  colorsForm: FormArray;
+  colorsForm: UntypedFormArray;
   addingNew = false;
 
   constructor(
     private settingsService: SettingsService,
-    private formBuilder: FormBuilder,
+    private formBuilder: UntypedFormBuilder,
     private messageService: MessageService,
     private confirmationService: ConfirmationService
   ) {
