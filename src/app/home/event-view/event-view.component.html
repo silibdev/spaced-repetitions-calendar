@@ -51,6 +51,21 @@
     ></p-editor>
   </div>
 
+  <div class="col-12">
+    <p-panel header="Photos" [toggleable]="true">
+      <div>
+        <p-fileUpload #fileUpload mode="basic" chooseLabel="Upload" [multiple]="true" accept="image/*" (onSelect)="photosSelected($event, fileUpload)"></p-fileUpload>
+      </div>
+      <div class="mb-2" *ngIf="$any(eventFormService.form.get('photos')?.value) as photos">
+        <div *ngFor="let photo of photos" class="grid">
+          <img src="{{photo.thumbnail}}" class="col-1">
+          <div class="col">{{photo.name}}</div>
+          <div class="col-3">Actions</div>
+        </div>
+      </div>
+    </p-panel>
+  </div>
+
   <div class="col-6 sm:col-7 md:col-4 lg:col-3 xl:col-2 p-field">
     <label>Category</label>
     <p-dropdown

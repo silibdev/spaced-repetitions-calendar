@@ -1,12 +1,28 @@
 import { Component, ElementRef, Input, OnInit, ViewChild } from '@angular/core';
 import { EventFormService } from '../services/event-form.service';
 import { BlockableUI } from 'primeng/api';
-import { SpacedRepModel } from '../models/spaced-rep.model';
+import { Photo, SpacedRepModel } from '../models/spaced-rep.model';
 import { UntypedFormControl } from '@angular/forms';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { distinctUntilChanged, filter, Observable, startWith, tap } from 'rxjs';
 import { SettingsService } from '../services/settings.service';
 import { Color } from '../models/settings.model';
+import { FileUpload } from 'primeng/fileupload';
+
+interface FileSelectEvent {
+  /**
+   * Browser event.
+   */
+  originalEvent: Event;
+  /**
+   * Uploaded files.
+   */
+  files: File[];
+  /**
+   * All files to be uploaded.
+   */
+  currentFiles: File[];
+}
 
 @UntilDestroy()
 @Component({
@@ -107,5 +123,19 @@ export class EventViewComponent implements OnInit, BlockableUI {
 
   getBlockableElement(): HTMLElement {
     return this.content?.nativeElement;
+  }
+
+  photosSelected(event: FileSelectEvent, uploader: FileUpload) {
+    const photos: Photo[] = []
+    event.currentFiles.forEach( f => {
+      const url = URL.createObjectURL(f);
+      photos.push({
+        id: '',
+        name: f.name,
+        thumbnail: url
+      });
+    });
+    this.eventFormService.addPhotos(photos);
+    uploader.clear();
   }
 }

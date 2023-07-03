@@ -3,6 +3,12 @@ export interface EventColor {
   secondary: string;
 }
 
+export interface Photo {
+  name: string;
+  id: string;
+  thumbnail: string;
+}
+
 export interface SpacedRepModel {
   allDay?: boolean;
   boldTitle?: boolean;
@@ -17,9 +23,10 @@ export interface SpacedRepModel {
   start: Date;
   title: string;
   category: string;
+  photos?: Photo[];
 }
 
-export type CommonSpacedRepModel = Pick<SpacedRepModel, 'id' | 'allDay' | 'title' | 'color' | 'shortDescription' | 'boldTitle' | 'highlightTitle' | 'category'>;
+export type CommonSpacedRepModel = Pick<SpacedRepModel, 'id' | 'allDay' | 'title' | 'color' | 'shortDescription' | 'boldTitle' | 'highlightTitle' | 'category' | 'photos'>;
 
 export type SpecificSpacedRepModel = Pick<SpacedRepModel, 'id' | 'repetitionNumber' | 'start' | 'linkedSpacedRepId' | 'done'>
 
