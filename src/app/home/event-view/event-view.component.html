@@ -56,11 +56,37 @@
       <div>
         <p-fileUpload #fileUpload mode="basic" chooseLabel="Upload" [multiple]="true" accept="image/*" (onSelect)="photosSelected($event, fileUpload)"></p-fileUpload>
       </div>
-      <div class="mb-2" *ngIf="$any(eventFormService.form.get('photos')?.value) as photos">
-        <div *ngFor="let photo of photos" class="grid">
-          <img src="{{photo.thumbnail}}" class="col-1">
-          <div class="col">{{photo.name}}</div>
-          <div class="col-3">Actions</div>
+      <div class="mb-2 grid gap-2" *ngIf="$any(eventFormService.form.get('photos')?.value) as photos">
+        <div *ngFor="let photo of photos" class="grid gap-1 col md:col-6 xl:col-4">
+          <img src="{{photo.thumbnail}}" class="col-1 p-fluid">
+          <div class="col"><input class="w-full" pInputText></div>
+          <div class="col">
+            <span class="p-buttonset">
+              <button
+                pButton
+                icon="pi pi-pencil"
+                pTooltip="Rename"
+                [tooltipPosition]="'top'"
+              ></button>
+              <button
+                *ngIf="!photo.toDelete"
+                pButton
+                class="p-button-danger"
+                icon="pi pi-trash"
+                (click)="deletePhoto(photo)"
+                pTooltip="Delete"
+                [tooltipPosition]="'top'"
+              ></button>
+              <button
+                *ngIf="photo.toDelete"
+                pButton
+                icon="pi pi-step-backward"
+                (click)="restorePhoto(photo)"
+                pTooltip="Restore"
+                [tooltipPosition]="'top'"
+              ></button>
+            </span>
+          </div>
         </div>
       </div>
     </p-panel>

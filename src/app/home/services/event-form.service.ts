@@ -20,6 +20,9 @@ import { DEFAULT_CATEGORY } from '../models/settings.model';
 export class EventFormService {
   form: UntypedFormGroup;
   private loaded = false;
+  private get photosControl(): FormArray {
+    return this.form.get('photos') as FormArray;
+  }
 
   constructor(
     fb: UntypedFormBuilder,
@@ -173,9 +176,8 @@ export class EventFormService {
   }
 
   addPhotos(photos: Photo[]) {
-    const photosControl = this.form.get('photos') as FormArray;
     photos.forEach( p => {
-      photosControl.push(new FormGroup({
+      this.photosControl.push(new FormGroup({
         id: new FormControl(p.id),
         name: new FormControl(p.name),
         thumbnail: new FormControl(p.thumbnail)
@@ -187,5 +189,12 @@ export class EventFormService {
     return this.form.valueChanges.pipe(
       filter(() => this.loaded)
     );
+  }
+
+  removePhoto(photo: Photo) {
+    const index = (this.photosControl.value as Array<Photo>).findIndex(p => p === photo);
+    if (index > -1) {
+      this.photosControl.removeAt(index);
+    }
   }
 }

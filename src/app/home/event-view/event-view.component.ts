@@ -24,6 +24,8 @@ interface FileSelectEvent {
   currentFiles: File[];
 }
 
+type PhotoExt = Photo & {toDelete?: boolean};
+
 @UntilDestroy()
 @Component({
   selector: 'app-event-view',
@@ -137,5 +139,17 @@ export class EventViewComponent implements OnInit, BlockableUI {
     });
     this.eventFormService.addPhotos(photos);
     uploader.clear();
+  }
+
+  deletePhoto(photo: PhotoExt) {
+    if (photo.id) {
+      photo.toDelete = true;
+      return;
+    }
+    this.eventFormService.removePhoto(photo);
+  }
+
+  restorePhoto(photo: PhotoExt) {
+    photo.toDelete = false;
   }
 }

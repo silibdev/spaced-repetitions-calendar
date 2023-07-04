@@ -31,6 +31,7 @@ import { TableModule } from 'primeng/table';
 import { LoginComponent } from './login/login.component';
 import { PanelModule } from 'primeng/panel';
 import { FileUploadModule } from 'primeng/fileupload';
+import { TooltipModule } from 'primeng/tooltip';
 
 
 @NgModule({
@@ -70,7 +71,8 @@ import { FileUploadModule } from 'primeng/fileupload';
     AutoCompleteModule,
     TableModule,
     PanelModule,
-    FileUploadModule
+    FileUploadModule,
+    TooltipModule
   ],
   providers: [
     TitleFormatterProvider
