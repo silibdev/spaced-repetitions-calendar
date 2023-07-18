@@ -176,5 +176,10 @@ export class HomeComponent implements OnInit, OnDestroy {
         }
       })
     ).subscribe();
+
+    if (!autoSaving) {
+      const photos = this.eventFormService.getPhotos();
+      this.spacedRepService.savePhotos(event, photos).subscribe();
+    }
   }
 }

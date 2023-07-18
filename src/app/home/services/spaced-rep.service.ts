@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import {
   CommonSpacedRepModel,
   CreateSpacedReps,
+  Photo,
   SpacedRepModel,
   SpecificSpacedRepModel
 } from '../models/spaced-rep.model';
@@ -480,5 +481,10 @@ export class SpacedRepService {
 
   sixthMigration() {
     return this.settingsService.sixthMigration();
+  }
+
+  savePhotos(event: SpacedRepModel, photos: Photo[]) {
+    const {masterId} = this.extractCommonModel(event);
+    return this.apiService.savePhotos(masterId, photos);
   }
 }

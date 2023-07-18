@@ -5,6 +5,7 @@ import {
   catchError,
   defaultIfEmpty,
   forkJoin,
+  from,
   map,
   MonoTypeOperatorFunction,
   Observable,
@@ -17,7 +18,7 @@ import {
 } from 'rxjs';
 import { FullSettings } from '../models/settings.model';
 import { ERROR_ANONYMOUS } from './auth.interceptor';
-import { CommonSpacedRepModel } from '../models/spaced-rep.model';
+import { CommonSpacedRepModel, Photo } from '../models/spaced-rep.model';
 import { AppStorage } from '../../app.storage';
 
 const ApiUrls = {
@@ -26,7 +27,8 @@ const ApiUrls = {
   deleteAllData: '/api/data',
   description: (id: string) => `/api/event-descriptions?id=${id}`,
   detail: (id: string) => `/api/event-details?id=${id}`,
-  lastUpdates: '/api/last-updates'
+  lastUpdates: '/api/last-updates',
+  photos: (id: string) => `/api/photos?id=${id}`
 }
 
 const OPTS_DB_NAME = 'src-opts-db';
@@ -421,5 +423,32 @@ export class ApiService {
 
   deleteAllData() {
     return this.httpClient.delete(ApiUrls.deleteAllData);
+  }
+
+  savePhotos(masterId: string, photos: Photo[]) {
+    const data = new FormData();
+    data.set('id', masterId);
+    photos.filter(p => p.id).forEach(p =>
+      data.append('photoMetadata', JSON.stringify({id: p.id, name: p.name}))
+    );
+
+    const photoBlobs = photos
+      .filter(p => !p.id)
+      .map(p =>
+        from(fetch(p.thumbnail).then(r => r.blob())
+          .then(blob => ({name: p.name, blob})
+          ))
+      );
+
+    return forkJoin([...photoBlobs]).pipe(
+      defaultIfEmpty([]),
+      switchMap(blobs => {
+        blobs.forEach(b =>
+          data.append('newPhotos', b.blob, b.name)
+        );
+
+        return this.httpClient.post(ApiUrls.photos(masterId), data);
+      })
+    );
   }
 }

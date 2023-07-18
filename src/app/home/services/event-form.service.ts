@@ -3,7 +3,6 @@ import {
   AbstractControl,
   FormArray,
   FormControl,
-  FormGroup,
   UntypedFormArray,
   UntypedFormBuilder,
   UntypedFormGroup,
@@ -177,11 +176,7 @@ export class EventFormService {
 
   addPhotos(photos: Photo[]) {
     photos.forEach( p => {
-      this.photosControl.push(new FormGroup({
-        id: new FormControl(p.id),
-        name: new FormControl(p.name),
-        thumbnail: new FormControl(p.thumbnail)
-      }));
+      this.photosControl.push(new FormControl(p));
     });
   }
 
@@ -196,5 +191,13 @@ export class EventFormService {
     if (index > -1) {
       this.photosControl.removeAt(index);
     }
+  }
+
+  getPhotos(): Photo[] {
+    return (this.photosControl.value as Array<Photo>).map(p => ({
+      id: p.id,
+      thumbnail: p.id ? '' : p.thumbnail,
+      name: p.name
+    }))
   }
 }

@@ -24,7 +24,7 @@ interface FileSelectEvent {
   currentFiles: File[];
 }
 
-type PhotoExt = Photo & {toDelete?: boolean};
+type PhotoExt = Photo & {toDelete?: boolean, editing?: boolean, oldName?: string};
 
 @UntilDestroy()
 @Component({
@@ -151,5 +151,20 @@ export class EventViewComponent implements OnInit, BlockableUI {
 
   restorePhoto(photo: PhotoExt) {
     photo.toDelete = false;
+  }
+
+  renamePhoto(photo: PhotoExt) {
+    photo.oldName = photo.name;
+    photo.editing = true;
+  }
+
+  confirmRenamePhoto(photo: PhotoExt) {
+    photo.oldName = undefined;
+    photo.editing = false;
+  }
+
+  cancelRenamePhoto(photo: PhotoExt) {
+    photo.name = photo.oldName || '';
+    photo.editing = false;
   }
 }
