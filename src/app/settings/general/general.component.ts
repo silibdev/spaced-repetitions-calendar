@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup } from '@angular/forms';
+import { UntypedFormBuilder, UntypedFormGroup } from '@angular/forms';
 import { MessageService } from 'primeng/api';
 import { distinctUntilChanged, map, Observable, startWith } from 'rxjs';
 import { SettingsService } from '../../home/services/settings.service';
@@ -13,13 +13,13 @@ import { SettingsService } from '../../home/services/settings.service';
 })
 export class GeneralComponent implements OnInit {
 
-  generalForm: FormGroup;
+  generalForm: UntypedFormGroup;
   autoSavingMinutes$?: Observable<string>;
 
   constructor(
     private settingsService: SettingsService,
     private messageService: MessageService,
-    fb: FormBuilder
+    fb: UntypedFormBuilder
   ) {
     const {autoSavingTimer} = this.settingsService.generalOptions;
     this.generalForm = fb.group({

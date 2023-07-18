@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { AuthService } from '../services/auth.service';
 import { Router } from '@angular/router';
 import { SpacedRepService } from '../services/spaced-rep.service';
+import { Observable, of } from 'rxjs';
 
 @Component({
   selector: 'app-login',
@@ -9,7 +10,7 @@ import { SpacedRepService } from '../services/spaced-rep.service';
   styleUrls: ['./login.component.scss']
 })
 export class LoginComponent implements OnInit {
-  somethingIsPresentLocally = false;
+  somethingIsPresentLocally$: Observable<boolean> = of(false);
 
   constructor(
     private authService: AuthService,
@@ -22,7 +23,7 @@ export class LoginComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.somethingIsPresentLocally = this.spacedRepService.isSomethingPresent();
+    this.somethingIsPresentLocally$ = this.spacedRepService.isSomethingPresent();
   }
 
   login(): void {

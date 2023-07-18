@@ -1,5 +1,6 @@
 import { first, from, map, mergeMap, Observable, of, reduce, switchMap, tap } from 'rxjs';
 import { SpacedRepService } from './home/services/spaced-rep.service';
+import { AppStorage } from './app.storage';
 
 const CURRENT_VERSION_KEY = 'src-cv-k';
 
@@ -33,6 +34,7 @@ export class Migrator {
       switchMap(() => this.switchToFourthMigration()),
       switchMap(() => this.switchToFifthMigration()),
       switchMap(() => this.switchToSixthMigration()),
+      switchMap(() => this.switchToSeventhMigration()),
       map(() => this.migrationApplied)
     )
   }
@@ -141,6 +143,16 @@ export class Migrator {
     this.migrationApplied = true;
     return this.spacedRepsService.sixthMigration().pipe(
       tap(() => Migrator.setVersion(6))
+    );
+  }
+
+  private switchToSeventhMigration() {
+    if (Migrator.getVersion() >= 7) {
+      return of(undefined);
+    }
+    this.migrationApplied = true;
+    return AppStorage.seventhMigration().pipe(
+      tap(() => Migrator.setVersion(7))
     );
   }
 }

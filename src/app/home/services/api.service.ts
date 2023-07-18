@@ -18,6 +18,7 @@ import {
 import { FullSettings } from '../models/settings.model';
 import { ERROR_ANONYMOUS } from './auth.interceptor';
 import { CommonSpacedRepModel } from '../models/spaced-rep.model';
+import { AppStorage } from '../../app.storage';
 
 const ApiUrls = {
   settings: '/api/settings',
@@ -39,7 +40,7 @@ const DETAIL_DB_NAME = (id: string) => DETAIL_DB_NAME_PREFIX + id;
 
 export const LAST_UPDATE_DB_NAME = 'src-last-update-db';
 
-const DB_NAME = 'src-db';
+export const DB_NAME = 'src-db';
 
 interface Extra {
   cacheKey: string,
@@ -71,7 +72,10 @@ function isAfter(dateA?: string, dateB?: string): boolean {
 export class ApiService {
   private outOfSync$ = new BehaviorSubject(false);
 
-  private MAP_DATA<T extends { data: string, updatedAt?: string }, R>(cacheKey: string, extra: { dontParse?: boolean, lastUpdateOp: LastUpdateOp }): OperatorFunction<T, R> {
+  private MAP_DATA<T extends { data: string, updatedAt?: string }, R>(cacheKey: string, extra: {
+    dontParse?: boolean,
+    lastUpdateOp: LastUpdateOp
+  }): OperatorFunction<T, R> {
     return (obs) => obs.pipe(
       map(({data, updatedAt}) => {
         if (updatedAt) {
@@ -156,56 +160,67 @@ export class ApiService {
     }));
   }
 
-  private getWithCache<R>(url: string, extra: Extra): Observable<R> {
-    const cachedItem = extra.cacheKey && localStorage.getItem(extra.cacheKey);
-    if (!extra.noCache && cachedItem || cachedItem === '') {
-      return extra.dontParse ? of(cachedItem) : of(JSON.parse(cachedItem));
-    }
-    const cachedRequest = this.requestOptimizer.get(url);
-    if (cachedRequest) {
-      return cachedRequest;
-    }
-    const request = this.httpClient.get(url).pipe(
-      tap(({data}: any) => localStorage.setItem(extra.cacheKey, data)),
-      this.MAP_DATA<any, R>(extra.cacheKey, {dontParse: extra.dontParse, lastUpdateOp: 'U'}),
-      tap(() => this.requestOptimizer.delete(url)),
-      shareReplay()
-    );
-    this.requestOptimizer.set(url, request)
-    return request;
-  }
-
-  private postWithCache<R>(url: string, data: R, extra: Extra): Observable<R> {
-    const itemToCache = extra.dontParse ? data as unknown as string : JSON.stringify(data);
-    localStorage.setItem(extra.cacheKey, itemToCache);
-    const lastUpdatedAt = this.lastUpdateMap[extra.cacheKey];
-    const request = this.httpClient.post(url, {data: itemToCache, lastUpdatedAt})
-      .pipe(
-        this.MAP_DATA<any, R>(extra.cacheKey, {dontParse: extra.dontParse, lastUpdateOp: 'U'}),
-        ApiService.HANDLE_ANONYMOUS(data)
-      );
-    return request.pipe(
-      catchError(() => {
-        this.addPendingChanges(url, request);
-        return of(data);
+  private getWithCache<R>(url: string, {cacheKey, noCache, dontParse}: Extra): Observable<R> {
+    return AppStorage.getItem(cacheKey).pipe(
+      switchMap(cachedItem => {
+        if (!noCache && cachedItem || cachedItem === '') {
+          return dontParse ? of(cachedItem) : of(JSON.parse(cachedItem));
+        }
+        const cachedRequest = this.requestOptimizer.get(url);
+        if (cachedRequest) {
+          return cachedRequest;
+        }
+        const request = this.httpClient.get(url).pipe(
+          switchMap(({data}: any) => AppStorage.setItem(cacheKey, data).pipe(
+            map(() => ({data})))
+          ),
+          this.MAP_DATA<any, R>(cacheKey, {dontParse: dontParse, lastUpdateOp: 'U'}),
+          tap(() => this.requestOptimizer.delete(url)),
+          shareReplay()
+        );
+        this.requestOptimizer.set(url, request)
+        return request;
       })
     );
   }
 
-  private deleteWithCache<R>(url: string, extra: Extra): Observable<R> {
-    const cachedItem = extra.cacheKey && localStorage.getItem(extra.cacheKey);
-    const data = extra.dontParse ? cachedItem : JSON.parse(cachedItem || 'null');
-    localStorage.removeItem(extra.cacheKey);
-    const lastUpdatedAt = this.lastUpdateMap[extra.cacheKey];
-    const request = this.httpClient.delete(url, {body: {lastUpdatedAt}})
-      .pipe(
-        this.MAP_DATA<any, R>(extra.cacheKey, {dontParse: extra.dontParse, lastUpdateOp: 'R'}),
-        ApiService.HANDLE_ANONYMOUS(data)
-      );
-    return request.pipe(
-      catchError(() => {
-        this.addPendingChanges(url, request);
-        return of(data);
+  private postWithCache<R>(url: string, data: R, {cacheKey, dontParse}: Extra): Observable<R> {
+    const itemToCache = dontParse ? data as unknown as string : JSON.stringify(data);
+    return AppStorage.setItem(cacheKey, itemToCache).pipe(
+      switchMap( () => {
+        const lastUpdatedAt = this.lastUpdateMap[cacheKey];
+        const request = this.httpClient.post(url, {data: itemToCache, lastUpdatedAt})
+          .pipe(
+            this.MAP_DATA<any, R>(cacheKey, {dontParse: dontParse, lastUpdateOp: 'U'}),
+            ApiService.HANDLE_ANONYMOUS(data)
+          );
+        return request.pipe(
+          catchError(() => {
+            this.addPendingChanges(url, request);
+            return of(data);
+          })
+        );
+      })
+    );
+  }
+
+  private deleteWithCache<R>(url: string, {cacheKey, dontParse}: Extra): Observable<R> {
+    return AppStorage.getItem(cacheKey).pipe(
+      map( cachedItem => dontParse ? cachedItem : JSON.parse(cachedItem || 'null')),
+      switchMap( data => AppStorage.removeItem(cacheKey).pipe(map(() => (data)))),
+      switchMap( data => {
+        const lastUpdatedAt = this.lastUpdateMap[cacheKey];
+        const request = this.httpClient.delete(url, {body: {lastUpdatedAt}})
+          .pipe(
+            this.MAP_DATA<any, R>(cacheKey, {dontParse: dontParse, lastUpdateOp: 'R'}),
+            ApiService.HANDLE_ANONYMOUS(data)
+          );
+        return request.pipe(
+          catchError(() => {
+            this.addPendingChanges(url, request);
+            return of(data);
+          })
+        );
       })
     );
   }
@@ -382,8 +397,11 @@ export class ApiService {
     Object.keys(localStorage)
       .filter(k => k.startsWith('src-'))
       .forEach(k => localStorage.removeItem(k));
-    this.initLastUpdateMap();
-    return of(undefined);
+    return AppStorage.desyncLocal().pipe(
+      tap(() => {
+        this.initLastUpdateMap();
+      })
+    );
   }
 
   setOutOfSync() {
@@ -394,8 +412,10 @@ export class ApiService {
     this.outOfSync$.next(false);
   }
 
-  isSomethingPresent(): boolean {
-    return !!localStorage.getItem(DB_NAME) && !!localStorage.getItem(OPTS_DB_NAME);
+  isSomethingPresent(): Observable<boolean> {
+    return AppStorage.getItem(DB_NAME).pipe(
+      map(data => !!data && !!localStorage.getItem(OPTS_DB_NAME))
+    );
   }
 
   deleteAllData() {
