@@ -6,7 +6,7 @@
 
   <div class="py-5">or</div>
 
-  <ng-container *ngIf="somethingIsPresentLocally">
+  <ng-container *ngIf="somethingIsPresentLocally$ | async">
     <button pButton class="mb-2 text-xl" (click)="loginAndSyncLocal()" label="Login and sync local"></button>
     <br>
     <span class="text-sm">(Something is stored locally from a previous version)</span>

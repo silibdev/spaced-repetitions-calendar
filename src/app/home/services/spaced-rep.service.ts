@@ -431,7 +431,7 @@ export class SpacedRepService {
     );
   }
 
-  isSomethingPresent(): boolean {
+  isSomethingPresent(): Observable<boolean> {
     return this.apiService.isSomethingPresent();
   }
 
@@ -448,7 +448,7 @@ export class SpacedRepService {
         return forkJoin(
           spacedReps.map(sr => {
             if (sr.done) {
-              sr.done = isAfter(sr.start, today) ? false : true;
+              sr.done = !isAfter(sr.start, today);
 
               // UPDATE SPECIFIC MODEL IF NEEDED
               const currentEventIndex = this.db.findIndex(e => sr.id === e.id);
