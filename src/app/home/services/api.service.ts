@@ -397,8 +397,11 @@ export class ApiService {
     Object.keys(localStorage)
       .filter(k => k.startsWith('src-'))
       .forEach(k => localStorage.removeItem(k));
-    this.initLastUpdateMap();
-    return of(undefined);
+    return AppStorage.desyncLocal().pipe(
+      tap(() => {
+        this.initLastUpdateMap();
+      })
+    );
   }
 
   setOutOfSync() {

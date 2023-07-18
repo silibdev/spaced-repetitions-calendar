@@ -44,4 +44,8 @@ export class AppStorage {
     }
     return of(null);
   }
+
+  static desyncLocal() {
+    return from(localforage.clear());
+  }
 }
