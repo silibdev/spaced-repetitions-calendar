@@ -35,6 +35,7 @@ export class Migrator {
       switchMap(() => this.switchToFifthMigration()),
       switchMap(() => this.switchToSixthMigration()),
       switchMap(() => this.switchToSeventhMigration()),
+      switchMap(()=> this.switchToEighthMigration()),
       map(() => this.migrationApplied)
     )
   }
@@ -153,6 +154,16 @@ export class Migrator {
     this.migrationApplied = true;
     return AppStorage.seventhMigration().pipe(
       tap(() => Migrator.setVersion(7))
+    );
+  }
+
+  private switchToEighthMigration() {
+    if (Migrator.getVersion() >= 8) {
+      return of(undefined);
+    }
+    this.migrationApplied = true;
+    return AppStorage.eighthMigration().pipe(
+      tap(() => Migrator.setVersion(8))
     );
   }
 }
