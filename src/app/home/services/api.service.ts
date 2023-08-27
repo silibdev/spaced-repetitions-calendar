@@ -31,11 +31,11 @@ const ApiUrls = {
 
 const OPTS_DB_NAME = 'src-opts-db';
 
-const DESCRIPTIONS_DB_NAME_PREFIX = 'src-desc-db';
+export const DESCRIPTIONS_DB_NAME_PREFIX = 'src-desc-db';
 const DESCRIPTIONS_DB_NAME = (id: string) => DESCRIPTIONS_DB_NAME_PREFIX + id;
 
 const OLD_SHORT_DESCRIPTION_DB_NAME = 'src-short-desc-db';
-const DETAIL_DB_NAME_PREFIX = 'src-event-detail-db';
+export const DETAIL_DB_NAME_PREFIX = 'src-event-detail-db';
 const DETAIL_DB_NAME = (id: string) => DETAIL_DB_NAME_PREFIX + id;
 
 export const LAST_UPDATE_DB_NAME = 'src-last-update-db';
