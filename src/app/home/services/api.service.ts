@@ -77,7 +77,8 @@ export class ApiService {
     lastUpdateOp: LastUpdateOp
   }): OperatorFunction<T, R> {
     return (obs) => obs.pipe(
-      map(({data, updatedAt}) => {
+      map((resp) => {
+        const {data, updatedAt} = resp;
         if (updatedAt) {
           this.saveLastUpdateMap(cacheKey, updatedAt, extra.lastUpdateOp);
         }
@@ -171,8 +172,8 @@ export class ApiService {
           return cachedRequest;
         }
         const request = this.httpClient.get(url).pipe(
-          switchMap(({data}: any) => AppStorage.setItem(cacheKey, data).pipe(
-            map(() => ({data})))
+          switchMap((resp: any) => AppStorage.setItem(cacheKey, resp.data).pipe(
+            map(() => resp))
           ),
           this.MAP_DATA<any, R>(cacheKey, {dontParse: dontParse, lastUpdateOp: 'U'}),
           tap(() => this.requestOptimizer.delete(url)),
