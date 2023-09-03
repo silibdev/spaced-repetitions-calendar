@@ -4,7 +4,7 @@ import { BlockableUI } from 'primeng/api';
 import { SpacedRepModel } from '../models/spaced-rep.model';
 import { UntypedFormControl } from '@angular/forms';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
-import { distinctUntilChanged, Observable, startWith, tap } from 'rxjs';
+import { distinctUntilChanged, filter, Observable, startWith, tap } from 'rxjs';
 import { SettingsService } from '../services/settings.service';
 import { Color } from '../models/settings.model';
 
@@ -88,6 +88,21 @@ export class EventViewComponent implements OnInit, BlockableUI {
     this.titleOptions$ = this.eventFormService.form.valueChanges.pipe(
       startWith(this.eventFormService.form.value)
     );
+
+    const doneAudio = new Audio();
+    doneAudio.src = "assets/sounds/done.mp3";
+    doneAudio.load();
+
+    const doneControl = this.eventFormService.form.get('done');
+    doneControl?.valueChanges.pipe(
+      untilDestroyed(this),
+      filter((done: boolean) => done),
+      tap(() => {
+        doneAudio.pause();
+        doneAudio.currentTime = 0;
+        doneAudio.play();
+      })
+    ).subscribe()
   }
 
   getBlockableElement(): HTMLElement {
