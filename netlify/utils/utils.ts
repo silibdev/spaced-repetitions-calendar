@@ -55,12 +55,16 @@ export function createHandler({getResource, postResource, deleteResource, bulkRe
         }
         break;
       case "POST":
+        let bodyOrError;
         if (!event.headers['content-type']?.includes('json')) {
-          const b = await parseMultipartForm(event);
-          console.log('post', {b});
+          const data = await parseMultipartForm(event);
+          bodyOrError = {data} as RequestBody<any>;
+          console.log('form data post');
+        } else {
+          bodyOrError = getBody(event.body);
         }
-        const bodyOrError = getBody(event.body);
         if (!('data' in bodyOrError)) {
+          console.log('error in body')
           return bodyOrError;
         }
         if (queryParams && 'bulk' in queryParams) {
@@ -167,29 +171,38 @@ function parseMultipartForm(event: HandlerEvent) {
       }
     });
     const result: any = {
-      files: [] as any[]
     };
 
-    busboy.on('file', (fieldname: string, file: any, filename: string, encoding: string, mimetype: string) => {
-      const uploadFile: any = {};
+    const addField = (fieldname: string, value: any) => {
+      const oldField = result[fieldname];
+      if (!oldField) {
+        result[fieldname] = value;
+      } else if (oldField instanceof Array) {
+        oldField.push(value);
+      } else {
+        result[fieldname] = [oldField, value];
+      }
+    }
 
-      file.on('data', (data: any) => {
-        uploadFile.content = data;
+    busboy.on('file', (fieldname, file, {filename, encoding,mimeType}) => {
+      let content: any;
+
+      file.on('data', (data) => {
+        content = data;
       });
 
       file.on('end', () => {
-        if (uploadFile.content) {
-          uploadFile.filename = filename;
-          uploadFile.contentType = mimetype;
-          uploadFile.encoding = encoding;
-          uploadFile.fieldname = fieldname;
-          result.files.push(uploadFile);
+        if (content) {
+          const myFile = {
+            filename, mimeType, encoding, content
+          };
+          addField(fieldname, myFile);
         }
       });
     });
 
     busboy.on('field', (fieldname, value) => {
-      result[fieldname] = value;
+      addField(fieldname, value)
     });
 
     busboy.on('error', error => {
