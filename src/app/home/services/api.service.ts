@@ -451,4 +451,10 @@ export class ApiService {
       })
     );
   }
+
+  getPhotos(masterId: string): Observable<Photo[]> {
+    return this.httpClient.get(ApiUrls.photos(masterId)).pipe(
+      map<any, Photo[]>( res => res.data)
+    );
+  }
 }

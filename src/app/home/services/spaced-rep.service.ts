@@ -487,4 +487,9 @@ export class SpacedRepService {
     const {masterId} = this.extractCommonModel(event);
     return this.apiService.savePhotos(masterId, photos);
   }
+
+  getPhotos(event: SpacedRepModel): Observable<Photo[]> {
+    const {masterId} = this.extractCommonModel(event);
+    return this.apiService.getPhotos(masterId);
+  }
 }
