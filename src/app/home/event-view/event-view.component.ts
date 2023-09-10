@@ -24,7 +24,7 @@ interface FileSelectEvent {
   currentFiles: File[];
 }
 
-type PhotoExt = Photo & {toDelete?: boolean, editing?: boolean, oldName?: string};
+type PhotoExt = Photo & {editing?: boolean, oldName?: string};
 
 @UntilDestroy()
 @Component({
@@ -127,7 +127,7 @@ export class EventViewComponent implements OnInit, BlockableUI {
     return this.content?.nativeElement;
   }
 
-  photosSelected(event: FileSelectEvent, uploader: FileUpload) {
+  addPhotos(event: FileSelectEvent, uploader: FileUpload) {
     const photos: Photo[] = []
     event.currentFiles.forEach( f => {
       const url = URL.createObjectURL(f);
@@ -165,6 +165,7 @@ export class EventViewComponent implements OnInit, BlockableUI {
 
   cancelRenamePhoto(photo: PhotoExt) {
     photo.name = photo.oldName || '';
+    photo.oldName = undefined;
     photo.editing = false;
   }
 }

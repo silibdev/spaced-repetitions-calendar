@@ -7,6 +7,7 @@ export interface Photo {
   name: string;
   id: string;
   thumbnail: string;
+  toDelete?: boolean;
 }
 
 export interface SpacedRepModel {

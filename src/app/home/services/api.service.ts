@@ -28,7 +28,7 @@ const ApiUrls = {
   description: (id: string) => `/api/event-descriptions?id=${id}`,
   detail: (id: string) => `/api/event-details?id=${id}`,
   lastUpdates: '/api/last-updates',
-  photos: (id: string) => `/api/photos?id=${id}`
+  photos: (id: string, photoId?: string) => `/api/photos?id=${id}${photoId ? '&photoId=' + photoId : ''}`,
 }
 
 const OPTS_DB_NAME = 'src-opts-db';
@@ -428,9 +428,11 @@ export class ApiService {
   savePhotos(masterId: string, photos: Photo[]) {
     const data = new FormData();
     data.set('id', masterId);
-    photos.filter(p => p.id).forEach(p =>
-      data.append('photoMetadata', JSON.stringify({id: p.id, name: p.name}))
+    photos.filter(p => p.id && !p.toDelete).forEach(p =>
+      data.append('photoMetadata', JSON.stringify({id: p.id, name: p.name, toDelete: p.toDelete}))
     );
+
+    const photosToDelete = photos.filter(p => p.toDelete);
 
     const photoBlobs = photos
       .filter(p => !p.id)
@@ -440,7 +442,7 @@ export class ApiService {
           ))
       );
 
-    return forkJoin([...photoBlobs]).pipe(
+    return forkJoin([forkJoin([...photoBlobs]).pipe(
       defaultIfEmpty([]),
       switchMap(blobs => {
         blobs.forEach(b =>
@@ -448,8 +450,10 @@ export class ApiService {
         );
 
         return this.httpClient.post(ApiUrls.photos(masterId), data);
-      })
-    );
+      }),
+    ),
+      ...photosToDelete.map(p => this.httpClient.delete(ApiUrls.photos(masterId, p.id)))
+    ]);
   }
 
   getPhotos(masterId: string): Observable<Photo[]> {
