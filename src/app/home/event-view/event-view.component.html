@@ -65,13 +65,15 @@
       </div>
       <div class="mb-2 grid gap-2" *ngIf="$any(eventFormService.photosControl?.value) as photos">
         <div *ngFor="let photo of photos" class="grid gap-1 col-12 md:col-6 xl:col-4">
-<!--            previewImageSrc="{{photo.id ? photo.thumbnail : 'data:image/jpeg;base64,' + photo.thumbnail}}"-->
           <p-image
-            src="data:image/jpeg;base64,{{photo.thumbnail}}"
+            #image
+            src="{{photo.id ? 'data:image/jpeg;base64,' : ''}}{{photo.thumbnail}}"
             alt="{{photo.name}}"
             width="100%"
             class="col-3 md:col-2 xl:col-1"
             [preview]="true"
+            (onShow)="onImageShow(image, photo)"
+            (onHide)="onImageHide(image, photo)"
           ></p-image>
           <div class="col">
             <input

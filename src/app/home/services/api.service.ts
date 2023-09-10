@@ -461,4 +461,12 @@ export class ApiService {
       map<any, Photo[]>( res => res.data)
     );
   }
+
+  getPhotoUrl(masterId: string, photoId: string): Observable<string> {
+    return this.httpClient.get(ApiUrls.photos(masterId, photoId), {responseType: 'blob'}).pipe(
+      map<Blob, string>(res => {
+        return URL.createObjectURL(res);
+      })
+    );
+  }
 }

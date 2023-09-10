@@ -6,6 +6,8 @@ export interface EventColor {
 export interface Photo {
   name: string;
   id: string;
+  // Per le nuove immagini è l'url del blob, per quelle salvate la stringa base64
+  // brutto brutto ma per ora è cosi' stacce
   thumbnail: string;
   toDelete?: boolean;
 }
