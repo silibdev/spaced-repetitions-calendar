@@ -3,7 +3,7 @@ import { CalendarEvent, CalendarView } from 'angular-calendar';
 import { EventFormService } from '../services/event-form.service';
 import { SpacedRepService } from '../services/spaced-rep.service';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
-import { debounceTime, finalize, map, Observable, Subscription, tap } from 'rxjs';
+import { debounceTime, finalize, map, Observable, of, Subscription, switchMap, tap } from 'rxjs';
 import { SpacedRepModel } from '../models/spaced-rep.model';
 import { isSameDay, isSameMonth } from 'date-fns';
 import { ConfirmationService } from 'primeng/api';
@@ -101,6 +101,14 @@ export class HomeComponent implements OnInit, OnDestroy {
   editEvent(event: SpacedRepModel): void {
     this.spacedRepService.get(event.id as string).pipe(
       untilDestroyed(this),
+      switchMap((event: SpacedRepModel) =>
+        this.spacedRepService.getPhotos(event).pipe(
+          map(photos => {
+            event.photos = photos;
+            return event;
+          })
+        )
+      ),
       tap(fullEvent => {
         this.eventToModify = fullEvent;
         this.openEdit = true;
@@ -166,20 +174,28 @@ export class HomeComponent implements OnInit, OnDestroy {
     const event = this.eventFormService.getEditedSpacedRep();
     this.spacedRepService.save(event).pipe(
       untilDestroyed(this),
-      finalize(() => {
+      switchMap(() => {
         if (autoSaving) {
           this.autoSavingState = 'saved';
           this.lastAutoSave = new Date();
+          return of();
         } else {
+          const photos = this.eventFormService.getPhotos();
+          return this.spacedRepService.savePhotos(event, photos);
+        }
+      }),
+      tap ({
+        error: () => {
+          alert('Error on saving, check connection and retry');
           this.loading = false;
-          this.openEdit = false;
+        },
+        complete: () => {
+          if (!autoSaving) {
+            this.loading = false;
+            this.openEdit = false;
+          }
         }
       })
     ).subscribe();
-
-    if (!autoSaving) {
-      const photos = this.eventFormService.getPhotos();
-      this.spacedRepService.savePhotos(event, photos).subscribe();
-    }
   }
 }
