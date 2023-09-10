@@ -15,29 +15,70 @@ export const PhotosRepository = {
     return {data: photos, updatedAt: ''};
   },
 
-  async postPhotos(userId: string, eventId: string, {data: {newPhotos}}: RequestBody<any>): Promise<RepositoryResult<string>> {
-    console.log('postPhotos', {userId, eventId, newPhotos});
+  async postPhotos(userId: string, eventId: string, {data: {newPhotos, photoMetadata}}: RequestBody<any>): Promise<RepositoryResult<string>> {
+    console.log('postPhotos', {userId, eventId});
     // const checkError = await checkLastUpdate(DB.execute("SELECT updated_at FROM EventDescription WHERE user=:userId AND id=:id", {userId, id: eventId}), lastUpdatedAt);
     // if (checkError) return checkError;
     const updatedAt = new Date().toISOString();
-    let photos: any[];
-    if (newPhotos && !(newPhotos instanceof Array)) {
-      photos = [newPhotos];
-    } else {
-      photos = newPhotos;
+
+    if (newPhotos) {
+      await this.addNewPhotos(userId, eventId, newPhotos, updatedAt);
     }
-    const values = photos.map((f: any) => db_formatter('(?, ?, ?, ?, FROM_BASE64(?))', [
+
+    if (photoMetadata) {
+      await this.modifyPhotos(userId, eventId, photoMetadata, updatedAt);
+    }
+
+    return {data: 'ok', updatedAt};
+  },
+
+  async addNewPhotos(userId: string, eventId: string, newPhotos: any, updatedAt: string) {
+    let photos: any[];
+    if (newPhotos instanceof Array) {
+      photos = newPhotos;
+    } else {
+      photos = [newPhotos];
+    }
+
+    const values = photos.map((f: any) => db_formatter('(?, ?, UUID(), ?, FROM_BASE64(?), ?)', [
       userId,
       eventId,
-      Math.random().toString(),
       f.filename,
       f.content.toString('base64'),
-      // updatedAt
+      updatedAt
     ])).join(',');
-    // const query = "INSERT INTO Photo (user, eventId, id, name, photo, updated_at) VALUES"
-    const query = `INSERT INTO Photo (user, eventId, id, name, photo) VALUES ${values}`;
+    const query = `INSERT INTO Photo (user, eventId, id, name, photo, updated_at) VALUES ${values}`;
     const result = await DB.execute(query);
-    console.log('post photos', result.insertId);
-    return {data: 'ok', updatedAt};
+    console.log('new photos', result.insertId);
+  },
+
+  async modifyPhotos(userId: string, eventId: string, photosToModify: any, updatedAt: string) {
+    let photos: any[];
+    if (photosToModify instanceof Array) {
+      photos = photosToModify;
+    } else {
+      photos = [photosToModify];
+    }
+
+    const photoMapped = photos.map((f: any) => JSON.parse(f));
+
+    const values = photoMapped.filter(p => !p.toDelete)
+      .map((f: any) => db_formatter('(?, ?, ?, ?, ?)', [
+      userId,
+      eventId,
+      f.id,
+      f.name,
+      updatedAt
+    ])).join(',');
+    const queryModify = `INSERT INTO Photo (user, eventId, id, name, updated_at) VALUES ${values} ON DUPLICATE KEY UPDATE name=VALUES(name), updated_at=VALUES(updated_at)`;
+    const result = await DB.execute(queryModify);
+    console.log('modified photos', result.insertId);
+  },
+
+  async deletePhoto(userId: string, eventId: string, photoId: string): Promise<RepositoryResult<{ id: string }>> {
+    const queryDelete = `DELETE FROM Photo WHERE user = :userId AND eventId = :eventId AND id = :photoId`;
+    const resultDelete = await DB.execute(queryDelete, {userId, eventId, photoId});
+    console.log('deleted photo', resultDelete.insertId);
+    return {data: {id: photoId}, updatedAt: new Date().toISOString()};
   }
 }
