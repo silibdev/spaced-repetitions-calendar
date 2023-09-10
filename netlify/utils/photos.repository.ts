@@ -1,15 +1,25 @@
 import { RepositoryResult, RequestBody } from './utils';
 import { DB, db_formatter } from './db-connector';
+import sharp from 'sharp';
 
 export const PhotosRepository = {
+
+  async getPhoto(userId: string, eventId: string, photoId: string) {
+    console.log('getPhoto', {userId, eventId, photoId});
+    const result = await DB.execute("SELECT name, photo FROM Photo WHERE user=:userId AND eventId=:eventId AND id=:photoId", {userId, eventId, photoId});
+    const photoRow: any = result.rows[0];
+    const photoBuffer = Buffer.from(photoRow.photo, 'binary').toString('base64');
+    console.log('get photo', userId, eventId, 'photoId', photoId);
+    return {photo: photoBuffer, name: photoRow.name};
+  },
+
   async getPhotos(userId: string, eventId: string): Promise<RepositoryResult<any>> {
     console.log('getPhotos', {userId, eventId});
-    const result = await DB.execute("SELECT id, name, photo FROM Photo WHERE user=:userId AND eventId=:eventId", {userId, eventId});
+    const result = await DB.execute("SELECT id, name, thumbnail FROM Photo WHERE user=:userId AND eventId=:eventId", {userId, eventId});
     const photos: any[] = result.rows;
     photos.forEach(p => {
-      const photoString = Buffer.from(p.photo, 'binary').toString('base64');
-      p.photo = photoString;
-      p.thumbnail = photoString;
+      const thumbnailString = Buffer.from(p.thumbnail, 'binary').toString('base64');
+      p.thumbnail = thumbnailString;
     });
     console.log('get photos', userId, eventId, 'photos', photos.length);
     return {data: photos, updatedAt: ''};
@@ -40,14 +50,22 @@ export const PhotosRepository = {
       photos = [newPhotos];
     }
 
-    const values = photos.map((f: any) => db_formatter('(?, ?, UUID(), ?, FROM_BASE64(?), ?)', [
-      userId,
-      eventId,
-      f.filename,
-      f.content.toString('base64'),
-      updatedAt
-    ])).join(',');
-    const query = `INSERT INTO Photo (user, eventId, id, name, photo, updated_at) VALUES ${values}`;
+    const values = (await Promise.all(photos.map( async (f: any) => {
+      const thumbnail = await sharp(f.content).resize({
+        width: 300,
+        height: 300,
+        fit: 'inside'
+      }).toBuffer();
+      return db_formatter('(?, ?, UUID(), ?, FROM_BASE64(?), FROM_BASE64(?), ?)', [
+        userId,
+        eventId,
+        f.filename,
+        f.content.toString('base64'),
+        thumbnail.toString('base64'),
+        updatedAt
+      ])
+    }))).join(',');
+    const query = `INSERT INTO Photo (user, eventId, id, name, photo, thumbnail, updated_at) VALUES ${values}`;
     const result = await DB.execute(query);
     console.log('new photos', result.insertId);
   },

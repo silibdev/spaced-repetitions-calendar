@@ -8,9 +8,22 @@ const handler: Handler = createHandler({
   deleteResource: deletePhoto
 })
 
-async function getPhotos(userId: string, {id}: { id: string }): Promise<HandlerResponse> {
-  const photos = await PhotosRepository.getPhotos(userId, id);
-  return createResponse(photos);
+async function getPhotos(userId: string, {id, photoId}: { id: string, photoId?: string }): Promise<HandlerResponse> {
+  if (photoId) {
+    const photoInfo = await PhotosRepository.getPhoto(userId, id, photoId);
+    return {
+      headers: {
+        'Content-Type': 'image/*',
+        'Content-disposition': `attachment; filename=${photoInfo.name}`
+      },
+      body: photoInfo.photo,
+      statusCode: 200,
+      isBase64Encoded: true,
+    };
+  } else {
+    const photos = await PhotosRepository.getPhotos(userId, id);
+    return createResponse(photos);
+  }
 }
 
 async function postPhotos(userId: string, body: RequestBody, {id}: { id: string }): Promise<HandlerResponse> {
