@@ -82,9 +82,9 @@
 
   <p-dialog appMaximized [(visible)]="openEdit" [modal]="true" (onHide)="closeEditEvent()" (onShow)="showEditEvent()">
     <div *pTemplate="'header'" class="flex justify-content-between" [style.width]="'100%'">
-      <span>Edit <span class="font-bold">{{editEventModel?.title}}</span> </span>
+      <span><span class="font-bold">{{editEventModel?.title}}</span> </span>
       <span *ngIf="autoSavingState">{{autoSavingState === 'saving' ? 'Auto saving...' : 'Auto-saved on '  + (lastAutoSave | date : 'M/d/yy, H:mm:ss')}}</span>
-      <span class="pr-4">Repetition: {{editEventModel?.repetitionNumber}}</span>
+      <span class="pr-4">Rep: {{editEventModel?.repetitionNumber}}</span>
     </div>
     <ng-container *ngIf="editEventModel">
       <app-event-view #content [event]="editEventModel"></app-event-view>

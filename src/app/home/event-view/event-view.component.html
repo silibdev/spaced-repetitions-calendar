@@ -1,67 +1,119 @@
-<div class="grid" [formGroup]="eventFormService.form" #content>
-  <p-message *ngIf="isMaster" severity="warn" text="Deleting this will delete the whole series!"
-             class="col-12"></p-message>
+<p-tabView [formGroup]="eventFormService.form" #content [scrollable]="true">
+  <p-tabPanel header="Details">
+    <div class="grid pt-2">
+      <p-message *ngIf="isMaster" severity="warn" text="Deleting this will delete the whole series!"
+                 class="col-12"></p-message>
+      <div
+        *ngIf="titleOptions$ | async as titleOpts"
+        class="col-12 lg:col-9 p-field"
+        [class.src-bold]="titleOpts.boldTitle"
+        [class.src-highlight]="titleOpts.highlightTitle"
+      >
+        <label>Title</label>
+        <textarea
+          [style.resize]="'vertical'"
+          pInputText
+          type="text"
+          rows="2"
+          [formControlName]="'title'"
+        ></textarea>
+      </div>
 
-  <div
-    *ngIf="titleOptions$ | async as titleOpts"
-    class="col-12 lg:col-9 p-field"
-    [class.src-bold]="titleOpts.boldTitle"
-    [class.src-highlight]="titleOpts.highlightTitle"
-  >
-    <label>Title</label>
-    <textarea
-      [style.resize]="'vertical'"
-      pInputText
-      type="text"
-      rows="2"
-      [formControlName]="'title'"
-    ></textarea>
-  </div>
+      <div class="col-4 lg:col-3 flex align-items-end">
+        <p-toggleButton
+          [formControlName]="'boldTitle'"
+          onLabel="Bold"
+          offLabel="Bold"
+        ></p-toggleButton>
+        <p-toggleButton
+          [formControlName]="'highlightTitle'"
+          onLabel="Highlight"
+          offLabel="Highlight"
+          styleClass="ml-2"
+        ></p-toggleButton>
+      </div>
 
-  <div class="col-4 lg:col-3 flex align-items-end">
-    <p-toggleButton
-      [formControlName]="'boldTitle'"
-      onLabel="Bold"
-      offLabel="Bold"
-    ></p-toggleButton>
-    <p-toggleButton
-      [formControlName]="'highlightTitle'"
-      onLabel="Highlight"
-      offLabel="Highlight"
-      styleClass="ml-2"
-    ></p-toggleButton>
-  </div>
+      <div class="col-12 p-field">
+        <label>Short description</label>
+        <textarea
+          [style.resize]="'vertical'"
+          pInputText
+          type="text"
+          rows="3"
+          [formControlName]="'shortDescription'"
+        ></textarea>
+      </div>
 
-  <div class="col-12 p-field">
-    <label>Short description</label>
-    <textarea
-      [style.resize]="'vertical'"
-      pInputText
-      type="text"
-      rows="3"
-      [formControlName]="'shortDescription'"
-    ></textarea>
-  </div>
+      <div class="col-6 sm:col-7 md:col-4 lg:col-3 xl:col-2 p-field">
+        <label>Category</label>
+        <p-dropdown
+          [options]="settingsService.categories"
+          [formControlName]="'category'"
+          appendTo="body"
+          [styleClass]="'w-full'"
+        ></p-dropdown>
+      </div>
 
-  <div class="col-12 p-field">
-    <label>Description</label>
+      <div class="col-5 sm:col-3 md:col-2 p-field">
+        <label>Date</label>
+        <p-calendar [formControlName]="'start'" appendTo="body"></p-calendar>
+      </div>
+
+      <div class="col-6 md:col-5 lg:col-4 p-field">
+        <label>Color</label>
+        <p-dropdown [options]="colorOpts" [formControl]="customColorControl" appendTo="body"
+                    [styleClass]="'w-8'"
+        >
+          <ng-template let-item pTemplate="selectedItem">
+            <div class="flex align-items-center">
+              <span class="color inline-block" [style.background-color]="item.value"></span>
+              <span class="pl-1">{{item.label}}</span>
+            </div>
+          </ng-template>
+          <ng-template let-item pTemplate="item">
+            <div class="flex align-items-center">
+              <span class="color inline-block" [style.background-color]="item.value"></span>
+              <span class="pl-1">{{item.label}}</span>
+            </div>
+          </ng-template>
+        </p-dropdown>
+        <p-colorPicker class="pl-2" [formControlName]="'color'" appendTo="body"></p-colorPicker>
+      </div>
+
+      <div class="col-6 md:col-4 lg:col-3 p-field" *ngIf="!isEdit">
+        <label>RepetitionSchema</label>
+        <p-dropdown
+          appendTo="body"
+          [editable]="true"
+          [options]="settingsService.repetitionSchemaOpts"
+          [formControlName]="'repetitionSchema'"
+          [styleClass]="'w-full'"
+        ></p-dropdown>
+      </div>
+
+      <div class="col-4 sm:col-3 md:col-2 p-field-checkbox" *ngIf="isEdit">
+        <p-checkbox class="pt-5" [formControlName]="'done'" [binary]="true" label="Done"></p-checkbox>
+      </div>
+    </div>
+  </p-tabPanel>
+  <p-tabPanel header="Description">
     <p-editor
       [formControlName]="'description'"
-      [style]="{height: '82vh'}"
+      [style]="{height: '73vh'}"
     ></p-editor>
-  </div>
-
-  <div class="col-12">
-    <p-panel
-      header="Photos ({{$any(eventFormService.photosControl?.value)?.length || 0}})"
-      [toggleable]="true"
-      [collapsed]="true"
-      [expandIcon]="'pi pi-chevron-up'"
-      [collapseIcon]="'pi pi-chevron-down'"
-    >
-      <div class="pb-2">
-        <p-fileUpload #fileUpload mode="basic" chooseLabel="Upload" [multiple]="true" accept=".png, .jpg, .jpeg"
-                      (onSelect)="addPhotos($event, fileUpload)"></p-fileUpload>
+  </p-tabPanel>
+  <p-tabPanel header="Photos ({{$any(eventFormService.photosControl?.value)?.length || 0}})" [cache]="true">
+    <ng-template pTemplate>
+      <div class="pb-2 pt-2">
+        <p-fileUpload
+          #fileUpload
+          mode="basic"
+          chooseLabel="Upload"
+          [chooseIcon]="'pi-upload'"
+          [multiple]="true"
+          accept=".png, .jpg, .jpeg"
+          (onSelect)="addPhotos($event, fileUpload)"
+        ></p-fileUpload>
       </div>
       <div class="mb-2 grid gap-2" *ngIf="$any(eventFormService.photosControl?.value) as photos">
         <div *ngFor="let photo of photos" class="grid gap-1 col-12 md:col-6 xl:col-4">
@@ -134,57 +186,6 @@
           </div>
         </div>
       </div>
-    </p-panel>
-  </div>
-
-  <div class="col-6 sm:col-7 md:col-4 lg:col-3 xl:col-2 p-field">
-    <label>Category</label>
-    <p-dropdown
-      [options]="settingsService.categories"
-      [formControlName]="'category'"
-      appendTo="body"
-      [styleClass]="'w-full'"
-    ></p-dropdown>
-  </div>
-
-  <div class="col-5 sm:col-3 md:col-2 p-field">
-    <label>Date</label>
-    <p-calendar [formControlName]="'start'" appendTo="body"></p-calendar>
-  </div>
-
-  <div class="col-6 md:col-5 lg:col-4 p-field">
-    <label>Color</label>
-    <p-dropdown [options]="colorOpts" [formControl]="customColorControl" appendTo="body"
-                [styleClass]="'w-8'"
-    >
-      <ng-template let-item pTemplate="selectedItem">
-        <div class="flex align-items-center">
-          <span class="color inline-block" [style.background-color]="item.value"></span>
-          <span class="pl-1">{{item.label}}</span>
-        </div>
-      </ng-template>
-      <ng-template let-item pTemplate="item">
-        <div class="flex align-items-center">
-          <span class="color inline-block" [style.background-color]="item.value"></span>
-          <span class="pl-1">{{item.label}}</span>
-        </div>
-      </ng-template>
-    </p-dropdown>
-    <p-colorPicker class="pl-2" [formControlName]="'color'" appendTo="body"></p-colorPicker>
-  </div>
-
-  <div class="col-6 md:col-4 lg:col-3 p-field" *ngIf="!isEdit">
-    <label>RepetitionSchema</label>
-    <p-dropdown
-      appendTo="body"
-      [editable]="true"
-      [options]="settingsService.repetitionSchemaOpts"
-      [formControlName]="'repetitionSchema'"
-      [styleClass]="'w-full'"
-    ></p-dropdown>
-  </div>
-
-  <div class="col-4 sm:col-3 md:col-2 p-field-checkbox" *ngIf="isEdit">
-    <p-checkbox class="pt-5" [formControlName]="'done'" [binary]="true" label="Done"></p-checkbox>
-  </div>
-</div>
+    </ng-template>
+  </p-tabPanel>
+</p-tabView>

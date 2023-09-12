@@ -33,6 +33,7 @@ import { PanelModule } from 'primeng/panel';
 import { FileUploadModule } from 'primeng/fileupload';
 import { TooltipModule } from 'primeng/tooltip';
 import { ImageModule } from 'primeng/image';
+import { TabViewModule } from 'primeng/tabview';
 
 
 @NgModule({
@@ -74,7 +75,8 @@ import { ImageModule } from 'primeng/image';
     PanelModule,
     FileUploadModule,
     TooltipModule,
-    ImageModule
+    ImageModule,
+    TabViewModule
   ],
   providers: [
     TitleFormatterProvider
