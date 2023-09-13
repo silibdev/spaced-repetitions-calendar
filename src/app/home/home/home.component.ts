@@ -3,8 +3,8 @@ import { CalendarEvent, CalendarView } from 'angular-calendar';
 import { EventFormService } from '../services/event-form.service';
 import { SpacedRepService } from '../services/spaced-rep.service';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
-import { debounceTime, finalize, map, Observable, of, Subscription, switchMap, tap } from 'rxjs';
-import { SpacedRepModel } from '../models/spaced-rep.model';
+import { catchError, debounceTime, finalize, map, Observable, of, Subject, Subscription, switchMap, tap } from 'rxjs';
+import { CommonSpacedRepModel, Photo, SpacedRepModel } from '../models/spaced-rep.model';
 import { isSameDay, isSameMonth } from 'date-fns';
 import { ConfirmationService } from 'primeng/api';
 import { ExtendedCalendarView, SRCCalendarView } from '../calendar-header/calendar-header.component';
@@ -83,7 +83,9 @@ export class HomeComponent implements OnInit, OnDestroy {
     const createSpacedRep = this.eventFormService.getCreateSpacedRep();
     this.loading = true;
     this.spacedRepService.create(createSpacedRep)
-      .pipe(untilDestroyed(this),
+      .pipe(
+        untilDestroyed(this),
+        switchMap((commonSr) => this.savePhotos(commonSr)),
         finalize(() => {
           this.loading = false;
           this.open = false;
@@ -98,16 +100,59 @@ export class HomeComponent implements OnInit, OnDestroy {
     }
   }
 
+  reloadPhotos({event, callback}: { event: SpacedRepModel, callback: (photos?: Photo[]) => void }) {
+    this.loading = true;
+    this.loadPhotos(event, true).pipe(
+      untilDestroyed(this),
+      tap(event => callback(event.photos)),
+      finalize(() => this.loading = false)
+    ).subscribe();
+  }
+
+  private loadPhotos(event: SpacedRepModel, withRetry: boolean): Observable<SpacedRepModel> {
+    return this.spacedRepService.getPhotos(event).pipe(
+      map(photos => {
+        event.photos = photos;
+        return event;
+      }),
+      catchError(() => {
+        if (!withRetry) {
+          return of(event);
+        }
+        const respObs$ = new Subject();
+
+        this.confirmationService.confirm({
+          icon: 'pi pi-exclamation-triangle',
+          header: 'Error while loading photos',
+          message: 'You can retry the load or you can just skip it for the moment',
+          acceptLabel: 'Skip',
+          acceptIcon: 'hidden',
+          accept: () => respObs$.next('skip'),
+          rejectLabel: 'Retry',
+          rejectIcon: 'hidden',
+          reject: () => respObs$.next('retry')
+        });
+
+        return respObs$.pipe(
+          switchMap(retry => {
+            if (retry === 'retry') {
+              return this.loadPhotos(event, withRetry);
+            } else {
+              return of(event).pipe(
+                finalize(() => respObs$.complete())
+              );
+            }
+          })
+        )
+      })
+    );
+  }
+
   editEvent(event: SpacedRepModel): void {
     this.spacedRepService.get(event.id as string).pipe(
       untilDestroyed(this),
-      switchMap((event: SpacedRepModel) =>
-        this.spacedRepService.getPhotos(event).pipe(
-          map(photos => {
-            event.photos = photos;
-            return event;
-          })
-        )
+      switchMap((sr: SpacedRepModel) =>
+        this.loadPhotos(sr, false)
       ),
       tap(fullEvent => {
         this.eventToModify = fullEvent;
@@ -121,7 +166,6 @@ export class HomeComponent implements OnInit, OnDestroy {
             tap(() => this.saveEvent(true))
           ).subscribe();
         }
-
       })
     ).subscribe()
   }
@@ -161,6 +205,42 @@ export class HomeComponent implements OnInit, OnDestroy {
     ).subscribe()
   }
 
+  private savePhotos(event: CommonSpacedRepModel): Observable<unknown> {
+    const photos = this.eventFormService.getPhotos();
+    return this.spacedRepService.savePhotos(event, photos).pipe(
+      catchError(() => {
+        const respObs$ = new Subject<string>();
+
+        this.confirmationService.confirm({
+          icon: 'pi pi-exclamation-triangle',
+          header: 'Error while saving photos',
+          message: 'You can retry the saving or you can just skip. If you skip the save the changes done to the photo, if any, will NOT be saved.',
+          acceptLabel: 'Skip',
+          acceptIcon: 'hidden',
+          accept: () => respObs$.next('skip'),
+          rejectLabel: 'Retry',
+          rejectIcon: 'hidden',
+          reject: () => respObs$.next('retry')
+        });
+
+        return respObs$.pipe(
+          switchMap(retry => {
+            if (retry === 'retry') {
+              return this.savePhotos(event);
+            } else {
+              return of(event).pipe(
+                // Perche' serve???
+                // https://stackoverflow.com/questions/47031924/when-using-rxjs-why-doesnt-switchmap-trigger-a-complete-event
+                // L'outer non completa in automatico se l'inner completa
+                finalize(() => respObs$.complete())
+              );
+            }
+          })
+        )
+      })
+    );
+  }
+
   saveEvent(autoSaving?: boolean): void {
     if (!this.eventFormService.isValid()) {
       return;
@@ -180,20 +260,13 @@ export class HomeComponent implements OnInit, OnDestroy {
           this.lastAutoSave = new Date();
           return of();
         } else {
-          const photos = this.eventFormService.getPhotos();
-          return this.spacedRepService.savePhotos(event, photos);
+          return this.savePhotos(event);
         }
       }),
-      tap ({
-        error: () => {
-          alert('Error on saving, check connection and retry');
+      finalize(() => {
+        if (!autoSaving) {
           this.loading = false;
-        },
-        complete: () => {
-          if (!autoSaving) {
-            this.loading = false;
-            this.openEdit = false;
-          }
+          this.openEdit = false;
         }
       })
     ).subscribe();

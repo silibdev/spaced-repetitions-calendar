@@ -19,6 +19,7 @@ import { DEFAULT_CATEGORY } from '../models/settings.model';
 export class EventFormService {
   form: UntypedFormGroup;
   private loaded = false;
+
   get photosControl(): FormArray | null {
     return this.form.get('photos') as FormArray;
   }
@@ -56,6 +57,7 @@ export class EventFormService {
   }
 
   reset(): void {
+    this.photosControl?.clear();
     this.form.setValue({
       repetitionSchema: this.settingsService.defaultRepetitionSchema.value,
       start: new Date(),
@@ -73,7 +75,6 @@ export class EventFormService {
       category: this.settingsService.currentCategory,
       photos: []
     });
-    this.photosControl?.clear();
     this.loaded = false;
   }
 
@@ -160,16 +161,18 @@ export class EventFormService {
         highlightTitle: event.highlightTitle,
         category: event.category || DEFAULT_CATEGORY
       });
-      const photos = event.photos || [];
+      const photos = event.photos;
       this.loadPhotos(photos);
 
       this.loaded = true;
     }
   }
 
-  loadPhotos(photos: Photo[]) {
+  loadPhotos(photos?: Photo[]) {
     this.photosControl?.clear();
-    this.addPhotos(photos);
+    if (photos) {
+      this.addPhotos(photos);
+    }
   }
 
 

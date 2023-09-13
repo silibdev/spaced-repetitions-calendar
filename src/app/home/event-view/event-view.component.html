@@ -1,4 +1,4 @@
-<p-tabView [formGroup]="eventFormService.form" #content [scrollable]="true">
+<p-tabView [formGroup]="eventFormService.form" [scrollable]="true">
   <p-tabPanel header="Details">
     <div class="grid pt-2">
       <p-message *ngIf="isMaster" severity="warn" text="Deleting this will delete the whole series!"
@@ -102,41 +102,51 @@
       [style]="{height: '73vh'}"
     ></p-editor>
   </p-tabPanel>
-  <p-tabPanel header="Photos ({{$any(eventFormService.photosControl?.value)?.length || 0}})" [cache]="true">
+  <p-tabPanel
+    header="Photos {{!event || event.photos ? '('+ ($any(eventFormService.photosControl?.value)?.length || 0) + ')' : ''}}"
+    [cache]="true"
+    [rightIcon]="!event || event.photos ? '' : 'pi pi-exclamation-triangle'"
+  >
     <ng-template pTemplate>
-      <div class="pb-2 pt-2">
-        <p-fileUpload
-          #fileUpload
-          mode="basic"
-          chooseLabel="Upload"
-          [chooseIcon]="'pi-upload'"
-          [multiple]="true"
-          accept=".png, .jpg, .jpeg"
-          (onSelect)="addPhotos($event, fileUpload)"
-        ></p-fileUpload>
-      </div>
-      <div class="mb-2 grid gap-2" *ngIf="$any(eventFormService.photosControl?.value) as photos">
-        <div *ngFor="let photo of photos" class="grid gap-1 col-12 md:col-6 xl:col-4">
-          <p-image
-            #image
-            src="{{photo.id ? 'data:image/jpeg;base64,' : ''}}{{photo.thumbnail}}"
-            alt="{{photo.name}}"
-            width="100%"
-            class="col-3 md:col-2 xl:col-1"
-            [preview]="true"
-            (onShow)="onImageShow(image, photo)"
-            (onHide)="onImageHide(image, photo)"
-          ></p-image>
-          <div class="col">
-            <input
-              class="w-full"
-              pInputText
-              [(ngModel)]="photo.name"
-              [disabled]="!photo.editing"
-              [ngModelOptions]="{standalone: true}"
-            >
-          </div>
-          <div class="col">
+      <ng-container *ngIf="event && !event.photos">
+        <div class="pt-2">
+          <button pButton [icon]="'pi pi-undo'" (click)="reloadPhotosClick()">Reload</button>
+        </div>
+      </ng-container>
+      <ng-container *ngIf="!event || event.photos">
+        <div class="pb-2 pt-2">
+          <p-fileUpload
+            #fileUpload
+            mode="basic"
+            chooseLabel="Upload"
+            [chooseIcon]="'pi-upload'"
+            [multiple]="true"
+            accept=".png, .jpg, .jpeg"
+            (onSelect)="addPhotos($event, fileUpload)"
+          ></p-fileUpload>
+        </div>
+        <div class="mb-2 grid gap-2" *ngIf="$any(eventFormService.photosControl?.value) as photos">
+          <div *ngFor="let photo of photos" class="grid gap-1 col-12 md:col-6 xl:col-4">
+            <p-image
+              #image
+              src="{{photo.id ? 'data:image/jpeg;base64,' : ''}}{{photo.thumbnail}}"
+              alt="{{photo.name}}"
+              width="100%"
+              class="col-3 md:col-2 xl:col-1"
+              [preview]="true"
+              (onShow)="onImageShow(image, photo)"
+              (onHide)="onImageHide(image, photo)"
+            ></p-image>
+            <div class="col">
+              <input
+                class="w-full"
+                pInputText
+                [(ngModel)]="photo.name"
+                [disabled]="!photo.editing"
+                [ngModelOptions]="{standalone: true}"
+              >
+            </div>
+            <div class="col">
             <span class="p-buttonset">
               <button
                 *ngIf="!photo.editing && !photo.toDelete"
@@ -183,9 +193,10 @@
                 ></button>
               </ng-container>
             </span>
+            </div>
           </div>
         </div>
-      </div>
+      </ng-container>
     </ng-template>
   </p-tabPanel>
 </p-tabView>

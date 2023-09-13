@@ -140,7 +140,7 @@ export class SpacedRepService {
     return of(undefined);
   }
 
-  create(createSpacedRep: CreateSpacedReps): Observable<void> {
+  create(createSpacedRep: CreateSpacedReps): Observable<CommonSpacedRepModel> {
     const repSchema: number[] = createSpacedRep.repetitionSchema.split(';').map(rep => +rep);
 
     this.settingsService.saveNewRepetitionSchema(createSpacedRep.repetitionSchema);
@@ -174,7 +174,7 @@ export class SpacedRepService {
       this.descriptionService.save(id, description || ''),
       this.eventDetailService.save(id, commonSpacedRepModel)
     ]).pipe(
-      mapTo(undefined),
+      map(() => commonSpacedRepModel),
       tap(() => this.setDb([...currentSR, ...newSpacedReps], true))
     );
   }
@@ -269,9 +269,16 @@ export class SpacedRepService {
     const newDb = this.db.filter(e => !(e.id === event.id || (isMaster && e.linkedSpacedRepId === event.id)));
     this.setDb(newDb, true);
     if (isMaster) {
+      const photos = (event.photos || [])
+        .filter(p => !!p.id)
+        .map(p => {
+          p.toDelete = true;
+          return p;
+        });
       return forkJoin([
         this.eventDetailService.delete(event.id),
-        this.descriptionService.delete(event.id)
+        this.descriptionService.delete(event.id),
+        this.savePhotos(event, photos)
       ]).pipe(mapTo(undefined));
     }
     return this.spacedReps$.pipe(mapTo(undefined), first());
@@ -407,8 +414,11 @@ export class SpacedRepService {
     );
   }
 
-  private extractCommonModel(sr: SpacedRepModel): {masterId: string, common: CommonSpacedRepModel} {
-    const masterId = sr.linkedSpacedRepId || sr.id;
+  private extractCommonModel(sr: CommonSpacedRepModel | SpacedRepModel): {
+    masterId: string,
+    common: CommonSpacedRepModel
+  } {
+    const masterId = 'linkedSpacedRepId' in sr ? sr.linkedSpacedRepId || sr.id : sr.id;
     const common: CommonSpacedRepModel = {
       id: masterId,
       allDay: sr.allDay,
@@ -483,8 +493,11 @@ export class SpacedRepService {
     return this.settingsService.sixthMigration();
   }
 
-  savePhotos(event: SpacedRepModel, photos: Photo[]) {
+  savePhotos(event: CommonSpacedRepModel, photos: Photo[]): Observable<unknown> {
     const {masterId} = this.extractCommonModel(event);
+    if (!photos.length) {
+      return of(undefined);
+    }
     return this.apiService.savePhotos(masterId, photos);
   }
 

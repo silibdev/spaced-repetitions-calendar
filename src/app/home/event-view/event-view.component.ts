@@ -2,10 +2,11 @@ import {
   ChangeDetectorRef,
   Component,
   ElementRef,
+  EventEmitter,
   Input,
   OnInit,
+  Output,
   QueryList,
-  ViewChild,
   ViewChildren
 } from '@angular/core';
 import { EventFormService } from '../services/event-form.service';
@@ -44,7 +45,6 @@ type PhotoExt = Photo & { editing?: boolean, oldName?: string };
   styleUrls: ['./event-view.component.scss']
 })
 export class EventViewComponent implements OnInit, BlockableUI {
-  @ViewChild('content') content?: ElementRef;
   isEdit = false;
   isMaster = false;
 
@@ -86,11 +86,15 @@ export class EventViewComponent implements OnInit, BlockableUI {
     return this._event;
   }
 
+  @Output()
+  reloadPhotos = new EventEmitter<{ event: SpacedRepModel, callback: (photos?: Photo[]) => void }>();
+
   constructor(
     public eventFormService: EventFormService,
     public settingsService: SettingsService,
     private srService: SpacedRepService,
-    private cd: ChangeDetectorRef
+    private cd: ChangeDetectorRef,
+    private elRef: ElementRef
   ) {
     this.customColorControl = new UntypedFormControl();
     this.colorOpts = [
@@ -157,7 +161,7 @@ export class EventViewComponent implements OnInit, BlockableUI {
   }
 
   getBlockableElement(): HTMLElement {
-    return this.content?.nativeElement;
+    return this.elRef?.nativeElement;
   }
 
   addPhotos(event: FileSelectEvent, uploader: FileUpload) {
@@ -223,5 +227,19 @@ export class EventViewComponent implements OnInit, BlockableUI {
   onImageHide(image: Image, photo: any) {
     image.src = (photo.id ? 'data:image/jpeg;base64,' : '') + photo.thumbnail;
     this.cd.detectChanges();
+  }
+
+  reloadPhotosClick() {
+    if (this.event) {
+      this.reloadPhotos.emit({
+        event: this.event,
+        callback: (photos) => {
+          this.eventFormService.loadPhotos(photos);
+          if (this.event) {
+            this.event.photos = photos
+          }
+        }
+      });
+    }
   }
 }

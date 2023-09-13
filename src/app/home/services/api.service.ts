@@ -425,7 +425,7 @@ export class ApiService {
     return this.httpClient.delete(ApiUrls.deleteAllData);
   }
 
-  savePhotos(masterId: string, photos: Photo[]) {
+  savePhotos(masterId: string, photos: Photo[]): Observable<unknown> {
     const data = new FormData();
     data.set('id', masterId);
     photos.filter(p => p.id && !p.toDelete).forEach(p =>

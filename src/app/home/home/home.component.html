@@ -87,7 +87,7 @@
       <span class="pr-4">Rep: {{editEventModel?.repetitionNumber}}</span>
     </div>
     <ng-container *ngIf="editEventModel">
-      <app-event-view #content [event]="editEventModel"></app-event-view>
+      <app-event-view #content [event]="editEventModel" (reloadPhotos)="reloadPhotos($event)"></app-event-view>
       <p-blockUI [target]="content" [blocked]="loading">
         <p-progressSpinner></p-progressSpinner>
       </p-blockUI>
