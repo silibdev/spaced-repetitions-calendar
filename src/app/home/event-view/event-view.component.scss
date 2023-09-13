@@ -12,3 +12,13 @@
 .src-highlight input {
   background-color: gold;
 }
+
+:host ::ng-deep {
+  .p-tabview-panels {
+    padding: 0;
+  }
+
+  .p-tabview .p-tabview-nav li .p-tabview-nav-link {
+    padding: 0.7rem;
+  }
+}

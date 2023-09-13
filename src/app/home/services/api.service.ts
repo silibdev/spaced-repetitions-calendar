@@ -5,6 +5,7 @@ import {
   catchError,
   defaultIfEmpty,
   forkJoin,
+  from,
   map,
   MonoTypeOperatorFunction,
   Observable,
@@ -17,7 +18,7 @@ import {
 } from 'rxjs';
 import { FullSettings } from '../models/settings.model';
 import { ERROR_ANONYMOUS } from './auth.interceptor';
-import { CommonSpacedRepModel } from '../models/spaced-rep.model';
+import { CommonSpacedRepModel, Photo } from '../models/spaced-rep.model';
 import { AppStorage } from '../../app.storage';
 
 const ApiUrls = {
@@ -26,7 +27,8 @@ const ApiUrls = {
   deleteAllData: '/api/data',
   description: (id: string) => `/api/event-descriptions?id=${id}`,
   detail: (id: string) => `/api/event-details?id=${id}`,
-  lastUpdates: '/api/last-updates'
+  lastUpdates: '/api/last-updates',
+  photos: (id: string, photoId?: string) => `/api/photos?id=${id}${photoId ? '&photoId=' + photoId : ''}`
 }
 
 const OPTS_DB_NAME = 'src-opts-db';
@@ -188,7 +190,7 @@ export class ApiService {
   private postWithCache<R>(url: string, data: R, {cacheKey, dontParse}: Extra): Observable<R> {
     const itemToCache = dontParse ? data as unknown as string : JSON.stringify(data);
     return AppStorage.setItem(cacheKey, itemToCache).pipe(
-      switchMap( () => {
+      switchMap(() => {
         const lastUpdatedAt = this.lastUpdateMap[cacheKey];
         const request = this.httpClient.post(url, {data: itemToCache, lastUpdatedAt})
           .pipe(
@@ -207,9 +209,9 @@ export class ApiService {
 
   private deleteWithCache<R>(url: string, {cacheKey, dontParse}: Extra): Observable<R> {
     return AppStorage.getItem(cacheKey).pipe(
-      map( cachedItem => dontParse ? cachedItem : JSON.parse(cachedItem || 'null')),
-      switchMap( data => AppStorage.removeItem(cacheKey).pipe(map(() => (data)))),
-      switchMap( data => {
+      map(cachedItem => dontParse ? cachedItem : JSON.parse(cachedItem || 'null')),
+      switchMap(data => AppStorage.removeItem(cacheKey).pipe(map(() => (data)))),
+      switchMap(data => {
         const lastUpdatedAt = this.lastUpdateMap[cacheKey];
         const request = this.httpClient.delete(url, {body: {lastUpdatedAt}})
           .pipe(
@@ -421,5 +423,58 @@ export class ApiService {
 
   deleteAllData() {
     return this.httpClient.delete(ApiUrls.deleteAllData);
+  }
+
+  savePhotos(masterId: string, photos: Photo[]): Observable<unknown> {
+    let somethingToSaveIsPresent = false;
+    const data = new FormData();
+    data.set('id', masterId);
+    photos.filter(p => p.id && !p.toDelete).forEach(p => {
+        data.append('photoMetadata', JSON.stringify({id: p.id, name: p.name, toDelete: p.toDelete}));
+        somethingToSaveIsPresent = true;
+      }
+    );
+
+    const photosToDelete = photos.filter(p => p.toDelete);
+
+    const photoBlobs = photos
+      .filter(p => !p.id)
+      .map(p =>
+        from(fetch(p.thumbnail).then(r => r.blob())
+          .then(blob => ({name: p.name, blob})
+          ))
+      );
+
+    return forkJoin([forkJoin([...photoBlobs]).pipe(
+      defaultIfEmpty([]),
+      switchMap(blobs => {
+        blobs.forEach(b => {
+            data.append('newPhotos', b.blob, b.name);
+            somethingToSaveIsPresent = true;
+          }
+        );
+
+        if (!somethingToSaveIsPresent) {
+          return of(undefined);
+        }
+        return this.httpClient.post(ApiUrls.photos(masterId), data);
+      })
+    ),
+      ...photosToDelete.map(p => this.httpClient.delete(ApiUrls.photos(masterId, p.id)))
+    ]);
+  }
+
+  getPhotos(masterId: string): Observable<Photo[]> {
+    return this.httpClient.get(ApiUrls.photos(masterId)).pipe(
+      map<any, Photo[]>(res => res.data)
+    );
+  }
+
+  getPhotoUrl(masterId: string, photoId: string): Observable<string> {
+    return this.httpClient.get(ApiUrls.photos(masterId, photoId), {responseType: 'blob'}).pipe(
+      map<Blob, string>(res => {
+        return URL.createObjectURL(res);
+      })
+    );
   }
 }

@@ -1,12 +1,42 @@
-import { Component, ElementRef, Input, OnInit, ViewChild } from '@angular/core';
+import {
+  ChangeDetectorRef,
+  Component,
+  ElementRef,
+  EventEmitter,
+  Input,
+  OnInit,
+  Output,
+  QueryList,
+  ViewChildren
+} from '@angular/core';
 import { EventFormService } from '../services/event-form.service';
 import { BlockableUI } from 'primeng/api';
-import { SpacedRepModel } from '../models/spaced-rep.model';
+import { Photo, SpacedRepModel } from '../models/spaced-rep.model';
 import { UntypedFormControl } from '@angular/forms';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { distinctUntilChanged, filter, Observable, startWith, tap } from 'rxjs';
 import { SettingsService } from '../services/settings.service';
 import { Color } from '../models/settings.model';
+import { FileUpload } from 'primeng/fileupload';
+import { Image } from 'primeng/image';
+import { SpacedRepService } from '../services/spaced-rep.service';
+
+interface FileSelectEvent {
+  /**
+   * Browser event.
+   */
+  originalEvent: Event;
+  /**
+   * Uploaded files.
+   */
+  files: File[];
+  /**
+   * All files to be uploaded.
+   */
+  currentFiles: File[];
+}
+
+type PhotoExt = Photo & { editing?: boolean, oldName?: string };
 
 @UntilDestroy()
 @Component({
@@ -15,7 +45,6 @@ import { Color } from '../models/settings.model';
   styleUrls: ['./event-view.component.scss']
 })
 export class EventViewComponent implements OnInit, BlockableUI {
-  @ViewChild('content') content?: ElementRef;
   isEdit = false;
   isMaster = false;
 
@@ -28,18 +57,44 @@ export class EventViewComponent implements OnInit, BlockableUI {
 
   customColorControl: UntypedFormControl;
 
-  titleOptions$?: Observable<{ boldTitle?: boolean, highlightTitle?: boolean}>;
+  titleOptions$?: Observable<{ boldTitle?: boolean, highlightTitle?: boolean }>;
+
+  @ViewChildren(Image)
+  set imageComponents(ics: QueryList<Image>) {
+    if (ics) {
+      // @ts-ignore
+      ics.forEach(im => im.zoomSettings = {
+        default: 1,
+        step: 0.1,
+        max: 4,
+        min: 0.5
+      });
+    }
+  }
+
+  private _event?: SpacedRepModel;
 
   @Input()
   set event(event: SpacedRepModel | undefined) {
     this.isEdit = !!event;
     this.isMaster = (event && !event.linkedSpacedRepId) || false;
     this.eventFormService.load(event);
+    this._event = event;
   };
+
+  get event(): SpacedRepModel | undefined {
+    return this._event;
+  }
+
+  @Output()
+  reloadPhotos = new EventEmitter<{ event: SpacedRepModel, callback: (photos?: Photo[]) => void }>();
 
   constructor(
     public eventFormService: EventFormService,
-    public settingsService: SettingsService
+    public settingsService: SettingsService,
+    private srService: SpacedRepService,
+    private cd: ChangeDetectorRef,
+    private elRef: ElementRef
   ) {
     this.customColorControl = new UntypedFormControl();
     this.colorOpts = [
@@ -59,14 +114,14 @@ export class EventViewComponent implements OnInit, BlockableUI {
         distinctUntilChanged(),
         startWith(colorControl.value),
         tap((color: string) => {
-          const colorOpt = this.colorOpts.find( c => c.value === color);
+          const colorOpt = this.colorOpts.find(c => c.value === color);
           if (colorOpt && colorOpt.label !== 'Custom') {
             this.customColorControl.setValue(colorOpt.value);
             this.eventFormService.disableColorControl();
           } else {
             let randomColor: string | undefined;
-            while (!randomColor || this.colorOpts.find(c => c.value === randomColor) ) {
-              randomColor = '#' + Math.floor(Math.random()*16777215).toString(16);
+            while (!randomColor || this.colorOpts.find(c => c.value === randomColor)) {
+              randomColor = '#' + Math.floor(Math.random() * 16777215).toString(16);
             }
             const colorToSet = color === 'custom' ? randomColor : color;
             this.customColor.value = colorToSet;
@@ -106,6 +161,85 @@ export class EventViewComponent implements OnInit, BlockableUI {
   }
 
   getBlockableElement(): HTMLElement {
-    return this.content?.nativeElement;
+    return this.elRef?.nativeElement;
+  }
+
+  addPhotos(event: FileSelectEvent, uploader: FileUpload) {
+    const photos: Photo[] = []
+    event.currentFiles.forEach(f => {
+      const url = URL.createObjectURL(f);
+      photos.push({
+        id: '',
+        name: f.name,
+        thumbnail: url
+      });
+    });
+    this.eventFormService.addPhotos(photos);
+    uploader.clear();
+  }
+
+  deletePhoto(photo: PhotoExt) {
+    if (photo.id) {
+      photo.toDelete = true;
+      return;
+    }
+    this.eventFormService.removePhoto(photo);
+  }
+
+  restorePhoto(photo: PhotoExt) {
+    photo.toDelete = false;
+  }
+
+  renamePhoto(photo: PhotoExt) {
+    photo.oldName = photo.name;
+    photo.editing = true;
+  }
+
+  confirmRenamePhoto(photo: PhotoExt) {
+    photo.oldName = undefined;
+    photo.editing = false;
+  }
+
+  cancelRenamePhoto(photo: PhotoExt) {
+    photo.name = photo.oldName || '';
+    photo.oldName = undefined;
+    photo.editing = false;
+  }
+
+  onImageShow(image: Image, photo: PhotoExt) {
+    if (!photo.id) {
+      // La immagini senza id, quelle da aggiungere non hanno una vera thumbnail
+      return;
+    }
+    this.srService.getPhotoUrl(this.event!, photo.id).subscribe(
+      url => {
+        image.src = url;
+        this.cd.detectChanges();
+
+        const htmlImage = document.querySelector<HTMLImageElement>('img.p-image-preview');
+        if (htmlImage) {
+          htmlImage.src = url;
+        }
+      }
+    );
+  }
+
+  onImageHide(image: Image, photo: any) {
+    image.src = (photo.id ? 'data:image/jpeg;base64,' : '') + photo.thumbnail;
+    this.cd.detectChanges();
+  }
+
+  reloadPhotosClick() {
+    if (this.event) {
+      this.reloadPhotos.emit({
+        event: this.event,
+        callback: (photos) => {
+          this.eventFormService.loadPhotos(photos);
+          if (this.event) {
+            this.event.photos = photos
+          }
+        }
+      });
+    }
   }
 }

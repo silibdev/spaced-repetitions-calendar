@@ -8,7 +8,6 @@ import {
   debounceTime,
   filter,
   map,
-  mapTo,
   Observable,
   of,
   pairwise,
@@ -124,7 +123,7 @@ export class AppComponent {
       // Wait 250ms before showing the loader
       debounce(loadingStatus => {
         if (loadingStatus.total === 1) {
-          return timer(300);
+          return timer(200);
         }
         return of(undefined);
       }),
@@ -136,7 +135,7 @@ export class AppComponent {
       switchMap(([prevLoadingStatus, loadingStatus]) => {
         if (prevLoadingStatus.total !== 0 && loadingStatus.total === loadingStatus.current) {
           // Pass 100 and wait 250ms before removing loader
-          return concat(of('100'), timer(250).pipe(mapTo('')));
+          return concat(of('100'), timer(250).pipe(map( () =>'')));
         } else {
           return of(loadingStatus.total
             ? (loadingStatus.current * 100 / loadingStatus.total).toFixed(2)
