@@ -3,6 +3,15 @@ export interface EventColor {
   secondary: string;
 }
 
+export interface Photo {
+  name: string;
+  id: string;
+  // Per le nuove immagini è l'url del blob, per quelle salvate la stringa base64
+  // brutto brutto ma per ora è cosi' stacce
+  thumbnail: string;
+  toDelete?: boolean;
+}
+
 export interface SpacedRepModel {
   allDay?: boolean;
   boldTitle?: boolean;
@@ -17,9 +26,10 @@ export interface SpacedRepModel {
   start: Date;
   title: string;
   category: string;
+  photos?: Photo[];
 }
 
-export type CommonSpacedRepModel = Pick<SpacedRepModel, 'id' | 'allDay' | 'title' | 'color' | 'shortDescription' | 'boldTitle' | 'highlightTitle' | 'category'>;
+export type CommonSpacedRepModel = Pick<SpacedRepModel, 'id' | 'allDay' | 'title' | 'color' | 'shortDescription' | 'boldTitle' | 'highlightTitle' | 'category' | 'photos'>;
 
 export type SpecificSpacedRepModel = Pick<SpacedRepModel, 'id' | 'repetitionNumber' | 'start' | 'linkedSpacedRepId' | 'done'>
 

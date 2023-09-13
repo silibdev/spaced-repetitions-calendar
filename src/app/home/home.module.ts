@@ -29,6 +29,11 @@ import { AutoCompleteModule } from 'primeng/autocomplete';
 import { ListViewComponent } from './list-view/list-view.component';
 import { TableModule } from 'primeng/table';
 import { LoginComponent } from './login/login.component';
+import { PanelModule } from 'primeng/panel';
+import { FileUploadModule } from 'primeng/fileupload';
+import { TooltipModule } from 'primeng/tooltip';
+import { ImageModule } from 'primeng/image';
+import { TabViewModule } from 'primeng/tabview';
 
 
 @NgModule({
@@ -66,7 +71,12 @@ import { LoginComponent } from './login/login.component';
     ToggleButtonModule,
     ConfirmDialogModule,
     AutoCompleteModule,
-    TableModule
+    TableModule,
+    PanelModule,
+    FileUploadModule,
+    TooltipModule,
+    ImageModule,
+    TabViewModule
   ],
   providers: [
     TitleFormatterProvider

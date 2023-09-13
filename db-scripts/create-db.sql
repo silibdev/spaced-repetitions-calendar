@@ -1,18 +1,18 @@
-CREATE TABLE `Settings` (
+CREATE TABLE IF NOT EXISTS `Settings` (
 	`user` varchar(255) NOT NULL,
 	`data` text,
 	`updated_at` TIMESTAMP,
 	PRIMARY KEY (`user`)
 );
 
-CREATE TABLE `EventList` (
+CREATE TABLE IF NOT EXISTS `EventList` (
 	`user` varchar(255) NOT NULL,
 	`list` mediumtext,
 	`updated_at` TIMESTAMP,
 	PRIMARY KEY (`user`)
 );
 
-CREATE TABLE `EventDetail` (
+CREATE TABLE IF NOT EXISTS `EventDetail` (
 	`user` varchar(255) NOT NULL,
 	`id` varchar(255) NOT NULL,
 	`detail` mediumtext,
@@ -20,10 +20,21 @@ CREATE TABLE `EventDetail` (
 	PRIMARY KEY (`user`, `id`)
 );
 
-CREATE TABLE `EventDescription` (
+CREATE TABLE IF NOT EXISTS `EventDescription` (
 	`user` varchar(255) NOT NULL,
 	`id` varchar(255) NOT NULL,
 	`description` mediumtext,
+	`updated_at` TIMESTAMP,
+	PRIMARY KEY (`user`, `id`)
+);
+
+CREATE TABLE IF NOT EXISTS `Photo` (
+    `user` varchar(255) NOT NULL,
+	`eventId` varchar(255) NOT NULL,
+	`id` varchar(255) NOT NULL,
+	`name` tinytext,
+	`thumbnail` mediumblob,
+	`photo` longblob,
 	`updated_at` TIMESTAMP,
 	PRIMARY KEY (`user`, `id`)
 );

@@ -1,6 +1,14 @@
 import { Injectable } from '@angular/core';
-import { AbstractControl, UntypedFormArray, UntypedFormBuilder, UntypedFormGroup, Validators } from '@angular/forms';
-import { CreateSpacedReps, SpacedRepModel } from '../models/spaced-rep.model';
+import {
+  AbstractControl,
+  FormArray,
+  FormControl,
+  UntypedFormArray,
+  UntypedFormBuilder,
+  UntypedFormGroup,
+  Validators
+} from '@angular/forms';
+import { CreateSpacedReps, Photo, SpacedRepModel } from '../models/spaced-rep.model';
 import { SettingsService } from './settings.service';
 import { filter, Observable } from 'rxjs';
 import { DEFAULT_CATEGORY } from '../models/settings.model';
@@ -12,9 +20,13 @@ export class EventFormService {
   form: UntypedFormGroup;
   private loaded = false;
 
+  get photosControl(): FormArray | null {
+    return this.form.get('photos') as FormArray;
+  }
+
   constructor(
     fb: UntypedFormBuilder,
-    private settingsService: SettingsService,
+    private settingsService: SettingsService
   ) {
     this.form = fb.group({
       title: [undefined, Validators.required],
@@ -30,7 +42,8 @@ export class EventFormService {
       repetitionNumber: [],
       boldTitle: [],
       highlightTitle: [],
-      category: [undefined, Validators.required]
+      category: [undefined, Validators.required],
+      photos: fb.array([])
     })
     this.reset();
   }
@@ -44,6 +57,7 @@ export class EventFormService {
   }
 
   reset(): void {
+    this.photosControl?.clear();
     this.form.setValue({
       repetitionSchema: this.settingsService.defaultRepetitionSchema.value,
       start: new Date(),
@@ -58,7 +72,8 @@ export class EventFormService {
       repetitionNumber: null,
       boldTitle: false,
       highlightTitle: false,
-      category: this.settingsService.currentCategory
+      category: this.settingsService.currentCategory,
+      photos: []
     });
     this.loaded = false;
   }
@@ -146,13 +161,46 @@ export class EventFormService {
         highlightTitle: event.highlightTitle,
         category: event.category || DEFAULT_CATEGORY
       });
+      const photos = event.photos;
+      this.loadPhotos(photos);
+
       this.loaded = true;
     }
+  }
+
+  loadPhotos(photos?: Photo[]) {
+    this.photosControl?.clear();
+    if (photos) {
+      this.addPhotos(photos);
+    }
+  }
+
+
+  addPhotos(photos: Photo[]) {
+    photos.forEach(p =>
+      this.photosControl?.push(new FormControl(p))
+    )
   }
 
   onEditedSpacedRep(): Observable<SpacedRepModel> {
     return this.form.valueChanges.pipe(
       filter(() => this.loaded)
     );
+  }
+
+  removePhoto(photo: Photo) {
+    const index = (this.photosControl?.value as Array<Photo>).findIndex(p => p === photo);
+    if (index > -1) {
+      this.photosControl?.removeAt(index);
+    }
+  }
+
+  getPhotos(): Photo[] {
+    return (this.photosControl?.value as Array<Photo>).map(p => ({
+      id: p.id,
+      thumbnail: p.id ? '' : p.thumbnail,
+      name: p.name,
+      toDelete: p.toDelete
+    }))
   }
 }
