@@ -132,67 +132,69 @@
               src="{{photo.id ? 'data:image/jpeg;base64,' : ''}}{{photo.thumbnail}}"
               alt="{{photo.name}}"
               width="100%"
-              class="col-3 md:col-2 xl:col-1"
+              class="col-3"
               [preview]="true"
               (onShow)="onImageShow(image, photo)"
               (onHide)="onImageHide(image, photo)"
             ></p-image>
             <div class="col">
-              <input
-                class="w-full"
-                pInputText
-                [(ngModel)]="photo.name"
-                [disabled]="!photo.editing"
-                [ngModelOptions]="{standalone: true}"
-              >
-            </div>
-            <div class="col">
-            <span class="p-buttonset">
-              <button
-                *ngIf="!photo.editing && !photo.toDelete"
-                pButton
-                icon="pi pi-pencil"
-                (click)="renamePhoto(photo)"
-                pTooltip="Rename"
-                [tooltipPosition]="'top'"
-              ></button>
-              <ng-container *ngIf="photo.editing">
-                <button
-                  pButton
-                  class="p-button-success"
-                  icon="pi pi-check"
-                  (click)="confirmRenamePhoto(photo)"
-                  pTooltip="Confirm"
-                  [tooltipPosition]="'top'"
-                ></button>
-                <button
-                  pButton
-                  icon="pi pi-times"
-                  (click)="cancelRenamePhoto(photo)"
-                  pTooltip="Cancel"
-                  [tooltipPosition]="'top'"
-                ></button>
-              </ng-container>
-              <ng-container *ngIf="!photo.editing">
-                <button
-                  *ngIf="!photo.toDelete"
-                  pButton
-                  class="p-button-danger"
-                  icon="pi pi-trash"
-                  (click)="deletePhoto(photo)"
-                  pTooltip="Delete"
-                  [tooltipPosition]="'top'"
-                ></button>
-                <button
-                  *ngIf="photo.toDelete"
-                  pButton
-                  icon="pi pi-replay"
-                  (click)="restorePhoto(photo)"
-                  pTooltip="Restore"
-                  [tooltipPosition]="'top'"
-                ></button>
-              </ng-container>
-            </span>
+              <div>
+                <input
+                  class="w-full"
+                  pInputText
+                  [(ngModel)]="photo.name"
+                  [disabled]="!photo.editing"
+                  [ngModelOptions]="{standalone: true}"
+                >
+              </div>
+              <div class="pt-1">
+                <span class="p-buttonset">
+                  <button
+                    *ngIf="!photo.editing && !photo.toDelete"
+                    pButton
+                    icon="pi pi-pencil"
+                    (click)="renamePhoto(photo)"
+                    pTooltip="Rename"
+                    [tooltipPosition]="'top'"
+                  ></button>
+                  <ng-container *ngIf="photo.editing">
+                    <button
+                      pButton
+                      class="p-button-success"
+                      icon="pi pi-check"
+                      (click)="confirmRenamePhoto(photo)"
+                      pTooltip="Confirm"
+                      [tooltipPosition]="'top'"
+                    ></button>
+                    <button
+                      pButton
+                      icon="pi pi-times"
+                      (click)="cancelRenamePhoto(photo)"
+                      pTooltip="Cancel"
+                      [tooltipPosition]="'top'"
+                    ></button>
+                  </ng-container>
+                  <ng-container *ngIf="!photo.editing">
+                    <button
+                      *ngIf="!photo.toDelete"
+                      pButton
+                      class="p-button-danger"
+                      icon="pi pi-trash"
+                      (click)="deletePhoto(photo)"
+                      pTooltip="Delete"
+                      [tooltipPosition]="'top'"
+                    ></button>
+                    <button
+                      *ngIf="photo.toDelete"
+                      pButton
+                      icon="pi pi-replay"
+                      (click)="restorePhoto(photo)"
+                      pTooltip="Restore"
+                      [tooltipPosition]="'top'"
+                    ></button>
+                  </ng-container>
+                </span>
+              </div>
             </div>
           </div>
         </div>
