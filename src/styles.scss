@@ -50,4 +50,12 @@
   z-index: 2;
 }
 
+.p-image-mask {
+  overflow: auto;
+
+  .p-image-toolbar {
+    position: fixed;
+  }
+}
+
 /*! purgecss end ignore */
