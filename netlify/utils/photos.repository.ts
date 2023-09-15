@@ -15,7 +15,7 @@ export const PhotosRepository = {
 
   async getPhotos(userId: string, eventId: string): Promise<RepositoryResult<any>> {
     console.log('getPhotos', {userId, eventId});
-    const result = await DB.execute("SELECT id, name, thumbnail FROM Photo WHERE user=:userId AND eventId=:eventId", {userId, eventId});
+    const result = await DB.execute("SELECT id, name, thumbnail FROM Photo WHERE user=:userId AND eventId=:eventId ORDER BY name ASC", {userId, eventId});
     const photos: any[] = result.rows;
     photos.forEach(p => {
       const thumbnailString = Buffer.from(p.thumbnail, 'binary').toString('base64');
