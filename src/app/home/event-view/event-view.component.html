@@ -98,6 +98,7 @@
   </p-tabPanel>
   <p-tabPanel header="Description">
     <p-editor
+      (keydown)="keyDown($event)"
       [formControlName]="'description'"
       [style]="{height: '73vh'}"
     ></p-editor>

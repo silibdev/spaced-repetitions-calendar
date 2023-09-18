@@ -242,4 +242,12 @@ export class EventViewComponent implements OnInit, BlockableUI {
       });
     }
   }
+
+  // Quill focus trap doesn't seem to work properly anymore
+  // this is a workaround
+  keyDown(event: KeyboardEvent) {
+    if (event.key === 'Tab') {
+      event.stopPropagation();
+    }
+  }
 }
