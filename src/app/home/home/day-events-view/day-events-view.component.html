@@ -1,0 +1,29 @@
+<div class="dev-open-day-events pb-2" *ngIf="isOpen" [@enterAnimation]="">
+  <div class="dev-event-row p-1 pb-2"
+       *ngFor="let event of events"
+       (mwlClick)="eventClicked.emit({event, sourceEvent: $event})"
+  >
+    <div class="dev-header grid">
+      <div class="col-fixed pr-0">
+        <p-avatar
+          [style]="{'background-color': event.color?.primary, width: '1.5rem', height: '1.5rem'}"
+          shape="circle"
+        ></p-avatar>
+        <span class="dev-done" [class.visible]="event.done"></span>
+      </div>
+      <div class="col">
+        <div class="grid">
+          <div class="col-8 md:col-9 lg:col-10 dev-title">
+            <div [class.dev-bold]="event.boldTitle" [class.dev-highlight]="event.highlightTitle">{{event.title}}</div>
+          </div>
+          <div class="col-4 md:col-3 lg:col-2">
+            <app-multi-segment-bar [correct]="5" [wrong]="5" [total]="15"></app-multi-segment-bar>
+          </div>
+          <div class="col-12 pt-0 dev-short-description">
+            {{event.shortDescription}}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

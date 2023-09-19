@@ -1,0 +1,33 @@
+.bar {
+  width: 100%;
+  display: flex;
+
+  .segment {
+    height: 100%;
+    text-align: center;
+
+    $radius: 10px;
+    &:first-child {
+      border-top-left-radius: $radius;
+      border-bottom-left-radius: $radius;
+    }
+
+    &:last-child {
+      border-top-right-radius: $radius;
+      border-bottom-right-radius: $radius;
+    }
+  }
+
+  .correct {
+    background-color: #35d935;
+
+  }
+
+  .wrong {
+    background-color: #ff352e;
+  }
+
+  .other {
+    background-color: #bebebe;
+  }
+}
