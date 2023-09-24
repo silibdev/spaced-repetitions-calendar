@@ -1,13 +1,26 @@
 import { Injectable, Provider } from '@angular/core';
 import {
   HTTP_INTERCEPTORS,
+  HttpErrorResponse,
   HttpEvent,
   HttpEventType,
   HttpHandler,
   HttpInterceptor,
   HttpRequest
 } from '@angular/common/http';
-import { bufferCount, first, map, Observable, ReplaySubject, shareReplay, Subject, switchMap, tap } from 'rxjs';
+import {
+  bufferCount,
+  catchError,
+  first,
+  map,
+  Observable,
+  ReplaySubject,
+  shareReplay,
+  Subject,
+  switchMap,
+  tap,
+  throwError
+} from 'rxjs';
 
 const BulkUrls = [
   `/api/event-descriptions`,
@@ -81,15 +94,28 @@ export class BulkInterceptor implements HttpInterceptor {
         emitter.next(id);
     }
 
-    return req.pipe(map(response => {
-      if (response.type !== HttpEventType.Response) {
-        return response;
-      }
-      const body = (response.body as any)?.data[id];
-      return response.clone({
-        body
-      });
-    }));
+    return req.pipe(
+      map(response => {
+        if (response.type !== HttpEventType.Response) {
+          return response;
+        }
+        const body = (response.body as any)?.data[id];
+        return response.clone({
+          body
+        });
+      }),
+      catchError((error: HttpErrorResponse) => {
+        const data = error.error.data[id];
+        return throwError(() => new HttpErrorResponse({
+            error: data,
+            headers: error.headers,
+            status: error.status,
+            statusText: error.statusText,
+            url: error.url || request.urlWithParams || undefined
+          })
+        );
+      })
+    );
   }
 }
 

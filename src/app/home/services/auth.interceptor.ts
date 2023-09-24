@@ -9,7 +9,6 @@ import {
 } from '@angular/common/http';
 import { catchError, Observable, of, switchMap, throwError } from 'rxjs';
 import { AuthService } from './auth.service';
-import { ApiService } from './api.service';
 
 export const ERROR_ANONYMOUS = 'error-anonymous';
 
@@ -17,8 +16,7 @@ export const ERROR_ANONYMOUS = 'error-anonymous';
 export class AuthInterceptor implements HttpInterceptor {
 
   constructor(
-    private authService: AuthService,
-    private apiService: ApiService
+    private authService: AuthService
   ) {
   }
 
@@ -39,14 +37,7 @@ export class AuthInterceptor implements HttpInterceptor {
         switchMap( refreshedToken => {
           const headers = request.headers.append('Authorization', 'Bearer ' + refreshedToken);
           request = request.clone({headers});
-          return next.handle(request).pipe(
-            catchError((error: HttpErrorResponse) => {
-              if (error.status === 500 && error.error?.data === 'OUT-OF-SYNC') {
-                this.apiService.setOutOfSync();
-              }
-              return throwError(() => error);
-            })
-          );
+          return next.handle(request);
         })
       );
     }

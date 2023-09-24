@@ -21,6 +21,7 @@ import { ToastModule } from 'primeng/toast';
 import { BULK_INTERCEPTOR_PROVIDER } from './home/services/bulk.interceptor';
 import { ProgressBarModule } from 'primeng/progressbar';
 import { LOADER_INTERCEPTOR_PROVIDER } from './home/services/loader.interceptor';
+import { OUT_OF_SYNC_INTERCEPTOR_PROVIDER } from './home/services/out-of-sync.interceptor';
 
 @NgModule({
   declarations: [
@@ -56,6 +57,7 @@ import { LOADER_INTERCEPTOR_PROVIDER } from './home/services/loader.interceptor'
       multi: true
     },
     LOADER_INTERCEPTOR_PROVIDER,
+    OUT_OF_SYNC_INTERCEPTOR_PROVIDER,
     BULK_INTERCEPTOR_PROVIDER,
     AUTH_INTERCEPTOR_PROVIDER
   ],
