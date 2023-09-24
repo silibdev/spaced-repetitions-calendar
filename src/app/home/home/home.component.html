@@ -27,8 +27,8 @@
   </app-calendar-header>
 
   <div [ngSwitch]="view" class="mt-3 calendar-container" *ngIf="events$ | async as events">
-    <ng-template #openDayEventsTemplate let-events="events" let-isOpen="isOpen">
-      <app-day-events-view [events]="events" [isOpen]="isOpen"></app-day-events-view>
+    <ng-template #openDayEventsTemplate let-events="events" let-isOpen="isOpen" let-eventClicked="eventClicked">
+      <app-day-events-view [events]="events" [isOpen]="isOpen" (eventClicked)="eventClicked.emit($event)"></app-day-events-view>
     </ng-template>
     <mwl-calendar-month-view
       *ngSwitchCase="CalendarView.Month"

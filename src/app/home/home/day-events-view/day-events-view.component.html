@@ -1,7 +1,7 @@
 <div class="dev-open-day-events pb-2" *ngIf="isOpen" [@enterAnimation]="">
   <div class="dev-event-row p-1 pb-2"
        *ngFor="let event of events"
-       (mwlClick)="eventClicked.emit({event, sourceEvent: $event})"
+       (click)="eventClicked.emit({event, sourceEvent: $event})"
   >
     <div class="dev-header grid">
       <div class="col-fixed pr-0">

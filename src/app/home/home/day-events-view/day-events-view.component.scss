@@ -6,6 +6,15 @@ app-day-events-view {
 
   .dev-event-row {
     border-bottom: 1px solid #e1e1e1;
+    cursor: pointer;
+
+    &:hover {
+      background-color: #ededed;
+
+      .dev-title {
+        text-decoration: underline;
+      }
+    }
 
     .col-fixed {
       display: flex;
