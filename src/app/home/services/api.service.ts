@@ -166,7 +166,7 @@ export class ApiService {
   private getWithCache<R>(url: string, {cacheKey, noCache, dontParse}: Extra): Observable<R> {
     return AppStorage.getItem(cacheKey).pipe(
       switchMap(cachedItem => {
-        if (!noCache && cachedItem || cachedItem === '') {
+        if (!noCache && (cachedItem || cachedItem === '')) {
           return dontParse ? of(cachedItem) : of(JSON.parse(cachedItem));
         }
         const cachedRequest = this.requestOptimizer.get(url);
