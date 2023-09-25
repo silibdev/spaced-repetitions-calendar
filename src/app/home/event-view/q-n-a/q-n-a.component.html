@@ -1,0 +1,23 @@
+<p-panel
+  *ngFor="let qna of (qna$ | async)"
+  [styleClass]="'pt-2'"
+  [toggleable]="true"
+  [collapsed]="true"
+  [expandIcon]="'pi pi-chevron-down'"
+  [collapseIcon]="'pi pi-chevron-right'"
+>
+  <ng-template pTemplate="header">
+    <div class="flex w-full">
+      <div class="flex-1">
+        {{qna.question}}
+      </div>
+      <div class="flex-none">
+        {{qna.status || 'NA'}}
+      </div>
+    </div>
+  </ng-template>
+  <ng-template pTemplate="content">
+    <p-editor [ngModel]="qna.answer">
+    </p-editor>
+  </ng-template>
+</p-panel>

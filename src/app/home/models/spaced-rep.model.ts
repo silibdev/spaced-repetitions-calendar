@@ -38,3 +38,9 @@ export interface CreateSpacedReps {
   startDate: Date;
   repetitionSchema: string;
 }
+
+export interface QNA {
+  question: string;
+  answer: string;
+  status: 'correct' | 'wrong' | undefined // undefined = not answered
+}

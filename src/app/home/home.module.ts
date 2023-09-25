@@ -37,6 +37,8 @@ import { TabViewModule } from 'primeng/tabview';
 import { AvatarModule } from 'primeng/avatar';
 import { DayEventsViewComponent } from './home/day-events-view/day-events-view.component';
 import { MultiSegmentBarComponent } from './multi-segment-bar/multi-segment-bar.component';
+import { QNAComponent } from './event-view/q-n-a/q-n-a.component';
+import { AccordionModule } from 'primeng/accordion';
 
 
 @NgModule({
@@ -49,7 +51,8 @@ import { MultiSegmentBarComponent } from './multi-segment-bar/multi-segment-bar.
     ListViewComponent,
     LoginComponent,
     DayEventsViewComponent,
-    MultiSegmentBarComponent
+    MultiSegmentBarComponent,
+    QNAComponent
   ],
   imports: [
     CommonModule,
@@ -82,7 +85,8 @@ import { MultiSegmentBarComponent } from './multi-segment-bar/multi-segment-bar.
     TooltipModule,
     ImageModule,
     TabViewModule,
-    AvatarModule
+    AvatarModule,
+    AccordionModule
   ],
   providers: [
     TitleFormatterProvider
