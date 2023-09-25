@@ -23,7 +23,6 @@ import {
   withLatestFrom
 } from 'rxjs';
 import { addDays, isAfter, isEqual } from 'date-fns';
-import { EventFormService } from './event-form.service';
 import { DescriptionsService } from './descriptions.service';
 import { EventDetailService } from './event-detail.service';
 import LZString from 'lz-string';
@@ -66,7 +65,6 @@ export class SpacedRepService {
   }
 
   constructor(
-    private eventFormService: EventFormService,
     private settingsService: SettingsService,
     private descriptionService: DescriptionsService,
     private eventDetailService: EventDetailService,
