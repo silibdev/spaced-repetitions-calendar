@@ -31,6 +31,7 @@ import { ApiService } from './api.service';
 import { Migrator } from '../../migrator';
 import * as LZUTF8 from 'lzutf8';
 import { DEFAULT_CATEGORY } from '../models/settings.model';
+import { ConfirmationService } from 'primeng/api';
 
 
 @Injectable({
@@ -491,12 +492,12 @@ export class SpacedRepService {
     return this.settingsService.sixthMigration();
   }
 
-  savePhotos(event: CommonSpacedRepModel, photos: Photo[]): Observable<unknown> {
+  savePhotos(event: CommonSpacedRepModel, photos: Photo[], confirmationService?: ConfirmationService): Observable<unknown> {
     const {masterId} = this.extractCommonModel(event);
     if (!photos.length) {
       return of(undefined);
     }
-    return this.apiService.savePhotos(masterId, photos);
+    return this.apiService.savePhotos(masterId, photos, confirmationService);
   }
 
   getPhotos(event: SpacedRepModel): Observable<Photo[]> {

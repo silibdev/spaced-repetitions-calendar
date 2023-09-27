@@ -99,4 +99,10 @@
     </ng-template>
   </p-dialog>
 </div>
-<p-confirmDialog icon="pi pi-exclamation-triangle" header="Confirm" acceptButtonStyleClass="p-button-outlined" [defaultFocus]="'reject'"></p-confirmDialog>
+<p-confirmDialog
+  icon="pi pi-exclamation-triangle"
+  header="Confirm"
+  acceptButtonStyleClass="p-button-outlined"
+  [defaultFocus]="'reject'"
+  (onHide)="notifier.next(null)"
+></p-confirmDialog>

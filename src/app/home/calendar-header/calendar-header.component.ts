@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CalendarView } from 'angular-calendar';
 
 export enum SRCCalendarView {
@@ -25,8 +25,8 @@ export class CalendarHeaderComponent {
 
   viewsOptions = [
     {label: 'Month', value: CalendarView.Month},
-    {label: 'Week', value: CalendarView.Week},
-    {label: 'Day', value: CalendarView.Day},
+    // {label: 'Week', value: CalendarView.Week},
+    // {label: 'Day', value: CalendarView.Day},
     {label: 'List', value: SRCCalendarView.List}
   ]
 }
