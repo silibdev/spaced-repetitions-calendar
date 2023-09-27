@@ -20,6 +20,7 @@ import { Color } from '../models/settings.model';
 import { FileUpload } from 'primeng/fileupload';
 import { Image } from 'primeng/image';
 import { SpacedRepService } from '../services/spaced-rep.service';
+import { ApiService } from '../services/api.service';
 
 interface FileSelectEvent {
   /**
@@ -45,6 +46,7 @@ type PhotoExt = Photo & { editing?: boolean, oldName?: string };
   styleUrls: ['./event-view.component.scss']
 })
 export class EventViewComponent implements OnInit, BlockableUI {
+  maxFileUpload = ApiService.MAX_FILE_UPLOAD;
   isEdit = false;
   isMaster = false;
 

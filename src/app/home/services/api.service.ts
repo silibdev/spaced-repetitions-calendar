@@ -4,6 +4,8 @@ import {
   BehaviorSubject,
   catchError,
   defaultIfEmpty,
+  delay,
+  finalize,
   forkJoin,
   from,
   map,
@@ -12,6 +14,7 @@ import {
   of,
   OperatorFunction,
   shareReplay,
+  Subject,
   switchMap,
   tap,
   throwError
@@ -20,6 +23,7 @@ import { FullSettings } from '../models/settings.model';
 import { ERROR_ANONYMOUS } from './auth.interceptor';
 import { CommonSpacedRepModel, Photo } from '../models/spaced-rep.model';
 import { AppStorage } from '../../app.storage';
+import { ConfirmationService } from 'primeng/api';
 
 const ApiUrls = {
   settings: '/api/settings',
@@ -72,6 +76,8 @@ function isAfter(dateA?: string, dateB?: string): boolean {
   providedIn: 'root'
 })
 export class ApiService {
+  public static MAX_FILE_UPLOAD = 6 * 1000 * 1000 //6MB
+
   private outOfSync$ = new BehaviorSubject(false);
 
   private MAP_DATA<T extends { data: string, updatedAt?: string }, R>(cacheKey: string, extra: {
@@ -425,12 +431,12 @@ export class ApiService {
     return this.httpClient.delete(ApiUrls.deleteAllData);
   }
 
-  savePhotos(masterId: string, photos: Photo[]): Observable<unknown> {
+  savePhotos(masterId: string, photos: Photo[], confirmationService?: ConfirmationService): Observable<unknown> {
     let somethingToSaveIsPresent = false;
-    const data = new FormData();
-    data.set('id', masterId);
+    const firstFormData = new FormData();
+    firstFormData.set('id', masterId);
     photos.filter(p => p.id && !p.toDelete).forEach(p => {
-        data.append('photoMetadata', JSON.stringify({id: p.id, name: p.name, toDelete: p.toDelete}));
+        firstFormData.append('photoMetadata', JSON.stringify({id: p.id, name: p.name, toDelete: p.toDelete}));
         somethingToSaveIsPresent = true;
       }
     );
@@ -445,21 +451,88 @@ export class ApiService {
           ))
       );
 
-    return forkJoin([forkJoin([...photoBlobs]).pipe(
-      defaultIfEmpty([]),
-      switchMap(blobs => {
-        blobs.forEach(b => {
-            data.append('newPhotos', b.blob, b.name);
-            somethingToSaveIsPresent = true;
+    const getWithRetry: (fd: FormData) => Observable<unknown> = (fd: FormData) => {
+      // return this.httpClient.post(ApiUrls.photos(masterId), fd).pipe(
+      return throwError(() => new Error('test')).pipe(delay(1000),
+        catchError((err) => {
+          if (!confirmationService) {
+            return err;
           }
-        );
+          const respObs$ = new Subject<string>();
 
-        if (!somethingToSaveIsPresent) {
-          return of(undefined);
-        }
-        return this.httpClient.post(ApiUrls.photos(masterId), data);
-      })
-    ),
+          const message = 'There are problems with '
+            + fd.getAll('newPhotos').map(f => typeof f !== 'string' ? `"${f.name}"` : '').join(', ') + '. '
+            + 'You can retry the saving or you can just skip. '
+            + 'If you skip the save the changes done to the photo, if any, will NOT be saved.';
+
+          confirmationService.confirm({
+
+            icon: 'pi pi-exclamation-triangle',
+            header: 'Error while saving photos',
+            message,
+            acceptLabel: 'Skip',
+            acceptIcon: 'hidden',
+            accept: () => respObs$.next('skip'),
+            rejectLabel: 'Retry',
+            rejectIcon: 'hidden',
+            reject: () => respObs$.next('retry')
+          });
+
+          return respObs$.pipe(
+            switchMap(retry => {
+              let retObs$;
+              if (retry === 'retry') {
+                retObs$ = getWithRetry(fd);
+              } else {
+                retObs$ = of(undefined);
+              }
+              return retObs$.pipe(
+                // https://stackoverflow.com/questions/47031924/when-using-rxjs-why-doesnt-switchmap-trigger-a-complete-event
+                // L'outer non completa in automatico se l'inner completa
+                finalize(() => respObs$.complete())
+              );
+            })
+          );
+        })
+      );
+    }
+
+    // @ts-ignore
+    const getFormDataSize = (fd: FormData) => [...fd].reduce((size, [name, value]) =>
+      size + (typeof value === 'string' ? value.length : value.size), 0
+    );
+
+
+    return forkJoin([
+      forkJoin(photoBlobs).pipe(
+        defaultIfEmpty([]),
+        switchMap(blobs => {
+          const dataGrouped = [firstFormData];
+          let i = 0;
+          let currSize = getFormDataSize(dataGrouped[i]);
+          blobs.forEach(b => {
+            const blobSize = b.blob.size;
+            currSize += blobSize;
+            if (currSize > ApiService.MAX_FILE_UPLOAD) {
+              const formData = new FormData();
+              dataGrouped.push(formData);
+              i += 1;
+              currSize = blobSize;
+            }
+            dataGrouped[i].append('newPhotos', b.blob, b.name);
+            somethingToSaveIsPresent = true;
+          });
+
+          if (!somethingToSaveIsPresent) {
+            return of(undefined);
+          }
+          return forkJoin(
+            dataGrouped.map(data =>
+              getWithRetry(data)
+            )
+          );
+        })
+      ),
       ...photosToDelete.map(p => this.httpClient.delete(ApiUrls.photos(masterId, p.id)))
     ]);
   }

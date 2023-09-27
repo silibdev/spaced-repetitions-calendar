@@ -58,4 +58,14 @@
   }
 }
 
+.p-messages {
+  .p-message-wrapper {
+    padding: 0.5rem 0.75rem;
+  }
+
+  .p-message .p-icon {
+    width: 1rem;
+    height: 1rem;
+  }
+}
 /*! purgecss end ignore */

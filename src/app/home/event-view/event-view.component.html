@@ -122,6 +122,7 @@
             chooseLabel="Upload"
             [chooseIcon]="'pi-upload'"
             [multiple]="true"
+            [maxFileSize]="maxFileUpload"
             accept=".png, .jpg, .jpeg"
             (onSelect)="addPhotos($event, fileUpload)"
           ></p-fileUpload>
