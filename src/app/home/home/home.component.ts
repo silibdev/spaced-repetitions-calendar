@@ -3,7 +3,21 @@ import { CalendarEvent, CalendarView } from 'angular-calendar';
 import { EventFormService } from '../services/event-form.service';
 import { SpacedRepService } from '../services/spaced-rep.service';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
-import { catchError, debounceTime, finalize, map, Observable, of, Subject, Subscription, switchMap, tap } from 'rxjs';
+import {
+  BehaviorSubject,
+  catchError,
+  debounceTime,
+  delay,
+  finalize,
+  map,
+  Observable,
+  of,
+  Subject,
+  Subscription,
+  switchMap,
+  tap,
+  zip
+} from 'rxjs';
 import { CommonSpacedRepModel, Photo, SpacedRepModel } from '../models/spaced-rep.model';
 import { isSameDay, isSameMonth } from 'date-fns';
 import { ConfirmationService } from 'primeng/api';
@@ -38,6 +52,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   lastAutoSave?: Date;
   categoryOpts: Category[] = [];
   initialCategory: string = '';
+  notifier: BehaviorSubject<null>;
 
   constructor(
     public eventFormService: EventFormService,
@@ -45,6 +60,17 @@ export class HomeComponent implements OnInit, OnDestroy {
     private spacedRepService: SpacedRepService,
     private confirmationService: ConfirmationService
   ) {
+    // This handle the case of multiple confirmation called in rapid succession
+    // the new confirmation object is passed only after the notifier (that emits when the confirmDialog is closed) emits
+    this.notifier = new BehaviorSubject(null);
+    const oldConfirmation = this.confirmationService.requireConfirmation$;
+    this.confirmationService.requireConfirmation$ = zip(
+      oldConfirmation,
+      this.notifier.pipe(delay(1000))
+    ).pipe(
+      map(([conf]) => conf)
+    );
+
     this.events$ = this.spacedRepService.getAll().pipe(
       tap(() => {
         this.categoryOpts = this.settingsService.categories;
@@ -207,38 +233,7 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   private savePhotos(event: CommonSpacedRepModel): Observable<unknown> {
     const photos = this.eventFormService.getPhotos();
-    return this.spacedRepService.savePhotos(event, photos).pipe(
-      catchError(() => {
-        const respObs$ = new Subject<string>();
-
-        this.confirmationService.confirm({
-          icon: 'pi pi-exclamation-triangle',
-          header: 'Error while saving photos',
-          message: 'You can retry the saving or you can just skip. If you skip the save the changes done to the photo, if any, will NOT be saved.',
-          acceptLabel: 'Skip',
-          acceptIcon: 'hidden',
-          accept: () => respObs$.next('skip'),
-          rejectLabel: 'Retry',
-          rejectIcon: 'hidden',
-          reject: () => respObs$.next('retry')
-        });
-
-        return respObs$.pipe(
-          switchMap(retry => {
-            if (retry === 'retry') {
-              return this.savePhotos(event);
-            } else {
-              return of(event).pipe(
-                // Perche' serve???
-                // https://stackoverflow.com/questions/47031924/when-using-rxjs-why-doesnt-switchmap-trigger-a-complete-event
-                // L'outer non completa in automatico se l'inner completa
-                finalize(() => respObs$.complete())
-              );
-            }
-          })
-        )
-      })
-    );
+    return this.spacedRepService.savePhotos(event, photos, this.confirmationService);
   }
 
   saveEvent(autoSaving?: boolean): void {
