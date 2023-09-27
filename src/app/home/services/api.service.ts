@@ -4,7 +4,6 @@ import {
   BehaviorSubject,
   catchError,
   defaultIfEmpty,
-  delay,
   finalize,
   forkJoin,
   from,
@@ -452,8 +451,8 @@ export class ApiService {
       );
 
     const getWithRetry: (fd: FormData) => Observable<unknown> = (fd: FormData) => {
-      // return this.httpClient.post(ApiUrls.photos(masterId), fd).pipe(
-      return throwError(() => new Error('test')).pipe(delay(1000),
+      return this.httpClient.post(ApiUrls.photos(masterId), fd).pipe(
+      // return throwError(() => new Error('test')).pipe(delay(1000),
         catchError((err) => {
           if (!confirmationService) {
             return err;
