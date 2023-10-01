@@ -12,6 +12,7 @@ import {
   map,
   Observable,
   of,
+  skip,
   Subject,
   Subscription,
   switchMap,
@@ -188,6 +189,7 @@ export class HomeComponent implements OnInit, OnDestroy {
         if (autoSavingTimer) {
           this.removeAutoSaving();
           this.autoSaveSub = this.eventFormService.onEditedSpacedRep().pipe(
+            skip(1),
             debounceTime(autoSavingTimer * 1000),
             tap(() => this.saveEvent(true))
           ).subscribe();
