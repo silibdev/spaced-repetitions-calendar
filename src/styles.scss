@@ -52,6 +52,12 @@
 
 .p-image-mask {
   overflow: auto;
+  align-items: start !important;
+  justify-content: start !important;
+
+  .p-image-preview {
+    transform-origin: top left;
+  }
 
   .p-image-toolbar {
     position: fixed;
