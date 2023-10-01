@@ -1,18 +1,74 @@
+<p-confirmPopup></p-confirmPopup>
 <p-panel
   *ngFor="let qna of (qna$ | async)"
   [styleClass]="'pt-2'"
   [toggleable]="true"
-  [collapsed]="true"
+  [collapsed]="!!qna.id"
   [expandIcon]="'pi pi-chevron-down'"
   [collapseIcon]="'pi pi-chevron-right'"
 >
   <ng-template pTemplate="header">
-    <div class="flex w-full">
+    <div class="flex align-items-center w-full">
       <div class="flex-1">
-        {{qna.question}}
+        <p-inplace #inplace [active]="!qna.id">
+          <ng-template pTemplate="display">
+            <span
+              class="inline-block"
+              [style.white-space]="'pre'"
+            >{{qna.question}}</span>
+          </ng-template>
+          <ng-template pTemplate="content">
+            <textarea
+              pInputText
+              class="w-full"
+              rows="3"
+              [style.resize]="'vertical'"
+              [(ngModel)]="qna.question"
+              [ngModelOptions]="{standalone: true}"
+            ></textarea>
+            <button
+              pButton
+              icon="pi pi-check"
+              class="ml-3"
+              (click)="inplace.deactivate($event)"
+            ></button>
+          </ng-template>
+        </p-inplace>
       </div>
-      <div class="flex-none">
-        {{qna.status || 'NA'}}
+      <div class="flex-none" *ngIf="!enableDelete">
+        <ng-container *ngIf="qna.status">
+          <p-tag
+            [severity]="qna.status === 'correct' ? 'success' : 'danger'"
+            [rounded]="true"
+          >
+            <span class="pi pi-times cursor-pointer mr-2" (click)="setStatus(qna, 'R')"></span>
+            <span>{{qna.status === 'correct' ? 'Correct' : 'Wrong'}}</span>
+          </p-tag>
+        </ng-container>
+        <ng-container *ngIf="!qna.status">
+          <span class="p-buttonset">
+            <button
+              pButton
+              class="p-button-outlined p-button-success p-button-sm"
+              label="Correct"
+              (click)="setStatus(qna, 'C')"
+            ></button>
+            <button
+              pButton
+              class="p-button-outlined p-button-danger p-button-sm"
+              label="Wrong"
+              (click)="setStatus(qna, 'W')"
+            ></button>
+          </span>
+        </ng-container>
+      </div>
+      <div class="flex-none" *ngIf="enableDelete">
+        <button
+          pButton
+          class="p-button-danger p-button-sm"
+          label="Delete"
+          (click)="confirmDelete(qna, $event)"
+        ></button>
       </div>
     </div>
   </ng-template>
@@ -21,3 +77,26 @@
     </p-editor>
   </ng-template>
 </p-panel>
+
+<div class="mt-3 flex justify-content-between">
+  <button
+    pButton
+    [style.visibility]="enableDelete ? 'hidden' : 'visible'"
+    label="Add Q&A"
+    (click)="addQNA()"
+  ></button>
+
+  <button
+    *ngIf="!enableDelete"
+    pButton
+    class="p-button-danger"
+    label="Enable delete Q&A"
+    (click)="enableDeleteQNA()"
+  ></button>
+  <button
+    *ngIf="enableDelete"
+    pButton
+    label="Disable delete Q&A"
+    (click)="disableDeleteQNA()"
+  ></button>
+</div>

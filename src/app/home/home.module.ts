@@ -39,6 +39,9 @@ import { DayEventsViewComponent } from './home/day-events-view/day-events-view.c
 import { MultiSegmentBarComponent } from './multi-segment-bar/multi-segment-bar.component';
 import { QNAComponent } from './event-view/q-n-a/q-n-a.component';
 import { AccordionModule } from 'primeng/accordion';
+import { TagModule } from 'primeng/tag';
+import { InplaceModule } from 'primeng/inplace';
+import { ConfirmPopupModule } from 'primeng/confirmpopup';
 
 
 @NgModule({
@@ -86,7 +89,10 @@ import { AccordionModule } from 'primeng/accordion';
     ImageModule,
     TabViewModule,
     AvatarModule,
-    AccordionModule
+    AccordionModule,
+    TagModule,
+    InplaceModule,
+    ConfirmPopupModule
   ],
   providers: [
     TitleFormatterProvider

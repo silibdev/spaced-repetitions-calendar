@@ -39,8 +39,11 @@ export interface CreateSpacedReps {
   repetitionSchema: string;
 }
 
+export type QNAStatus = 'correct' | 'wrong' | undefined // undefined = not answered
+
 export interface QNA {
   question: string;
   answer: string;
-  status: 'correct' | 'wrong' | undefined // undefined = not answered
+  status: QNAStatus;
+  id?: string;
 }

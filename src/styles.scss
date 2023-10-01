@@ -74,4 +74,16 @@
     height: 1rem;
   }
 }
+
+.p-inplace {
+  .p-inplace-display {
+    display: inline-block !important;
+  }
+
+  .p-inplace-content {
+    display: inline-flex !important;
+    align-items: end;
+    width: 90%;
+  }
+}
 /*! purgecss end ignore */
