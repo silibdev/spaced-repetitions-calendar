@@ -16,8 +16,13 @@
           <div class="col-8 md:col-9 lg:col-10 dev-title">
             <div [class.dev-bold]="event.boldTitle" [class.dev-highlight]="event.highlightTitle">{{event.title}}</div>
           </div>
-          <div class="col-4 md:col-3 lg:col-2">
-            <app-multi-segment-bar [correct]="5" [wrong]="5" [total]="15"></app-multi-segment-bar>
+          <div class="col-4 md:col-3 lg:col-2" *ngIf="segmentsMap$ | async as segmentsMap">
+            <app-multi-segment-bar
+              *ngIf="segmentsMap[event.id] | async as sm"
+              [correct]="sm.correct"
+              [wrong]="sm.wrong"
+              [total]="sm.total"
+            ></app-multi-segment-bar>
           </div>
           <div class="col-12 pt-0 dev-short-description">
             {{event.shortDescription}}

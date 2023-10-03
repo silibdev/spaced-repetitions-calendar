@@ -1,10 +1,10 @@
 import { Component, Input, OnChanges, OnDestroy, SimpleChanges } from '@angular/core';
-import { QNAService } from '../../services/q-n-a.service';
-import { Observable, tap } from 'rxjs';
+import { Observable } from 'rxjs';
 import { QNA, QNAStatus } from '../../models/spaced-rep.model';
 import { Utils } from '../../../utils';
 import confetti from 'canvas-confetti';
 import { ConfirmationService } from 'primeng/api';
+import { QNAFormService } from '../../services/q-n-a-form.service';
 
 @Component({
   selector: 'app-q-n-a',
@@ -13,19 +13,19 @@ import { ConfirmationService } from 'primeng/api';
   providers: [ConfirmationService]
 })
 export class QNAComponent implements OnChanges, OnDestroy {
+
   @Input()
-  id: string | undefined;
+  ids: { masterId: string, eventId: string } | undefined;
 
   qna$?: Observable<QNA[]>;
-
-  correctAudio = new Audio();
-  wrongAudio = new Audio();
-  completeAudio = new Audio();
-  private qnas?: QNA[];
   enableDelete = false;
 
+  private correctAudio = new Audio();
+  private wrongAudio = new Audio();
+  private completeAudio = new Audio();
+
   constructor(
-    private qnaService: QNAService,
+    private qnaFormService: QNAFormService,
     private confirmationService: ConfirmationService
   ) {
     this.correctAudio.src = 'assets/sounds/correct.mp3';
@@ -39,23 +39,14 @@ export class QNAComponent implements OnChanges, OnDestroy {
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['id']) {
-      this.loadQNA(changes['id'].currentValue);
+    if (changes['ids']) {
+      this.loadQNA(changes['ids'].currentValue);
     }
   }
 
-  private reset(): void {
-  }
-
-  private loadQNA(id: string | undefined) {
-    if (!id) {
-      this.reset();
-      return;
-    }
-
-    this.qna$ = this.qnaService.get(id).pipe(
-      tap(qnas => this.qnas = qnas)
-    );
+  private loadQNA(ids: { masterId: string, eventId: string } | undefined) {
+    this.enableDelete = false;
+    this.qna$ = this.qnaFormService.load(ids?.masterId, ids?.eventId);
   }
 
   setStatus(qna: QNA, status: 'R' | 'C' | 'W') { // Reset | Correct | Wrong
@@ -74,7 +65,7 @@ export class QNAComponent implements OnChanges, OnDestroy {
 
     const audio = audioMap[status];
     Utils.playAudio(audio).then(() => {
-      if (this.qnas && this.qnas.every(q => !!q.status)) {
+      if (this.qnaFormService.areAllAnswered()) {
         Utils.playAudio(this.completeAudio);
         confetti({
           zIndex: 999999,
@@ -91,18 +82,11 @@ export class QNAComponent implements OnChanges, OnDestroy {
   }
 
   addQNA() {
-    this.qnas?.push({
-      question: '',
-      status: undefined,
-      answer: ''
-    })
+    this.qnaFormService.addNewQNA();
   }
 
   deleteQNA(qna: QNA) {
-    const index = this.qnas?.findIndex(q => qna === q);
-    if (typeof index === 'number' && index >= 0) {
-      this.qnas?.splice(index, 1);
-    }
+    this.qnaFormService.deleteQNA(qna);
   }
 
   confirmDelete(qna: QNA, event: Event) {
