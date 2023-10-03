@@ -41,8 +41,8 @@
             [severity]="qna.status === 'correct' ? 'success' : 'danger'"
             [rounded]="true"
           >
-            <span class="pi pi-times cursor-pointer mr-2" (click)="setStatus(qna, 'R')"></span>
             <span>{{qna.status === 'correct' ? 'Correct' : 'Wrong'}}</span>
+            <span class="pi pi-times cursor-pointer ml-2" (click)="setStatus(qna, 'R')"></span>
           </p-tag>
         </ng-container>
         <ng-container *ngIf="!qna.status">
@@ -73,7 +73,7 @@
     </div>
   </ng-template>
   <ng-template pTemplate="content">
-    <p-editor [ngModel]="qna.answer">
+    <p-editor [(ngModel)]="qna.answer">
     </p-editor>
   </ng-template>
 </p-panel>
@@ -86,17 +86,21 @@
     (click)="addQNA()"
   ></button>
 
-  <button
-    *ngIf="!enableDelete"
-    pButton
-    class="p-button-danger"
-    label="Enable delete Q&A"
-    (click)="enableDeleteQNA()"
-  ></button>
-  <button
-    *ngIf="enableDelete"
-    pButton
-    label="Disable delete Q&A"
-    (click)="disableDeleteQNA()"
-  ></button>
+  <ng-container *ngIf="(qna$ | async) as qna">
+    <ng-container *ngIf="qna.length > 0">
+      <button
+        *ngIf="!enableDelete"
+        pButton
+        class="p-button-danger"
+        label="Enable delete Q&A"
+        (click)="enableDeleteQNA()"
+      ></button>
+      <button
+        *ngIf="enableDelete"
+        pButton
+        label="Disable delete Q&A"
+        (click)="disableDeleteQNA()"
+      ></button>
+    </ng-container>
+  </ng-container>
 </div>

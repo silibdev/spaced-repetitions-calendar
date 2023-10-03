@@ -1,5 +1,5 @@
 import { Component, Input, OnChanges, OnDestroy, SimpleChanges } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, shareReplay } from 'rxjs';
 import { QNA, QNAStatus } from '../../models/spaced-rep.model';
 import { Utils } from '../../../utils';
 import confetti from 'canvas-confetti';
@@ -46,7 +46,7 @@ export class QNAComponent implements OnChanges, OnDestroy {
 
   private loadQNA(ids: { masterId: string, eventId: string } | undefined) {
     this.enableDelete = false;
-    this.qna$ = this.qnaFormService.load(ids?.masterId, ids?.eventId);
+    this.qna$ = this.qnaFormService.load(ids?.masterId, ids?.eventId).pipe(shareReplay(1));
   }
 
   setStatus(qna: QNA, status: 'R' | 'C' | 'W') { // Reset | Correct | Wrong

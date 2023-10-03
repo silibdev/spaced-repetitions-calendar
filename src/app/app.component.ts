@@ -122,7 +122,7 @@ export class AppComponent {
     this.loadingValuePerc$ = this.loaderService.loadingStatus$.pipe(
       // Wait 250ms before showing the loader
       debounce(loadingStatus => {
-        if (loadingStatus.total === 1) {
+        if (loadingStatus.total >= 1) {
           return timer(200);
         }
         return of(undefined);
