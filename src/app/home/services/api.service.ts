@@ -20,7 +20,7 @@ import {
 } from 'rxjs';
 import { FullSettings } from '../models/settings.model';
 import { ERROR_ANONYMOUS } from './auth.interceptor';
-import { CommonSpacedRepModel, Photo } from '../models/spaced-rep.model';
+import { CommonSpacedRepModel, Photo, QNA } from '../models/spaced-rep.model';
 import { AppStorage } from '../../app.storage';
 import { ConfirmationService } from 'primeng/api';
 
@@ -28,10 +28,11 @@ const ApiUrls = {
   settings: '/api/settings',
   eventList: '/api/event-list',
   deleteAllData: '/api/data',
-  description: (id: string) => `/api/event-descriptions?id=${id}`,
-  detail: (id: string) => `/api/event-details?id=${id}`,
+  description: (eventId: string) => `/api/event-descriptions?id=${eventId}`,
+  detail: (eventId: string) => `/api/event-details?id=${eventId}`,
   lastUpdates: '/api/last-updates',
-  photos: (id: string, photoId?: string) => `/api/photos?id=${id}${photoId ? '&photoId=' + photoId : ''}`
+  photos: (eventId: string, photoId?: string) => `/api/photos?id=${eventId}${photoId ? '&photoId=' + photoId : ''}`,
+  qnas: (masterId: string, eventId: string, qnaId?: string) => `/api/qnas?id=${eventId}&masterId=${masterId}${qnaId ? '&qnaId=' + qnaId : ''}`
 }
 
 const OPTS_DB_NAME = 'src-opts-db';
@@ -548,5 +549,21 @@ export class ApiService {
         return URL.createObjectURL(res);
       })
     );
+  }
+
+  getQNA(masterId: string, eventId: string): Observable<QNA[]> {
+    return this.httpClient.get(ApiUrls.qnas(masterId, eventId)).pipe(
+      map<any, QNA[]>(res => res.data)
+    );
+  }
+
+  setQNA(masterId: string, eventId: string, qna: QNA): Observable<{id: string}> {
+    return this.httpClient.post(ApiUrls.qnas(masterId, eventId, qna.id), {data: qna}).pipe(
+      map<any, {id: string}>(res => res.data)
+    );
+  }
+
+  deleteQNA(masterId: string, eventId: string, idQna: string): Observable<unknown> {
+    return this.httpClient.delete(ApiUrls.qnas(masterId, eventId, idQna));
   }
 }
