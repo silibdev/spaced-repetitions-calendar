@@ -100,7 +100,7 @@ export class ApiService {
       if (error === ERROR_ANONYMOUS) {
         return of(data);
       }
-      return throwError(error);
+      return throwError(() => error);
     }))
   }
 

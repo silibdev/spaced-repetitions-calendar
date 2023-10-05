@@ -43,7 +43,7 @@ export class QNAFormService {
       question: '',
       status: undefined,
       answer: ''
-    })
+    });
   }
 
   deleteQNA(qna: QNA) {

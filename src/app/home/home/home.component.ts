@@ -266,7 +266,10 @@ export class HomeComponent implements OnInit, OnDestroy {
           this.lastAutoSave = new Date();
           return of();
         } else {
-          return forkJoin([this.savePhotos(event), this.saveQNA(event.linkedSpacedRepId || event.id, event.id)]);
+          return forkJoin([
+            this.savePhotos(event),
+            this.saveQNA(event.linkedSpacedRepId || event.id, event.id)
+          ]);
         }
       }),
       finalize(() => {
@@ -281,6 +284,6 @@ export class HomeComponent implements OnInit, OnDestroy {
   private saveQNA(masterId: string, eventId: string) {
     const qnas = this.qnaFormService.qnas;
     const qnasToDelete = this.qnaFormService.qnasToDelete;
-    return this.qnaService.save(masterId, eventId, qnas, qnasToDelete);
+    return this.qnaService.save(masterId, eventId, qnas, qnasToDelete, this.confirmationService);
   }
 }
