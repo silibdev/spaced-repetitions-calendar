@@ -46,8 +46,8 @@ export const EventDetailRepository = {
 
   async bulkGetEventDetail(userId: string, ids: string[]): Promise<RepositoryResult<Record<string, RepositoryResult<string>>>> {
     const result = await DB.execute("SELECT id, detail, updated_at FROM EventDetail WHERE user=:userId AND id IN (:ids)", {userId, ids});
-    const returnData = result.rows.reduce<Record<string, RepositoryResult<string>>>( (acc, row: any) => {
-      acc[row['id']] = {
+    const returnData = result.rows.reduce<Record<string, RepositoryResult<string>>>((acc, row: any) => {
+      acc['id=' + row['id']] = {
         data: row['detail'],
         updatedAt: getUpdatedAtFromRow(row)
       };
@@ -57,7 +57,7 @@ export const EventDetailRepository = {
   },
 
   async bulkPostEventDetail(userId: string, bulkData: BulkRequestBodyData[]): Promise<RepositoryResult<Record<string, RepositoryResult<string>>>> {
-    const ids = bulkData.map(bd => bd.queryParams);
+    const ids = bulkData.map(bd => new URLSearchParams(bd.queryParams).get('id') as string);
     const bulkLastUpdates = bulkData.reduce((acc, bd) => {
       acc[bd.queryParams] = bd.body?.lastUpdatedAt!;
       return acc;
@@ -70,14 +70,14 @@ export const EventDetailRepository = {
     const updatedAt = new Date().toISOString();
     // CREATE VALUES FOR QUERY
     const values = bulkData
-      .map( bd => db_formatter('(?,?,?,?)', [userId, bd.queryParams, bd.body?.data, updatedAt]))
+      .map(bd => db_formatter('(?,?,?,?)', [userId, bd.queryParams, bd.body?.data, updatedAt]))
       .join(',');
     const query = `INSERT INTO EventDetail (user, id, detail, updated_at) VALUES ${values} ON DUPLICATE KEY UPDATE detail=VALUES(detail), updated_at=VALUES(updated_at)`;
 
     const result = await DB.execute(query);
     console.log('post eventDetail', result.insertId);
 
-    const returnData = bulkData.reduce( (acc, bd) => {
+    const returnData = bulkData.reduce((acc, bd) => {
       acc[bd.queryParams] = {data: '{"ok":"ok"}', updatedAt};
       return acc;
     }, {} as Record<string, RepositoryResult<string>>);
