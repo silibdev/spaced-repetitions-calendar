@@ -75,9 +75,7 @@ export const QNAsRepository = {
     return {data: {id}, updatedAt};
   },
 
-  async deleteQNA(userId: string, masterId: string, eventId: string, qnaId: string): Promise<RepositoryResult<{
-    id: string
-  }>> {
+  async deleteQNA(userId: string, masterId: string, eventId: string, qnaId: string): Promise<RepositoryResult<{ id: string }>> {
     const [templateResult, statusResult] = await DB.transaction(async tx => {
       const tQuery = `
         DELETE FROM QNATemplate WHERE user = :userId AND eventId = :masterId AND id = :qnaId

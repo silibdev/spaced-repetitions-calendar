@@ -23,9 +23,11 @@ import {
 } from 'rxjs';
 
 const BulkUrls = [
-  `/api/event-descriptions`,
-  `/api/event-details`,
-  `/api/qnas`,
+  { url: `/api/event-descriptions`},
+  { url: `/api/event-details`},
+  {
+    url: `/api/qnas`, methods: ['GET']
+  }
 ];
 
 type BulkBody = {
@@ -41,8 +43,16 @@ export class BulkInterceptor implements HttpInterceptor {
   constructor() {
   }
 
+  private checkIfBulk(urlToCheck: string, methodToCheck: string): boolean {
+    return BulkUrls.some(urlOpt => {
+      const url = urlOpt.url;
+      const methods = urlOpt.methods || ['GET', 'POST'];
+      return urlToCheck.startsWith(url) && methods.includes(methodToCheck);
+    });
+  }
+
   intercept(request: HttpRequest<unknown>, next: HttpHandler): Observable<HttpEvent<unknown>> {
-    if (!BulkUrls.some(url => request.url.startsWith(url)) || !['GET', 'POST'].includes(request.method)) {
+    if (!this.checkIfBulk(request.url, request.method)) {
       return next.handle(request);
     }
 
@@ -105,7 +115,7 @@ export class BulkInterceptor implements HttpInterceptor {
         if (response.type !== HttpEventType.Response) {
           return response;
         }
-        const body = (response.body as any)?.data[queryParams] || null;
+        const body = (response.body as any)?.data[queryParams] || {data: undefined, updatedAt: ''};
         return response.clone({
           body
         });

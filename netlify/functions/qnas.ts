@@ -47,10 +47,6 @@ async function bulkQNAs(userId: string, {data, method}: BulkRequestBody): Promis
     case 'GET':
       response = await QNAsRepository.bulkGetQNA(userId, bulkQueryParams);
       break;
-    case 'POST':
-      response = {data: '', updatedAt: ''};
-      // response = await EventDetailRepository.bulkPostEventDetail(userId, data);
-      break;
     default:
       response = {data: 'impossible', statusCode: 500, updatedAt: new Date().toISOString()};
   }
