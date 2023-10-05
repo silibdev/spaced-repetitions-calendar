@@ -24,13 +24,19 @@ import {
 
 const BulkUrls = [
   `/api/event-descriptions`,
-  `/api/event-details`
-]
+  `/api/event-details`,
+  `/api/qnas`,
+];
+
+type BulkBody = {
+  queryParams: string,
+  body?: any
+}
 
 @Injectable()
 export class BulkInterceptor implements HttpInterceptor {
 
-  private bulkRequestMap = new Map<string, { emitter: Subject<any>, req: Observable<HttpEvent<unknown>> }>();
+  private bulkRequestMap = new Map<string, { emitter: Subject<BulkBody>, req: Observable<HttpEvent<unknown>> }>();
 
   constructor() {
   }
@@ -40,11 +46,11 @@ export class BulkInterceptor implements HttpInterceptor {
       return next.handle(request);
     }
 
-    const [url, id] = request.url.split('?id=');
+    const [url, queryParams] = request.url.split('?');
     const key = request.method + '-' + url;
 
     if (!this.bulkRequestMap.has(key)) {
-      const subject = new ReplaySubject(1);
+      const subject = new ReplaySubject<BulkBody>(1);
       let timeout: any;
       const clearSubject = () => {
         subject.complete();
@@ -88,10 +94,10 @@ export class BulkInterceptor implements HttpInterceptor {
     switch (request.method) {
       case 'POST':
       case 'PUT':
-        emitter.next({id, data: request.body});
+        emitter.next({queryParams, body: request.body});
         break;
       default:
-        emitter.next(id);
+        emitter.next({queryParams});
     }
 
     return req.pipe(
@@ -99,13 +105,13 @@ export class BulkInterceptor implements HttpInterceptor {
         if (response.type !== HttpEventType.Response) {
           return response;
         }
-        const body = (response.body as any)?.data[id];
+        const body = (response.body as any)?.data[queryParams] || null;
         return response.clone({
           body
         });
       }),
       catchError((error: HttpErrorResponse) => {
-        const data = error.error.data[id];
+        const data = error.error.data[queryParams];
         return throwError(() => new HttpErrorResponse({
             error: data,
             headers: error.headers,

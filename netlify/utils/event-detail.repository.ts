@@ -1,5 +1,12 @@
 import { DB, db_formatter } from './db-connector';
-import { bulkCheckLastUpdate, checkLastUpdate, getUpdatedAtFromRow, RepositoryResult, RequestBody } from './utils';
+import {
+  bulkCheckLastUpdate,
+  BulkRequestBodyData,
+  checkLastUpdate,
+  getUpdatedAtFromRow,
+  RepositoryResult,
+  RequestBody
+} from './utils';
 
 export const EventDetailRepository = {
   async getEventDetail(userId: string, eventId: string): Promise<RepositoryResult<string>> {
@@ -49,10 +56,10 @@ export const EventDetailRepository = {
     return {data: returnData, updatedAt: new Date().toISOString()};
   },
 
-  async bulkPostEventDetail(userId: string, bulkData: { id: string, data: RequestBody }[]): Promise<RepositoryResult<Record<string, RepositoryResult<string>>>> {
-    const ids = bulkData.map(bd => bd.id);
+  async bulkPostEventDetail(userId: string, bulkData: BulkRequestBodyData[]): Promise<RepositoryResult<Record<string, RepositoryResult<string>>>> {
+    const ids = bulkData.map(bd => bd.queryParams);
     const bulkLastUpdates = bulkData.reduce((acc, bd) => {
-      acc[bd.id] = bd.data.lastUpdatedAt!;
+      acc[bd.queryParams] = bd.body?.lastUpdatedAt!;
       return acc;
     }, {} as Record<string, string>);
 
@@ -63,7 +70,7 @@ export const EventDetailRepository = {
     const updatedAt = new Date().toISOString();
     // CREATE VALUES FOR QUERY
     const values = bulkData
-      .map( bd => db_formatter('(?,?,?,?)', [userId, bd.id, bd.data.data, updatedAt]))
+      .map( bd => db_formatter('(?,?,?,?)', [userId, bd.queryParams, bd.body?.data, updatedAt]))
       .join(',');
     const query = `INSERT INTO EventDetail (user, id, detail, updated_at) VALUES ${values} ON DUPLICATE KEY UPDATE detail=VALUES(detail), updated_at=VALUES(updated_at)`;
 
@@ -71,7 +78,7 @@ export const EventDetailRepository = {
     console.log('post eventDetail', result.insertId);
 
     const returnData = bulkData.reduce( (acc, bd) => {
-      acc[bd.id] = {data: '{"ok":"ok"}', updatedAt};
+      acc[bd.queryParams] = {data: '{"ok":"ok"}', updatedAt};
       return acc;
     }, {} as Record<string, RepositoryResult<string>>);
     return {data: returnData, updatedAt};
