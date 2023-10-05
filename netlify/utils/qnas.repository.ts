@@ -1,5 +1,5 @@
 import { getUpdatedAtFromRow, RepositoryResult, RequestBody } from './utils';
-import { DB } from './db-connector';
+import { DB, db_formatter } from './db-connector';
 
 export const QNAsRepository = {
 
@@ -62,17 +62,22 @@ export const QNAsRepository = {
       }
       const sResult = await tx.execute(sQuery, sParams);
 
-      const idResult = await tx.execute('SELECT id FROM QNATemplate WHERE user=:userId AND eventId=:masterId AND id=@QNAID', {userId, masterId});
+      const idResult = await tx.execute('SELECT id FROM QNATemplate WHERE user=:userId AND eventId=:masterId AND id=@QNAID', {
+        userId,
+        masterId
+      });
 
       const id = (idResult.rows[0] as any).id;
-      return[tResult, sResult, id]
+      return [tResult, sResult, id]
     });
 
     console.log('post qna', {templateResult, statusResult});
     return {data: {id}, updatedAt};
   },
 
-  async deleteQNA(userId: string, masterId: string, eventId: string, qnaId: string): Promise<RepositoryResult<{ id: string }>> {
+  async deleteQNA(userId: string, masterId: string, eventId: string, qnaId: string): Promise<RepositoryResult<{
+    id: string
+  }>> {
     const [templateResult, statusResult] = await DB.transaction(async tx => {
       const tQuery = `
         DELETE FROM QNATemplate WHERE user = :userId AND eventId = :masterId AND id = :qnaId
@@ -80,7 +85,7 @@ export const QNAsRepository = {
       const tParams = {
         userId,
         qnaId,
-        masterId,
+        masterId
       }
       const tResult = await tx.execute(tQuery, tParams);
 
@@ -89,15 +94,41 @@ export const QNAsRepository = {
       `;
       const sParams = {
         userId,
-        qnaId,
+        qnaId
       }
       const sResult = await tx.execute(sQuery, sParams);
 
-      return[tResult.insertId, sResult.insertId]
+      return [tResult.insertId, sResult.insertId]
     });
 
     console.log('delete qna', {templateResult, statusResult});
 
     return {data: {id: qnaId}, updatedAt: new Date().toISOString()};
+  },
+
+  async bulkGetQNA(userId: string, bulkQueryParamsString: string[]): Promise<RepositoryResult<any>> {
+    const bulkQueryParams = bulkQueryParamsString.map(q => new URLSearchParams(q));
+    const ids = bulkQueryParams.map(q => db_formatter('(:ids)', {ids: [q.get('masterId'), q.get('id')]}));
+    const result = await DB.execute(`
+      SELECT T.id, T.eventId as masterId, S.eventId as eventId, T.question, T.answer, S.status
+      FROM QNATemplate as T
+      JOIN QNAStatus as S ON (T.user = S.user AND T.id = S.id)
+      WHERE T.user=:userId AND (T.eventId, S.eventId) IN (${ids.join(', ')})
+    `, {userId});
+
+    const returnData = result.rows.reduce<Record<string, RepositoryResult<any[]>>>((acc, row: Record<string, any>, i) => {
+      const {eventId, masterId, ...qna} = row;
+      const id = `id=${eventId}&masterId=${masterId}`;
+      if (!acc[id]) {
+        acc[id] = {
+          data: [],
+          updatedAt: ''
+        };
+      }
+      acc[id].data.push(qna);
+      return acc;
+    }, {});
+
+    return {data: returnData, updatedAt: new Date().toISOString()};
   }
 }
