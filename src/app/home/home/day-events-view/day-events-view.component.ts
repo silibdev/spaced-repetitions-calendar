@@ -11,7 +11,7 @@ import {
 import { SpacedRepModel } from '../../models/spaced-rep.model';
 import { animate, style, transition, trigger } from '@angular/animations';
 import { QNAService } from '../../services/q-n-a.service';
-import { BehaviorSubject, debounceTime, map, Observable, shareReplay, tap } from 'rxjs';
+import { BehaviorSubject, debounceTime, filter, map, Observable, shareReplay, tap } from 'rxjs';
 import { UntilDestroy } from '@ngneat/until-destroy';
 
 interface SegmentInput {
@@ -40,7 +40,7 @@ interface SegmentInput {
         ])
       ]
     )
-  ],
+  ]
 })
 export class DayEventsViewComponent implements OnChanges {
 
@@ -61,14 +61,13 @@ export class DayEventsViewComponent implements OnChanges {
   constructor(
     private qnaService: QNAService
   ) {
-    console.log('constructed');
-
     this.segmentsMap$ = this.segmentsMapInt$.pipe(
       debounceTime(100),
+      filter(() => !!this.isOpen),
       tap((segmentsMap) => {
         this.events?.forEach(e => {
           segmentsMap[e.id] = this.qnaService.get(e.linkedSpacedRepId || e.id, e.id).pipe(
-            map( qnas => {
+            map(qnas => {
               const segmentInput: SegmentInput = {
                 correct: 0,
                 total: 0,
@@ -93,10 +92,34 @@ export class DayEventsViewComponent implements OnChanges {
   }
 
   ngOnChanges(changes: SimpleChanges) {
-    console.log({changes});
-    if(changes['isOpen'] || changes['events']) {
-      this.qnaService.reset();
-      this.segmentsMapInt$.next({});
+    if (this.isOpen) {
+      console.log({changes});
     }
+
+    const isOpenChange = changes['isOpen'];
+    const changeEvents = changes['events'];
+    if ((isOpenChange && isOpenChange.currentValue === false)
+      || (changeEvents && this.eventsAreDifferent(changeEvents.currentValue, changeEvents.previousValue))
+    ) {
+      this.qnaService.reset();
+      this.segmentsMapInt$.next({})
+    }
+
+  }
+
+  private eventsAreDifferent(currentValue: SpacedRepModel[] | undefined, previousValue: SpacedRepModel[] | undefined) {
+    if (!currentValue || !previousValue) {
+      return true;
+    }
+    if (currentValue.length !== previousValue.length) {
+      return true;
+    }
+    const currSet = new Set(currentValue.map(e => e.id));
+    const prevSet = new Set(previousValue.map(e => e.id));
+    if ([...currSet].some(e => !prevSet.has(e))) {
+      return true;
+    }
+
+    return false;
   }
 }
