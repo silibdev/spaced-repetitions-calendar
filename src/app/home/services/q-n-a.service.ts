@@ -3,6 +3,7 @@ import { BehaviorSubject, defaultIfEmpty, finalize, forkJoin, map, Observable, S
 import { QNA } from '../models/spaced-rep.model';
 import { ApiService } from './api.service';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
+import { ConfirmationService } from 'primeng/api';
 
 @UntilDestroy()
 @Injectable({
@@ -49,15 +50,26 @@ export class QNAService {
     );
   }
 
-  save(masterId: string, id: string, qnas: QNA[], qnasToDelete: QNA[]) {
+  save(masterId: string, id: string, qnas: QNA[], qnasToDelete: QNA[], confirmationService: ConfirmationService) {
+    function pred(x: QNA | undefined): x is QNA {
+      return x !== undefined;
+    }
+
     return forkJoin([
-      ...qnas.map(q => this.apiService.setQNA(masterId, id, q).pipe(
-        tap(res => q.id = res.id),
-        defaultIfEmpty(undefined))
-      ),
-      ...qnasToDelete.map(q => this.apiService.deleteQNA(masterId, id, q.id as string).pipe(defaultIfEmpty(undefined)))
+      ...qnas.map(q => this.apiService.setQNA(masterId, id, q, confirmationService).pipe(
+        tap(res => {
+          if (res) {
+            q.id = res.id
+          }
+        }),
+        defaultIfEmpty(undefined),
+        map(qna => qna && q)
+      )),
+      ...qnasToDelete.map(q => this.apiService.deleteQNA(masterId, id, q, confirmationService).pipe(defaultIfEmpty(undefined), map(() => undefined)))
     ]).pipe(
-      tap(() => this.updateStore(id, qnas))
+      tap((returnQNA) => {
+        this.updateStore(id, returnQNA.filter<QNA>(pred));
+      })
     );
   }
 }

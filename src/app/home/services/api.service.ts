@@ -451,52 +451,6 @@ export class ApiService {
           ))
       );
 
-    const getWithRetry: (fd: FormData) => Observable<unknown> = (fd: FormData) => {
-      return this.httpClient.post(ApiUrls.photos(masterId), fd).pipe(
-      // return throwError(() => new Error('test')).pipe(delay(1000),
-        catchError((err) => {
-          if (!confirmationService) {
-            return err;
-          }
-          const respObs$ = new Subject<string>();
-
-          const message = 'There are problems with '
-            + fd.getAll('newPhotos').map(f => typeof f !== 'string' ? `"${f.name}"` : '').join(', ') + '. '
-            + 'You can retry the saving or you can just skip. '
-            + 'If you skip the save the changes done to the photo, if any, will NOT be saved.';
-
-          confirmationService.confirm({
-
-            icon: 'pi pi-exclamation-triangle',
-            header: 'Error while saving photos',
-            message,
-            acceptLabel: 'Skip',
-            acceptIcon: 'hidden',
-            accept: () => respObs$.next('skip'),
-            rejectLabel: 'Retry',
-            rejectIcon: 'hidden',
-            reject: () => respObs$.next('retry')
-          });
-
-          return respObs$.pipe(
-            switchMap(retry => {
-              let retObs$;
-              if (retry === 'retry') {
-                retObs$ = getWithRetry(fd);
-              } else {
-                retObs$ = of(undefined);
-              }
-              return retObs$.pipe(
-                // https://stackoverflow.com/questions/47031924/when-using-rxjs-why-doesnt-switchmap-trigger-a-complete-event
-                // L'outer non completa in automatico se l'inner completa
-                finalize(() => respObs$.complete())
-              );
-            })
-          );
-        })
-      );
-    }
-
     // @ts-ignore
     const getFormDataSize = (fd: FormData) => [...fd].reduce((size, [name, value]) =>
       size + (typeof value === 'string' ? value.length : value.size), 0
@@ -528,7 +482,21 @@ export class ApiService {
           }
           return forkJoin(
             dataGrouped.map(data =>
-              getWithRetry(data)
+            {
+              const message = 'There are problems with '
+                + data.getAll('newPhotos').map(f => typeof f !== 'string' ? `"${f.name}"` : '').join(', ') + '. '
+                + 'You can retry the saving or you can just skip. '
+                + 'If you skip the save the changes done to the photo, if any, will NOT be saved.';
+
+              return this.callWithRetry(
+                this.httpClient.post(ApiUrls.photos(masterId), data),
+                confirmationService,
+                {
+                  header:'Error while saving photos',
+                  message
+                }
+              )
+            }
             )
           );
         })
@@ -557,13 +525,66 @@ export class ApiService {
     );
   }
 
-  setQNA(masterId: string, eventId: string, qna: QNA): Observable<{id: string}> {
-    return this.httpClient.post(ApiUrls.qnas(masterId, eventId, qna.id), {data: qna}).pipe(
+  setQNA(masterId: string, eventId: string, qna: QNA, confirmationService?: ConfirmationService): Observable<{id: string} | undefined> {
+    const question = qna.question.length > 50 ? qna.question.substring(0, 50) + '...' : qna.question;
+    return this.callWithRetry(this.httpClient.post(ApiUrls.qnas(masterId, eventId, qna.id), {data: qna}).pipe(
       map<any, {id: string}>(res => res.data)
+    ),
+      confirmationService, {
+      header: 'Error while saving Q&A',
+      message: `"${question}" could not be saved. Try again or skip it.`
+    });
+  }
+
+  deleteQNA(masterId: string, eventId: string, qna: QNA, confirmationService?: ConfirmationService): Observable<unknown> {
+    const question = qna.question.length > 50 ? qna.question.substring(0, 50) + '...' : qna.question;
+    return this.callWithRetry(
+      this.httpClient.delete(ApiUrls.qnas(masterId, eventId, qna.id)),
+      confirmationService,
+      {
+        header: 'Error while deleting Q&A',
+        message: `"${question}" could not be deleted. Try again or skip it.`
+      }
     );
   }
 
-  deleteQNA(masterId: string, eventId: string, idQna: string): Observable<unknown> {
-    return this.httpClient.delete(ApiUrls.qnas(masterId, eventId, idQna));
+  private callWithRetry<D>(obs: Observable<D>, confirmationService?: ConfirmationService, confOpts?: {header: string, message: string}): Observable<D> {
+    return obs.pipe(
+      catchError<any, Observable<D>>((err) => {
+        if (!confirmationService || !confOpts) {
+          return err;
+        }
+        const respObs$ = new Subject<string>();
+
+        confirmationService.confirm({
+          icon: 'pi pi-exclamation-triangle',
+          header: confOpts.header,
+          message: confOpts.message,
+          acceptLabel: 'Skip',
+          acceptIcon: 'hidden',
+          accept: () => respObs$.next('skip'),
+          rejectLabel: 'Retry',
+          rejectIcon: 'hidden',
+          reject: () => respObs$.next('retry')
+        });
+
+        return respObs$.pipe(
+          switchMap(retry => {
+            let retObs$;
+            if (retry === 'retry') {
+              retObs$ = this.callWithRetry(obs, confirmationService, confOpts);
+            } else {
+              retObs$ = of(undefined);
+            }
+            return retObs$.pipe(
+              // https://stackoverflow.com/questions/47031924/when-using-rxjs-why-doesnt-switchmap-trigger-a-complete-event
+              // L'outer non completa in automatico se l'inner completa
+              // @ts-ignore
+              finalize(() => respObs$.complete())
+            );
+          })
+        );
+      })
+    );
   }
 }
