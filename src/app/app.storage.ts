@@ -9,7 +9,6 @@ import {
 
 export class AppStorage {
   static {
-    console.log('storage init');
     localforage.config({name: 'src'});
   }
 

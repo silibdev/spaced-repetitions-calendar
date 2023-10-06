@@ -124,7 +124,6 @@ export class AppComponent {
       // Wait 500ms before showing the loader
       debounce(( [_, loadingStatus]) => {
         if (loadingStatus.total >= 1) {
-          console.time('test');
           return timer(500);
         }
         return of(undefined);
@@ -135,7 +134,6 @@ export class AppComponent {
       // I don't have to show the loader at all
       switchMap(([prevLoadingStatus, loadingStatus]) => {
         if (prevLoadingStatus.total !== 0 && loadingStatus.total === loadingStatus.current) {
-          console.timeEnd('test');
           // Wait 250ms before removing loader
           return of('').pipe(delay(250));
         } else {

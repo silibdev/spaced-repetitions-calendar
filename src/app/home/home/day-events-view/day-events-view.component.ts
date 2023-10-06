@@ -92,10 +92,6 @@ export class DayEventsViewComponent implements OnChanges {
   }
 
   ngOnChanges(changes: SimpleChanges) {
-    if (this.isOpen) {
-      console.log({changes});
-    }
-
     const isOpenChange = changes['isOpen'];
     const changeEvents = changes['events'];
     if ((isOpenChange && isOpenChange.currentValue === false)

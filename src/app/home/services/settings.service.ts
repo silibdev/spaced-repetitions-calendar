@@ -110,11 +110,9 @@ export class SettingsService {
 
     this.apiService.setSettings(this.opts).subscribe({
       next: resp => {
-        console.log('opts saved', resp);
         subscriber?.next && subscriber.next(resp);
       },
       error: (error) => {
-        console.error('opts not saved', error);
         subscriber?.error && subscriber.error(error);
       },
       complete: () => {
@@ -126,7 +124,6 @@ export class SettingsService {
   saveGeneralOptions(opts: Options): boolean {
     const {autoSavingTimer} = opts;
     if (autoSavingTimer < 0) {
-      console.error('Auto-saving timer: wrong value');
       return false;
     }
     this.opts.autoSavingTimer = autoSavingTimer;
