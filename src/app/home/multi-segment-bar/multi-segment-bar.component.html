@@ -1,0 +1,23 @@
+<div class="bar">
+  <div
+    class="segment correct"
+    *ngIf="correct != 0"
+    [style.width]="(correct/total)*100 + '%'"
+    [pTooltip]="'Correct: ' + correct"
+    [tooltipPosition]="'left'"
+  >{{correct}}</div>
+  <div
+    class="segment wrong"
+    *ngIf="wrong != 0"
+    [style.width]="(wrong/total)*100 + '%'"
+    [pTooltip]="'Wrong: ' + wrong"
+    [tooltipPosition]="'left'"
+  >{{wrong}}</div>
+  <div
+    class="segment other"
+    *ngIf="other != 0"
+    [style.width]="(other/total)*100 + '%'"
+    [pTooltip]="'Total: ' + other"
+    [tooltipPosition]="'left'"
+  >{{other}}</div>
+</div>

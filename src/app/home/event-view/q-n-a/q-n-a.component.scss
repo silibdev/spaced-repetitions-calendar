@@ -1,0 +1,16 @@
+:host ::ng-deep {
+  .p-panel-header {
+    padding-left: 0.5rem !important;
+  }
+
+  .p-panel {
+    .p-panel-icons-end {
+    order: -1;
+    padding-right: 0.5rem;
+    }
+    .p-panel-content {
+      padding: 0;
+      border: 0;
+    }
+  }
+}

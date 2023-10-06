@@ -43,7 +43,6 @@ export class AuthService {
 
     netlifyIdentity.on('login', user => {
       netlifyIdentity.close();
-      console.log('login', user);
       this.setUser({
         name: user.user_metadata?.full_name as string,
         token: user.token?.access_token
@@ -51,7 +50,6 @@ export class AuthService {
     });
 
     netlifyIdentity.on('logout', () => {
-      console.log('Logged out');
       this.resetUser();
     });
 
@@ -98,7 +96,6 @@ export class AuthService {
   init = () => new Promise(resolve => {
     let resolved = false;
     netlifyIdentity.on('init', user => {
-      console.log('init', user);
       // If I'm not logged, check if there is an anonymous user
       if (!user) {
         const localAnonymousUser = JSON.parse(localStorage.getItem(USER_DB_NAME) || 'null');

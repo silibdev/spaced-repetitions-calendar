@@ -203,4 +203,7 @@
       </ng-container>
     </ng-template>
   </p-tabPanel>
+  <p-tabPanel header="Q&A">
+    <app-q-n-a [ids]="event ? {masterId: event.linkedSpacedRepId || event.id, eventId: event.id} : undefined"></app-q-n-a>
+  </p-tabPanel>
 </p-tabView>

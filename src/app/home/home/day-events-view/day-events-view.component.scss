@@ -1,0 +1,60 @@
+app-day-events-view {
+  .dev-open-day-events {
+    overflow: hidden;
+    background: #fafafa;
+  }
+
+  .dev-event-row {
+    border-bottom: 1px solid #e1e1e1;
+    cursor: pointer;
+
+    &:hover {
+      background-color: #ededed;
+
+      .dev-title {
+        text-decoration: underline;
+      }
+    }
+
+    .col-fixed {
+      display: flex;
+      align-items: start;
+    }
+
+    .dev-done {
+      //background-color: #71dc00;
+      //border-radius: 30%;
+      //color: white;
+      visibility: hidden;
+      margin-left: 0.5rem;
+      padding: 0.25rem;
+
+      // https://icons8.com/icon/uEOIjnBJDq8Q/done
+      background-image:    url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAACXBIWXMAAAsTAAALEwEAmpwYAAABKUlEQVR4nO2Vy0oDQRBF708IbnwhIsG/EMSlIi5FRDFT1STgr+ncmvgdLlyJoBEVP0DFVyRgY4JJbGGm28Uc6GXXuV39AmpqYlCIgrqDJJg7BPUDpm8w3U0l732NiCHshzxiCBsrjxCC6n6Rf4eg24i98oEh56Cb/qfyU51Bx61U0PYeKGco2lPji500Z0G9AOUhKESpK6ebg8nlwKR7UBtx5Hm2BEp3RMu6KJqL1co7sgzTmwn7do3j1kJFbdcGqLcBxa7QyebLv2omqzB5DCx4V95pHwqRrYH6FBaiqkcml3VQntPIPaaboL6kkXuoW6C8ppF7Crf9txBlfyx9+v+1yXsauYdub3KIKuUe6sHoux9D7qG2h0PElHtyOUon9xSyH/681iCIT22Gof3rjxnJAAAAAElFTkSuQmCC);
+      background-size:     cover;
+      background-repeat:   no-repeat;
+      background-position: center center;
+      display: block;
+      width: 1.5rem;
+      height: 1.5rem;
+
+      &.visible {
+        visibility: visible;
+      }
+    }
+
+    .dev-title, .dev-short-description {
+      opacity: 0.5;
+    }
+
+    .dev-title {
+      .dev-bold {
+        font-weight: bold;
+      }
+
+      .dev-highlight {
+        background-color: #ffe100;
+      }
+    }
+  }
+}

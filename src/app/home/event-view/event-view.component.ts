@@ -21,6 +21,7 @@ import { FileUpload } from 'primeng/fileupload';
 import { Image } from 'primeng/image';
 import { SpacedRepService } from '../services/spaced-rep.service';
 import { ApiService } from '../services/api.service';
+import { Utils } from '../../utils';
 
 interface FileSelectEvent {
   /**
@@ -155,9 +156,7 @@ export class EventViewComponent implements OnInit, BlockableUI {
       untilDestroyed(this),
       filter((done: boolean) => done),
       tap(() => {
-        doneAudio.pause();
-        doneAudio.currentTime = 0;
-        doneAudio.play();
+        Utils.playAudio(doneAudio);
       })
     ).subscribe()
   }

@@ -38,3 +38,12 @@ export interface CreateSpacedReps {
   startDate: Date;
   repetitionSchema: string;
 }
+
+export type QNAStatus = 'correct' | 'wrong' | undefined // undefined = not answered
+
+export interface QNA {
+  question: string;
+  answer: string;
+  status: QNAStatus;
+  id?: string;
+}

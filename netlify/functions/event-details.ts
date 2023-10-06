@@ -28,7 +28,8 @@ async function bulkEventDetail(userId: string, {data, method}: BulkRequestBody):
   let response: RepositoryResult<Record<string, RepositoryResult<string>> | string>;
   switch (method) {
     case 'GET':
-      response = await EventDetailRepository.bulkGetEventDetail(userId, data);
+      const ids = data.map(d => new URLSearchParams(d.queryParams).get('id') as string);
+      response = await EventDetailRepository.bulkGetEventDetail(userId, ids);
       break;
     case 'POST':
       response = await EventDetailRepository.bulkPostEventDetail(userId, data);

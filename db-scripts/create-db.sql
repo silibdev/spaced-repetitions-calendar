@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS `EventDescription` (
 );
 
 CREATE TABLE IF NOT EXISTS `Photo` (
-    `user` varchar(255) NOT NULL,
+  `user` varchar(255) NOT NULL,
 	`eventId` varchar(255) NOT NULL,
 	`id` varchar(255) NOT NULL,
 	`name` tinytext,
@@ -37,4 +37,24 @@ CREATE TABLE IF NOT EXISTS `Photo` (
 	`photo` longblob,
 	`updated_at` TIMESTAMP,
 	PRIMARY KEY (`user`, `id`)
+);
+
+CREATE TABLE IF NOT EXISTS `QNATemplate` (
+  `user` varchar(255) NOT NULL,
+	`eventId` varchar(255) NOT NULL,
+	`id` varchar(255) NOT NULL,
+	`question` text,
+	`answer` mediumtext,
+	`created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+	`updated_at` TIMESTAMP,
+	PRIMARY KEY (`user`, `eventId`, `id`)
+);
+
+CREATE TABLE IF NOT EXISTS `QNAStatus` (
+  `user` varchar(255) NOT NULL,
+  `eventId` varchar(255) NOT NULL,
+	`id` varchar(255) NOT NULL,
+	`status` tinytext,
+	`updated_at` TIMESTAMP,
+	PRIMARY KEY (`user`, `eventId`, `id`)
 );
