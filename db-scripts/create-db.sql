@@ -45,6 +45,7 @@ CREATE TABLE IF NOT EXISTS `QNATemplate` (
 	`id` varchar(255) NOT NULL,
 	`question` text,
 	`answer` mediumtext,
+	`created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
 	`updated_at` TIMESTAMP,
 	PRIMARY KEY (`user`, `eventId`, `id`)
 );
