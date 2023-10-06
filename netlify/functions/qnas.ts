@@ -1,12 +1,11 @@
 import { Handler, HandlerResponse } from "@netlify/functions";
-import { BulkRequestBody, createHandler, createResponse, RepositoryResult, RequestBody } from '../utils/utils';
+import { createHandler, createResponse, RequestBody } from '../utils/utils';
 import { QNAsRepository } from '../utils/qnas.repository';
 
 const handler: Handler = createHandler({
   getResource: getQNAs,
   postResource: postQNA,
-  deleteResource: deleteQNA,
-  bulkResource: bulkQNAs
+  deleteResource: deleteQNA
 })
 
 async function getQNAs(userId: string, {id, qnaId, masterId}: {
@@ -38,19 +37,6 @@ async function deleteQNA(userId: string, {id, masterId, qnaId}: {
 }): Promise<HandlerResponse> {
   const eventDetail = await QNAsRepository.deleteQNA(userId, masterId, id, qnaId);
   return createResponse(eventDetail);
-}
-
-async function bulkQNAs(userId: string, {data, method}: BulkRequestBody): Promise<HandlerResponse> {
-  let response: RepositoryResult<Record<string, RepositoryResult<string>> | string>;
-  const bulkQueryParams = data.map(d => d.queryParams);
-  switch (method) {
-    case 'GET':
-      response = await QNAsRepository.bulkGetQNA(userId, bulkQueryParams);
-      break;
-    default:
-      response = {data: 'impossible', statusCode: 500, updatedAt: new Date().toISOString()};
-  }
-  return createResponse(response);
 }
 
 export { handler };

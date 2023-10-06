@@ -1,32 +1,90 @@
 import { getUpdatedAtFromRow, RepositoryResult, RequestBody } from './utils';
-import { DB, db_formatter } from './db-connector';
+import { DB } from './db-connector';
 
 export const QNAsRepository = {
 
   async getQNA(userId: string, masterId: string, eventId: string, qnaId: string): Promise<RepositoryResult<any>> {
     console.log('getQNA', {userId, eventId, qnaId});
-    const result = await DB.execute(`
-      SELECT T.id, T.question, T.answer, S.status
-      FROM QNATemplate as T
-      JOIN QNAStatus as S ON (T.id = S.id AND T.user = S.user)
-      WHERE T.user=:userId AND T.eventId=:masterId AND S.id=:qnaId AND S.eventId=:eventId
-    `, {userId, eventId, qnaId, masterId});
-    const qnaRow: any = result.rows[0];
-    const updatedAt = getUpdatedAtFromRow(qnaRow);
-    console.log('get qna', userId, eventId, 'qnaId', qnaId);
+    const {qnaRow, updatedAt} = await DB.transaction(async tx => {
+      //Check if statuses are present
+      const r = await tx.execute(`
+        SELECT id, eventId
+        FROM QNAStatus
+        WHERE user = :userId
+        AND eventId = :eventId
+        AND id = :questionId
+      `, {userId, eventId, qnaId});
+      // If multiple => error
+      if (r.rows.length > 1) {
+        throw new Error(`There should be only one question status for user:${userId}, event:${eventId}, qna:${qnaId}. Instead you got ${r.rows.length}`);
+      }
+
+      // If not present => create it
+      if (r.rows.length === 0) {
+        await tx.execute(`
+          INSERT INTO QNAStatus (user, eventId, id, updated_at)
+          VALUES (:userId, :eventId, :questionId, :updatedAt)
+        `, {userId, eventId, qnaId, updatedAt: new Date().toISOString()});
+      }
+
+      const result = await tx.execute(`
+        SELECT T.id, T.question, T.answer, S.status
+        FROM QNATemplate as T
+        LEFT JOIN QNAStatus as S ON (T.id = S.id AND T.user = S.user)
+        WHERE T.user=:userId AND T.eventId=:masterId AND S.id=:qnaId AND S.eventId=:eventId
+      `, {userId, eventId, qnaId, masterId});
+      const qnaRow: any = result.rows[0];
+      const updatedAt = getUpdatedAtFromRow(qnaRow);
+      console.log('get qna', userId, eventId, 'qnaId', qnaId);
+      return {qnaRow, updatedAt};
+    })
     return {data: qnaRow, updatedAt};
   },
 
   async getQNAs(userId: string, masterId: string, eventId: string): Promise<RepositoryResult<any>> {
     console.log('getQNAs', {userId, eventId});
-    const result = await DB.execute(`
-      SELECT T.id, T.question, T.answer, S.status
-      FROM QNATemplate as T
-      JOIN QNAStatus as S ON (T.user = S.user AND T.id = S.id)
-      WHERE T.user=:userId AND T.eventId=:masterId AND S.eventId=:eventId
-    `, {userId, eventId, masterId});
-    const qnas: any[] = result.rows;
-    console.log('get qnas', userId, eventId, 'qnas', qnas.length);
+    const qnas = await DB.transaction(async tx => {
+      const updatedAt = new Date().toISOString();
+      //check which statuses are present
+      // 1. get questions ids
+      const r = await tx.execute(`
+          SELECT id
+          FROM QNATemplate
+          WHERE user = :userId
+          AND eventId = :masterId
+        `, {userId, masterId});
+      const questionIds: string[] = r.rows.map((r: any) => r.id);
+
+      if (questionIds.length) {
+        // 2. get questions without statuses
+        const r2 = await tx.execute(`
+          SELECT id, eventId
+          FROM QNAStatus
+          WHERE user = :userId
+          AND eventId = :eventId
+          AND id in (:questionIds)
+        `, {userId, eventId, questionIds});
+        const questionsWithStatus = r2.rows.map((r: any) => r.id);
+        const missingQuestions = questionIds.filter(id => !questionsWithStatus.includes(id));
+
+        for (const questionId of missingQuestions) {
+          await tx.execute(`
+            INSERT INTO QNAStatus (user, eventId, id, updated_at)
+            VALUES (:userId, :eventId, :questionId, :updatedAt)
+          `, {userId, eventId, questionId, updatedAt});
+        }
+      }
+
+      const result = await tx.execute(`
+        SELECT T.id, T.question, T.answer, S.status
+        FROM QNATemplate as T
+        LEFT JOIN QNAStatus as S ON (T.user = S.user AND T.id = S.id)
+        WHERE T.user=:userId AND T.eventId=:masterId AND S.eventId=:eventId
+      `, {userId, eventId, masterId});
+      const qnas: any[] = result.rows;
+      console.log('get qnas', userId, eventId, 'qnas', qnas.length);
+      return qnas;
+    });
     return {data: qnas, updatedAt: ''};
   },
 
@@ -75,6 +133,7 @@ export const QNAsRepository = {
     return {data: {id}, updatedAt};
   },
 
+  // EventId is not used because when deleting a qna you have to delete all statuses for all events
   async deleteQNA(userId: string, masterId: string, eventId: string, qnaId: string): Promise<RepositoryResult<{ id: string }>> {
     const [templateResult, statusResult] = await DB.transaction(async tx => {
       const tQuery = `
@@ -102,31 +161,5 @@ export const QNAsRepository = {
     console.log('delete qna', {templateResult, statusResult});
 
     return {data: {id: qnaId}, updatedAt: new Date().toISOString()};
-  },
-
-  async bulkGetQNA(userId: string, bulkQueryParamsString: string[]): Promise<RepositoryResult<any>> {
-    const bulkQueryParams = bulkQueryParamsString.map(q => new URLSearchParams(q));
-    const ids = bulkQueryParams.map(q => db_formatter('(:ids)', {ids: [q.get('masterId'), q.get('id')]}));
-    const result = await DB.execute(`
-      SELECT T.id, T.eventId as masterId, S.eventId as eventId, T.question, T.answer, S.status
-      FROM QNATemplate as T
-      JOIN QNAStatus as S ON (T.user = S.user AND T.id = S.id)
-      WHERE T.user=:userId AND (T.eventId, S.eventId) IN (${ids.join(', ')})
-    `, {userId});
-
-    const returnData = result.rows.reduce<Record<string, RepositoryResult<any[]>>>((acc, row: Record<string, any>, i) => {
-      const {eventId, masterId, ...qna} = row;
-      const id = `id=${eventId}&masterId=${masterId}`;
-      if (!acc[id]) {
-        acc[id] = {
-          data: [],
-          updatedAt: ''
-        };
-      }
-      acc[id].data.push(qna);
-      return acc;
-    }, {});
-
-    return {data: returnData, updatedAt: new Date().toISOString()};
   }
 }

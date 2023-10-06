@@ -22,12 +22,9 @@ import {
   throwError
 } from 'rxjs';
 
-const BulkUrls = [
-  { url: `/api/event-descriptions`},
-  { url: `/api/event-details`},
-  {
-    url: `/api/qnas`, methods: ['GET']
-  }
+const BulkUrls: { url: string, methods?: string[] }[] = [
+  {url: `/api/event-descriptions`},
+  {url: `/api/event-details`}
 ];
 
 type BulkBody = {
