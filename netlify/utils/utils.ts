@@ -29,7 +29,8 @@ export interface RequestBody<D = string> {
   method?: 'GET' | 'POST'
 }
 
-export type BulkRequestBody = RequestBody<any>
+export type BulkRequestBodyData = { queryParams: string, body?: any };
+export type BulkRequestBody = RequestBody<BulkRequestBodyData[]>;
 
 export interface ResourceHandler {
   getResource?: (userId: string, queryParams?: any) => Promise<HandlerResponse>;

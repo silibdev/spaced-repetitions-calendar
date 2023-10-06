@@ -9,9 +9,11 @@ import {
   debounceTime,
   delay,
   finalize,
+  forkJoin,
   map,
   Observable,
   of,
+  skip,
   Subject,
   Subscription,
   switchMap,
@@ -24,6 +26,8 @@ import { ConfirmationService } from 'primeng/api';
 import { ExtendedCalendarView, SRCCalendarView } from '../calendar-header/calendar-header.component';
 import { SettingsService } from '../services/settings.service';
 import { Category } from '../models/settings.model';
+import { QNAFormService } from '../services/q-n-a-form.service';
+import { QNAService } from '../services/q-n-a.service';
 
 @UntilDestroy()
 @Component({
@@ -58,7 +62,9 @@ export class HomeComponent implements OnInit, OnDestroy {
     public eventFormService: EventFormService,
     private settingsService: SettingsService,
     private spacedRepService: SpacedRepService,
-    private confirmationService: ConfirmationService
+    private confirmationService: ConfirmationService,
+    private qnaFormService: QNAFormService,
+    private qnaService: QNAService
   ) {
     // This handle the case of multiple confirmation called in rapid succession
     // the new confirmation object is passed only after the notifier (that emits when the confirmDialog is closed) emits
@@ -111,7 +117,11 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.spacedRepService.create(createSpacedRep)
       .pipe(
         untilDestroyed(this),
-        switchMap((commonSr) => this.savePhotos(commonSr)),
+        switchMap((commonSr) => forkJoin([
+          this.savePhotos(commonSr),
+          this.saveQNA(commonSr.id, commonSr.id)
+          ])
+        ),
         finalize(() => {
           this.loading = false;
           this.open = false;
@@ -188,6 +198,7 @@ export class HomeComponent implements OnInit, OnDestroy {
         if (autoSavingTimer) {
           this.removeAutoSaving();
           this.autoSaveSub = this.eventFormService.onEditedSpacedRep().pipe(
+            skip(1),
             debounceTime(autoSavingTimer * 1000),
             tap(() => this.saveEvent(true))
           ).subscribe();
@@ -255,7 +266,10 @@ export class HomeComponent implements OnInit, OnDestroy {
           this.lastAutoSave = new Date();
           return of();
         } else {
-          return this.savePhotos(event);
+          return forkJoin([
+            this.savePhotos(event),
+            this.saveQNA(event.linkedSpacedRepId || event.id, event.id)
+          ]);
         }
       }),
       finalize(() => {
@@ -265,5 +279,11 @@ export class HomeComponent implements OnInit, OnDestroy {
         }
       })
     ).subscribe();
+  }
+
+  private saveQNA(masterId: string, eventId: string) {
+    const qnas = this.qnaFormService.qnas;
+    const qnasToDelete = this.qnaFormService.qnasToDelete;
+    return this.qnaService.save(masterId, eventId, qnas, qnasToDelete, this.confirmationService);
   }
 }

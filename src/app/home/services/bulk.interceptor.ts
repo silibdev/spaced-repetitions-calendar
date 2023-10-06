@@ -22,29 +22,42 @@ import {
   throwError
 } from 'rxjs';
 
-const BulkUrls = [
-  `/api/event-descriptions`,
-  `/api/event-details`
-]
+const BulkUrls: { url: string, methods?: string[] }[] = [
+  {url: `/api/event-descriptions`},
+  {url: `/api/event-details`}
+];
+
+type BulkBody = {
+  queryParams: string,
+  body?: any
+}
 
 @Injectable()
 export class BulkInterceptor implements HttpInterceptor {
 
-  private bulkRequestMap = new Map<string, { emitter: Subject<any>, req: Observable<HttpEvent<unknown>> }>();
+  private bulkRequestMap = new Map<string, { emitter: Subject<BulkBody>, req: Observable<HttpEvent<unknown>> }>();
 
   constructor() {
   }
 
+  private checkIfBulk(urlToCheck: string, methodToCheck: string): boolean {
+    return BulkUrls.some(urlOpt => {
+      const url = urlOpt.url;
+      const methods = urlOpt.methods || ['GET', 'POST'];
+      return urlToCheck.startsWith(url) && methods.includes(methodToCheck);
+    });
+  }
+
   intercept(request: HttpRequest<unknown>, next: HttpHandler): Observable<HttpEvent<unknown>> {
-    if (!BulkUrls.some(url => request.url.startsWith(url)) || !['GET', 'POST'].includes(request.method)) {
+    if (!this.checkIfBulk(request.url, request.method)) {
       return next.handle(request);
     }
 
-    const [url, id] = request.url.split('?id=');
+    const [url, queryParams] = request.url.split('?');
     const key = request.method + '-' + url;
 
     if (!this.bulkRequestMap.has(key)) {
-      const subject = new ReplaySubject(1);
+      const subject = new ReplaySubject<BulkBody>(1);
       let timeout: any;
       const clearSubject = () => {
         subject.complete();
@@ -88,10 +101,10 @@ export class BulkInterceptor implements HttpInterceptor {
     switch (request.method) {
       case 'POST':
       case 'PUT':
-        emitter.next({id, data: request.body});
+        emitter.next({queryParams, body: request.body});
         break;
       default:
-        emitter.next(id);
+        emitter.next({queryParams});
     }
 
     return req.pipe(
@@ -99,13 +112,13 @@ export class BulkInterceptor implements HttpInterceptor {
         if (response.type !== HttpEventType.Response) {
           return response;
         }
-        const body = (response.body as any)?.data[id];
+        const body = (response.body as any)?.data[queryParams] || {data: undefined, updatedAt: ''};
         return response.clone({
           body
         });
       }),
       catchError((error: HttpErrorResponse) => {
-        const data = error.error.data[id];
+        const data = error.error.data[queryParams];
         return throwError(() => new HttpErrorResponse({
             error: data,
             headers: error.headers,

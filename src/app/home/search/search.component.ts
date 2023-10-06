@@ -1,6 +1,6 @@
 import { Component, EventEmitter, OnInit, Output } from '@angular/core';
 import { SpacedRepService } from '../services/spaced-rep.service';
-import { debounceTime, Observable, Subject, switchMap, tap } from 'rxjs';
+import { debounceTime, Observable, Subject, switchMap } from 'rxjs';
 import { SpacedRepModel } from '../models/spaced-rep.model';
 
 @Component({
@@ -22,8 +22,7 @@ export class SearchComponent implements OnInit {
   ) {
     this.results$ = this.searchQuery$.pipe(
       debounceTime(100),
-      switchMap(query => this.srService.search(query)),
-      tap(console.log)
+      switchMap(query => this.srService.search(query))
     );
   }
 
@@ -31,7 +30,6 @@ export class SearchComponent implements OnInit {
   }
 
   search(query: string): void {
-    console.log('search', query);
     this.searchQuery$.next(query);
   }
 

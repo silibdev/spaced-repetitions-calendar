@@ -34,6 +34,14 @@ import { FileUploadModule } from 'primeng/fileupload';
 import { TooltipModule } from 'primeng/tooltip';
 import { ImageModule } from 'primeng/image';
 import { TabViewModule } from 'primeng/tabview';
+import { AvatarModule } from 'primeng/avatar';
+import { DayEventsViewComponent } from './home/day-events-view/day-events-view.component';
+import { MultiSegmentBarComponent } from './multi-segment-bar/multi-segment-bar.component';
+import { QNAComponent } from './event-view/q-n-a/q-n-a.component';
+import { AccordionModule } from 'primeng/accordion';
+import { TagModule } from 'primeng/tag';
+import { InplaceModule } from 'primeng/inplace';
+import { ConfirmPopupModule } from 'primeng/confirmpopup';
 
 
 @NgModule({
@@ -44,7 +52,10 @@ import { TabViewModule } from 'primeng/tabview';
     DialogMaximizedDirective,
     SearchComponent,
     ListViewComponent,
-    LoginComponent
+    LoginComponent,
+    DayEventsViewComponent,
+    MultiSegmentBarComponent,
+    QNAComponent
   ],
   imports: [
     CommonModule,
@@ -76,7 +87,12 @@ import { TabViewModule } from 'primeng/tabview';
     FileUploadModule,
     TooltipModule,
     ImageModule,
-    TabViewModule
+    TabViewModule,
+    AvatarModule,
+    AccordionModule,
+    TagModule,
+    InplaceModule,
+    ConfirmPopupModule
   ],
   providers: [
     TitleFormatterProvider

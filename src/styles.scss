@@ -52,6 +52,12 @@
 
 .p-image-mask {
   overflow: auto;
+  align-items: start !important;
+  justify-content: start !important;
+
+  .p-image-preview {
+    transform-origin: top left;
+  }
 
   .p-image-toolbar {
     position: fixed;
@@ -66,6 +72,18 @@
   .p-message .p-icon {
     width: 1rem;
     height: 1rem;
+  }
+}
+
+.p-inplace {
+  .p-inplace-display {
+    display: inline-block !important;
+  }
+
+  .p-inplace-content {
+    display: inline-flex !important;
+    align-items: end;
+    width: 90%;
   }
 }
 /*! purgecss end ignore */
