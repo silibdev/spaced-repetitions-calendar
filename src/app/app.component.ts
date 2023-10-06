@@ -3,9 +3,9 @@ import { ConfirmationService, MenuItem, MessageService } from 'primeng/api';
 import { AuthService } from './home/services/auth.service';
 import {
   combineLatest,
-  concat,
   debounce,
   debounceTime,
+  delay,
   filter,
   map,
   Observable,
@@ -120,22 +120,24 @@ export class AppComponent {
     );
 
     this.loadingValuePerc$ = this.loaderService.loadingStatus$.pipe(
-      // Wait 250ms before showing the loader
-      debounce(loadingStatus => {
+      pairwise(),
+      // Wait 500ms before showing the loader
+      debounce(( [_, loadingStatus]) => {
         if (loadingStatus.total >= 1) {
-          return timer(200);
+          console.time('test');
+          return timer(500);
         }
         return of(undefined);
       }),
-      pairwise(),
       // Since I receive delayed status, maybe I receive a status of done
       // (when total === current) after another status of done
       // So I need to check that the previous status was actually a loading otherwise
       // I don't have to show the loader at all
       switchMap(([prevLoadingStatus, loadingStatus]) => {
         if (prevLoadingStatus.total !== 0 && loadingStatus.total === loadingStatus.current) {
-          // Pass 100 and wait 250ms before removing loader
-          return concat(of('100'), timer(250).pipe(map( () =>'')));
+          console.timeEnd('test');
+          // Wait 250ms before removing loader
+          return of('').pipe(delay(250));
         } else {
           return of(loadingStatus.total
             ? (loadingStatus.current * 100 / loadingStatus.total).toFixed(2)
