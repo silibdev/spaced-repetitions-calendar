@@ -32,6 +32,7 @@ import { Migrator } from '../../migrator';
 import * as LZUTF8 from 'lzutf8';
 import { DEFAULT_CATEGORY } from '../models/settings.model';
 import { ConfirmationService } from 'primeng/api';
+import { Utils } from '../../utils';
 
 
 @Injectable({
@@ -144,7 +145,7 @@ export class SpacedRepService {
 
     this.settingsService.saveNewRepetitionSchema(createSpacedRep.repetitionSchema);
 
-    const id = Math.random().toString();
+    const id = Utils.generateRandomUUID();
     createSpacedRep.spacedRep.id = id;
 
     const specificSpacedRepModel: SpecificSpacedRepModel = {
@@ -157,7 +158,7 @@ export class SpacedRepService {
 
     repSchema.forEach((rep) => {
       const spacedRep: SpecificSpacedRepModel = {
-        id: Math.random().toString(),
+        id: Utils.generateRandomUUID(),
         linkedSpacedRepId: specificSpacedRepModel.id,
         start: addDays(specificSpacedRepModel.start, rep),
         repetitionNumber: rep

@@ -1,3 +1,5 @@
+import { v4 } from 'uuid';
+
 export class Utils {
   static playAudio(audio: HTMLAudioElement | undefined) {
     if (audio) {
@@ -9,5 +11,9 @@ export class Utils {
       });
     }
     return Promise.resolve();
+  }
+
+  static generateRandomUUID(): string {
+    return v4();
   }
 }
