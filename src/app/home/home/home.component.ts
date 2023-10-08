@@ -6,13 +6,16 @@ import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import {
   BehaviorSubject,
   catchError,
+  combineLatest,
   debounceTime,
   delay,
+  distinctUntilChanged,
   finalize,
   forkJoin,
   map,
   Observable,
   of,
+  ReplaySubject,
   skip,
   Subject,
   Subscription,
@@ -21,7 +24,7 @@ import {
   zip
 } from 'rxjs';
 import { CommonSpacedRepModel, Photo, SpacedRepModel } from '../models/spaced-rep.model';
-import { isSameDay, isSameMonth } from 'date-fns';
+import { addMonths, format, isSameDay, isSameMonth, setDate, subMonths } from 'date-fns';
 import { ConfirmationService } from 'primeng/api';
 import { ExtendedCalendarView, SRCCalendarView } from '../calendar-header/calendar-header.component';
 import { SettingsService } from '../services/settings.service';
@@ -58,6 +61,8 @@ export class HomeComponent implements OnInit, OnDestroy {
   initialCategory: string = '';
   notifier: BehaviorSubject<null>;
 
+  private monthToView$ = new ReplaySubject<[Date, Date, Date]>();
+
   constructor(
     public eventFormService: EventFormService,
     private settingsService: SettingsService,
@@ -77,24 +82,28 @@ export class HomeComponent implements OnInit, OnDestroy {
       map(([conf]) => conf)
     );
 
-    this.events$ = this.spacedRepService.getAll().pipe(
-      tap(() => {
-        this.categoryOpts = this.settingsService.categories;
-        this.initialCategory = this.settingsService.currentCategory;
-      }),
-      map(events => events.map(srModel => {
-        const calendarEvent: CalendarEvent & SpacedRepModel = srModel;
-        calendarEvent.cssClass = '';
-        if (calendarEvent.boldTitle) {
-          calendarEvent.cssClass += 'src-bold-title ';
-        }
-        if (calendarEvent.highlightTitle) {
-          calendarEvent.cssClass += 'src-highlight-title';
-        }
-        return calendarEvent;
-      }))
+    this.events$ = combineLatest([
+      this.spacedRepService.getAll().pipe(
+        tap(() => {
+          this.categoryOpts = this.settingsService.categories;
+          this.initialCategory = this.settingsService.currentCategory;
+        })
+      ),
+      this.monthToView$.pipe(
+        distinctUntilChanged((prev, next) => {
+          // Simple equality check: get keys, sort, concatenate, check if string are equal
+          const prevString = prev.map(d => format(d, 'yyyy-MM')).join(',');
+          const nextString = next.map(d => format(d, 'yyyy-MM')).join(',');
+          return prevString === nextString;
+        })
+      )
+    ]).pipe(
+      map(([events, monthsToView]) =>
+        events.filter(e => monthsToView.some(m => isSameMonth(e.start, m)))
+      )
     );
 
+    this.viewDateChange(this.viewDate);
   }
 
   ngOnInit(): void {
@@ -102,6 +111,16 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this.removeAutoSaving();
+  }
+
+  viewDateChange(viewDate: Date) {
+    this.viewDate = viewDate;
+
+    const currentMonth = setDate(viewDate, 1);
+    const nextMonth = setDate(addMonths(viewDate, 1), 1);
+    const prevMonth = setDate(subMonths(viewDate, 1), 1);
+
+    this.monthToView$.next([prevMonth, currentMonth, nextMonth]);
   }
 
   changeCategory(category: string) {
