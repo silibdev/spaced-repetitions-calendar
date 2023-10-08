@@ -1,6 +1,6 @@
 {
   "name": "spaced-repetitions-calendar",
-  "version": "2.6.3",
+  "version": "2.6.4",
   "scripts": {
     "ng": "ng",
     "start": "ng serve --proxy-config proxy.json",
