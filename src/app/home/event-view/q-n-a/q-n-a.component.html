@@ -73,8 +73,10 @@
     </div>
   </ng-template>
   <ng-template pTemplate="content">
-    <p-editor [(ngModel)]="qna.answer">
-    </p-editor>
+    <p-editor
+      (keydown)="keyDown($event)"
+      [(ngModel)]="qna.answer"
+    ></p-editor>
   </ng-template>
 </p-panel>
 
