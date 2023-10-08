@@ -35,8 +35,7 @@ app-day-events-view {
           //border-radius: 30%;
           //color: white;
           visibility: hidden;
-          margin-left: 0.5em;
-          padding: 0.25em;
+          margin-left: 0.25em;
 
           // https://icons8.com/icon/uEOIjnBJDq8Q/done
           background: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHg9IjBweCIgeT0iMHB4IiB3aWR0aD0iMjU2IiBoZWlnaHQ9IjI1NiIgdmlld0JveD0iMCAwIDE2IDE2Ij4KPHBvbHlnb24gZmlsbD0iIzAwYjU2OSIgcG9pbnRzPSI1Ljg1NywxNC44NDQgMC4xNzIsOS4wMzIgMy4wMzEsNi4yMzUgNS44ODgsOS4xNTYgMTIuOTg0LDIuMDYgMTUuODEyLDQuODg4Ij48L3BvbHlnb24+Cjwvc3ZnPg==') 50% 50% no-repeat;
@@ -52,6 +51,8 @@ app-day-events-view {
       }
 
       .dev-header-2 {
+        margin-left: -0.25rem;
+
         .dev-title {
           .dev-bold {
             font-weight: bold;

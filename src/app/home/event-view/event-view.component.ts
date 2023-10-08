@@ -124,7 +124,7 @@ export class EventViewComponent implements OnInit, BlockableUI {
           } else {
             let randomColor: string | undefined;
             while (!randomColor || this.colorOpts.find(c => c.value === randomColor)) {
-              randomColor = '#' + Math.floor(Math.random() * 16777215).toString(16);
+              randomColor = Utils.generateRandomColor();
             }
             const colorToSet = color === 'custom' ? randomColor : color;
             this.customColor.value = colorToSet;

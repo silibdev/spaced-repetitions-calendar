@@ -70,7 +70,7 @@ export const EventDescriptionRepository = {
     const updatedAt = new Date().toISOString();
     // CREATE VALUES FOR QUERY
     const values = bulkData
-      .map(bd => db_formatter('(?,?,?,?)', [userId, bd.queryParams, bd.body?.data, updatedAt]))
+      .map((bd, index) => db_formatter('(?,?,?,?)', [userId, ids[index], bd.body?.data, updatedAt]))
       .join(',');
     const query = `INSERT INTO EventDescription (user, id, description, updated_at) VALUES ${values} ON DUPLICATE KEY UPDATE description=VALUES(description), updated_at=VALUES(updated_at)`;
 
