@@ -55,6 +55,12 @@
   align-items: start !important;
   justify-content: start !important;
 
+  .p-image-toolbar {
+    button:nth-child(1), button:nth-child(2) {
+      display: none;
+    }
+  }
+
   .p-image-preview {
     transform-origin: top left;
   }
