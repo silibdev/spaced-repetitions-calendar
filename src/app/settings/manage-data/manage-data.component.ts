@@ -9,12 +9,12 @@ import { LAST_UPDATE_DB_NAME } from '../../home/services/api.service';
 
 
 @Component({
-  selector: 'app-import-export',
-  templateUrl: './import-export.component.html',
-  styleUrls: ['./import-export.component.scss'],
+  selector: 'app-manage-data',
+  templateUrl: './manage-data.component.html',
+  styleUrls: ['./manage-data.component.scss'],
   providers: [ConfirmationService]
 })
-export class ImportExportComponent implements OnInit {
+export class ManageDataComponent implements OnInit {
 
   error?: string;
 

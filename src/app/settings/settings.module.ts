@@ -8,7 +8,7 @@ import { ButtonModule } from 'primeng/button';
 import { ToastModule } from 'primeng/toast';
 import { ReactiveFormsModule } from '@angular/forms';
 import { ConfirmPopupModule } from 'primeng/confirmpopup';
-import { ImportExportComponent } from './import-export/import-export.component';
+import { ManageDataComponent } from './manage-data/manage-data.component';
 import { FileUploadModule } from 'primeng/fileupload';
 import { HttpClientModule } from '@angular/common/http';
 import { MessageModule } from 'primeng/message';
@@ -24,7 +24,7 @@ import { CategoriesComponent } from './categories/categories.component';
 @NgModule({
   declarations: [
     RepetitionSchemasComponent,
-    ImportExportComponent,
+    ManageDataComponent,
     GeneralComponent,
     ColorsComponent,
     CategoriesComponent
