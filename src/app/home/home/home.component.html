@@ -78,7 +78,7 @@
       </p-blockUI>
     </ng-container>
     <ng-template pTemplate="footer">
-      <button pButton [label]="'Cancel'" [disabled]="loading" class="p-button-outlined" (click)="open = false"></button>
+      <button pButton [label]="'Cancel'" [disabled]="loading" class="p-button-outlined" [style.float]="'left'" (click)="open = false"></button>
       <button pButton [label]="'Create'" [loading]="loading" (click)="createSpacedRep()"></button>
     </ng-template>
   </p-dialog>
@@ -98,7 +98,6 @@
     </ng-container>
     <ng-template pTemplate="footer">
       <button pButton [label]="'Delete'" [disabled]="loading" class="p-button-danger" [style.float]="'left'" (click)="confirmDeleteEvent()"></button>
-      <button pButton [label]="'Close'" [disabled]="loading" class="p-button-outlined" (click)="openEdit = false"></button>
       <button pButton [label]="'Save'" [loading]="loading" (click)="saveEvent()"></button>
     </ng-template>
   </p-dialog>
