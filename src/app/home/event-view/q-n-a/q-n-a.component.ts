@@ -1,5 +1,5 @@
 import { Component, Input, OnChanges, OnDestroy, SimpleChanges } from '@angular/core';
-import { Observable, shareReplay } from 'rxjs';
+import { BehaviorSubject, combineLatestWith, map, Observable, shareReplay } from 'rxjs';
 import { QNA, QNAStatus } from '../../models/spaced-rep.model';
 import { Utils } from '../../../utils';
 import confetti from 'canvas-confetti';
@@ -20,6 +20,7 @@ export class QNAComponent implements OnChanges, OnDestroy {
   qna$?: Observable<QNA[]>;
   enableDelete = false;
 
+  private reorder$ = new BehaviorSubject(true);
   private correctAudio = new Audio();
   private wrongAudio = new Audio();
   private completeAudio = new Audio();
@@ -46,7 +47,15 @@ export class QNAComponent implements OnChanges, OnDestroy {
 
   private loadQNA(ids: { masterId: string, eventId: string } | undefined) {
     this.enableDelete = false;
-    this.qna$ = this.qnaFormService.load(ids?.masterId, ids?.eventId).pipe(shareReplay(1));
+    this.qna$ = this.qnaFormService.load(ids?.masterId, ids?.eventId).pipe(
+      combineLatestWith(this.reorder$),
+      map(([qna]) => qna.sort((a, b) => a.question.localeCompare(b.question))),
+      shareReplay(1)
+    );
+  }
+
+  reorderQnas(): void {
+    this.reorder$.next(true);
   }
 
   setStatus(qna: QNA, status: 'R' | 'C' | 'W') { // Reset | Correct | Wrong
