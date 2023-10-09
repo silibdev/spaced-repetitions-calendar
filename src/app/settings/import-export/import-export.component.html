@@ -1,11 +1,11 @@
-<h2>Import / Export</h2>
+<h2>Manage data</h2>
 <div class="mx-6">
-  <div class="grid align-items-center">
-    <div class="col-12 md:col-4 lg:col-3">
-      <button pButton label="Export" (click)="export()" icon="pi pi-download"></button>
-    </div>
-    <div class="col-12 md:col-8 lg:col-9">A txt backup file will be downloaded</div>
-  </div>
+<!--  <div class="grid align-items-center">-->
+<!--    <div class="col-12 md:col-4 lg:col-3">-->
+<!--      <button pButton label="Export" (click)="export()" icon="pi pi-download"></button>-->
+<!--    </div>-->
+<!--    <div class="col-12 md:col-8 lg:col-9">A txt backup file will be downloaded</div>-->
+<!--  </div>-->
   <div class="grid align-items-center mt-4" *ngIf="isNotLoggedIn$ | async">
     <div class="col-12 md:col-4 lg:col-3">
       <p-fileUpload
@@ -37,43 +37,43 @@
     </div>
     <div class="col-12 md:col-8 lg:col-9">You can restore a backup</div>
   </div>
-  <div class="pt-6">
+  <div class="pt-2">
     <p-fieldset legend="Danger Area" class="danger-area" [toggleable]="true" [collapsed]="true">
       <ng-container *ngIf="isLoggedIn$ | async">
-        <div class="grid align-items-center">
-          <div class="col-12 md:col-4 lg:col-3">
-            <p-fileUpload
-              class="inline-block"
-              (onSelect)="backupSelected($event, fileUpload)"
-              (uploadHandler)="confirmDataImport($event)"
-              [chooseLabel]="'Import...'"
-              [chooseIcon]="'pi pi-upload'"
-              [uploadIcon]="'pi pi-history'"
-              [customUpload]="true"
-              [mode]="'basic'"
-              #fileUpload
-            ></p-fileUpload>
-            <p-message
-              *ngIf="error"
-              (click)="error = undefined"
-              severity="error"
-              text="{{error}}"
-            ></p-message>
-            <div *ngIf="fileUpload.hasFiles()">
-              <button
-                class="p-button-outlined"
-                pButton
-                icon="pi pi-times"
-                label="Cancel"
-                (click)="fileUpload.clear()"
-              ></button>
-            </div>
-          </div>
-          <div class="col-12 md:col-8 lg:col-9">
-            You can restore a backup.<br>
-            <span class="font-bold">ATTENTION:</span> This will replace all current data!
-          </div>
-        </div>
+<!--        <div class="grid align-items-center">-->
+<!--          <div class="col-12 md:col-4 lg:col-3">-->
+<!--            <p-fileUpload-->
+<!--              class="inline-block"-->
+<!--              (onSelect)="backupSelected($event, fileUpload)"-->
+<!--              (uploadHandler)="confirmDataImport($event)"-->
+<!--              [chooseLabel]="'Import...'"-->
+<!--              [chooseIcon]="'pi pi-upload'"-->
+<!--              [uploadIcon]="'pi pi-history'"-->
+<!--              [customUpload]="true"-->
+<!--              [mode]="'basic'"-->
+<!--              #fileUpload-->
+<!--            ></p-fileUpload>-->
+<!--            <p-message-->
+<!--              *ngIf="error"-->
+<!--              (click)="error = undefined"-->
+<!--              severity="error"-->
+<!--              text="{{error}}"-->
+<!--            ></p-message>-->
+<!--            <div *ngIf="fileUpload.hasFiles()">-->
+<!--              <button-->
+<!--                class="p-button-outlined"-->
+<!--                pButton-->
+<!--                icon="pi pi-times"-->
+<!--                label="Cancel"-->
+<!--                (click)="fileUpload.clear()"-->
+<!--              ></button>-->
+<!--            </div>-->
+<!--          </div>-->
+<!--          <div class="col-12 md:col-8 lg:col-9">-->
+<!--            You can restore a backup.<br>-->
+<!--            <span class="font-bold">ATTENTION:</span> This will replace all current data!-->
+<!--          </div>-->
+<!--        </div>-->
         <div class="grid align-items-center  mt-4">
           <div class="col-12 md:col-4 lg:col-3">
             <button pButton label="Delete All Data" (click)="confirmRemoteDataDeletion()" icon="pi pi-trash"></button>

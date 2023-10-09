@@ -11,7 +11,7 @@ const routes: Routes = [
     path: 'rep-schemas', component: RepetitionSchemasComponent
   },
   {
-    path: 'import-export', component: ImportExportComponent,
+    path: 'manage-data', component: ImportExportComponent,
   },
   {
     path: 'general', component: GeneralComponent,
