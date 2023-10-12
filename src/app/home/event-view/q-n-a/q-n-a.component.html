@@ -10,7 +10,7 @@
   <ng-template pTemplate="header">
     <div class="flex align-items-center w-full">
       <div class="flex-1">
-        <p-inplace #inplace [active]="!qna.id">
+        <p-inplace #inplace [active]="!qna.id" (onDeactivate)="reorderQnas()">
           <ng-template pTemplate="display">
             <span
               class="inline-block"

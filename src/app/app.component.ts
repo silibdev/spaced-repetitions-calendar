@@ -42,20 +42,20 @@ export class AppComponent {
           routerLink: 'settings/general'
         },
         {
-          label: 'Repetition schemas',
+          label: 'Repetition Schemas',
           routerLink: 'settings/rep-schemas'
         },
         {
-          label: 'Manage categories',
+          label: 'Manage Categories',
           routerLink: 'settings/categories'
         },
         {
-          label: 'Manage colors',
+          label: 'Manage Colors',
           routerLink: 'settings/colors'
         },
         {
-          label: 'Import/Export',
-          routerLink: 'settings/import-export'
+          label: 'Manage Data',
+          routerLink: 'settings/manage-data'
         }
       ]
     },

@@ -123,7 +123,7 @@
             [chooseIcon]="'pi-upload'"
             [multiple]="true"
             [maxFileSize]="maxFileUpload"
-            accept=".png, .jpg, .jpeg"
+            accept="image/*"
             (onSelect)="addPhotos($event, fileUpload)"
           ></p-fileUpload>
         </div>
@@ -134,7 +134,7 @@
               src="{{photo.id ? 'data:image/jpeg;base64,' : ''}}{{photo.thumbnail}}"
               alt="{{photo.name}}"
               width="100%"
-              class="col-3"
+              class="col-3 src-rotate-{{image.previewVisible ? rotationClass : ''}}"
               [preview]="true"
               (onShow)="onImageShow(image, photo)"
               (onHide)="onImageHide(image, photo)"

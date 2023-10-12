@@ -50,19 +50,36 @@
   z-index: 2;
 }
 
+.src-rotate-0 .p-image-preview {
+  transform-origin: top left;
+  translate: 0 0;
+}
+
+.src-rotate-90 .p-image-preview {
+  transform-origin: bottom left;
+  translate: 0 -100%;
+}
+
+.src-rotate-180 .p-image-preview {
+  transform-origin: bottom right;
+  translate: -100% -100%;
+}
+
+.src-rotate-270 .p-image-preview {
+  transform-origin: top right;
+  translate: -100% 0;
+}
+
 .p-image-mask {
   overflow: auto;
   align-items: start !important;
   justify-content: start !important;
 
-  .p-image-preview {
-    transform-origin: top left;
-  }
-
   .p-image-toolbar {
     position: fixed;
   }
 }
+
 
 .p-messages {
   .p-message-wrapper {

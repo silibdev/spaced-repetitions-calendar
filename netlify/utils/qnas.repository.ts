@@ -80,7 +80,6 @@ export const QNAsRepository = {
         FROM QNATemplate as T
         LEFT JOIN QNAStatus as S ON (T.user = S.user AND T.id = S.id)
         WHERE T.user=:userId AND T.eventId=:masterId AND S.eventId=:eventId
-        ORDER BY T.created_at asc
       `, {userId, eventId, masterId});
       const qnas: any[] = result.rows;
       console.log('get qnas', userId, eventId, 'qnas', qnas.length);

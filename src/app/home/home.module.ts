@@ -17,7 +17,6 @@ import { BlockUIModule } from 'primeng/blockui';
 import { CalendarModule } from 'primeng/calendar';
 import { MessageModule } from 'primeng/message';
 import { ColorPickerModule } from 'primeng/colorpicker';
-import { TitleFormatterProvider } from './services/title-formatter.provider';
 import { SelectButtonModule } from 'primeng/selectbutton';
 import { DialogMaximizedDirective } from './dialog-maximized.directive';
 import { CheckboxModule } from 'primeng/checkbox';
@@ -94,8 +93,6 @@ import { ConfirmPopupModule } from 'primeng/confirmpopup';
     InplaceModule,
     ConfirmPopupModule
   ],
-  providers: [
-    TitleFormatterProvider
-  ]
+  providers: []
 })
 export class HomeModule { }

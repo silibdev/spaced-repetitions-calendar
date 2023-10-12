@@ -446,9 +446,16 @@ export class ApiService {
     const photoBlobs = photos
       .filter(p => !p.id)
       .map(p =>
-        from(fetch(p.thumbnail).then(r => r.blob())
-          .then(blob => ({name: p.name, blob})
-          ))
+        fetch(p.thumbnail)
+          .then(r => r.blob())
+          // .then(blob => new Promise<Blob>((resolve, error) => {
+          //   // @ts-ignore
+          //   new CompressorJS(blob, {
+          //     success: (blobCompressed: Blob) => resolve(blobCompressed),
+          //     error: (err: any) => error(err)
+          //   });
+          // }))
+          .then(blob => ({name: p.name, blob}))
       );
 
     // @ts-ignore
@@ -458,8 +465,9 @@ export class ApiService {
 
 
     return forkJoin([
-      forkJoin(photoBlobs).pipe(
-        defaultIfEmpty([]),
+      // forkJoin(photoBlobs).pipe(
+      //   defaultIfEmpty([]),
+      from(photoBlobs[0]).pipe(map(b => ([b])),
         switchMap(blobs => {
           const dataGrouped = [firstFormData];
           let i = 0;
@@ -502,7 +510,13 @@ export class ApiService {
         })
       ),
       ...photosToDelete.map(p => this.httpClient.delete(ApiUrls.photos(masterId, p.id)))
-    ]);
+    ]).pipe(
+      tap({
+        next: val => console.log('apiservice photo', val),
+        error: err => console.log('apiservice photo error', err),
+        finalize: () => console.log('apiservice photo finalize')
+      })
+    );
   }
 
   getPhotos(masterId: string): Observable<Photo[]> {

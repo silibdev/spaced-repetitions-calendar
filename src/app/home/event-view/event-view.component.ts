@@ -62,15 +62,36 @@ export class EventViewComponent implements OnInit, BlockableUI {
 
   titleOptions$?: Observable<{ boldTitle?: boolean, highlightTitle?: boolean }>;
 
+  rotationClass = 0;
+
   @ViewChildren(Image)
   set imageComponents(ics: QueryList<Image>) {
     if (ics) {
-      // @ts-ignore
-      ics.forEach(im => im.zoomSettings = {
-        default: 1,
-        step: 0.1,
-        max: 4,
-        min: 0.5
+      ics.forEach(im => {
+        // @ts-ignore
+        im.zoomSettings = {
+          default: 1,
+          step: 0.1,
+          max: 4,
+          min: 0.5
+        };
+
+        // pathing methods
+        const oldRotateLeft = im.rotateLeft.bind(im);
+        im.rotateLeft = () => {
+          oldRotateLeft();
+          this.setRotation(im.rotate);
+        };
+        const oldRotateRight = im.rotateRight.bind(im);
+        im.rotateRight = () => {
+          oldRotateRight();
+          this.setRotation(im.rotate);
+        };
+        const oldClosePreview = im.closePreview.bind(im);
+        im.closePreview = () => {
+          oldClosePreview();
+          this.setRotation(0);
+        };
       });
     }
   }
@@ -225,7 +246,7 @@ export class EventViewComponent implements OnInit, BlockableUI {
     );
   }
 
-  onImageHide(image: Image, photo: any) {
+  onImageHide(image: Image, photo: PhotoExt) {
     image.src = (photo.id ? 'data:image/jpeg;base64,' : '') + photo.thumbnail;
     this.cd.detectChanges();
   }
@@ -250,5 +271,13 @@ export class EventViewComponent implements OnInit, BlockableUI {
     if (event.key === 'Tab') {
       event.stopPropagation();
     }
+  }
+
+  private setRotation(rotation: number) {
+    this.rotationClass = rotation % 360;
+    if (this.rotationClass < 0) {
+      this.rotationClass += 360;
+    }
+    console.log(this.rotationClass);
   }
 }
