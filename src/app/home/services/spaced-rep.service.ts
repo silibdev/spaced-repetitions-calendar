@@ -10,6 +10,7 @@ import {
   BehaviorSubject,
   combineLatestWith,
   defaultIfEmpty,
+  distinctUntilChanged,
   first,
   forkJoin,
   map,
@@ -100,6 +101,7 @@ export class SpacedRepService {
 
   private loadDb(forceSave?: boolean): Observable<unknown> {
     return this.apiService.getEventList().pipe(
+      distinctUntilChanged(),
       tap((savedDb) => {
         let db: any = [];
         if (savedDb) {

@@ -123,7 +123,7 @@
             [chooseIcon]="'pi-upload'"
             [multiple]="true"
             [maxFileSize]="maxFileUpload"
-            accept=".png, .jpg, .jpeg"
+            accept="image/*"
             (onSelect)="addPhotos($event, fileUpload)"
           ></p-fileUpload>
         </div>
