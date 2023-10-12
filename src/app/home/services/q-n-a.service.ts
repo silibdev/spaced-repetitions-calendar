@@ -62,12 +62,12 @@ export class QNAService {
             q.id = res.id
           }
         }),
-        defaultIfEmpty(undefined),
         map(qna => qna && q)
       )),
-      ...qnasToDelete.map(q => this.apiService.deleteQNA(masterId, id, q, confirmationService).pipe(defaultIfEmpty(undefined), map(() => undefined)))
+      ...qnasToDelete.map(q => this.apiService.deleteQNA(masterId, id, q, confirmationService).pipe(map(() => undefined)))
     ]).pipe(
-      tap((returnQNA) => {
+      defaultIfEmpty([] as any),
+      tap((returnQNA: (QNA | undefined)[]) => {
         this.updateStore(id, returnQNA.filter<QNA>(pred));
       })
     );
