@@ -24,6 +24,7 @@ export class QNAComponent implements OnChanges, OnDestroy {
   private correctAudio = new Audio();
   private wrongAudio = new Audio();
   private completeAudio = new Audio();
+  private lastPlayingSound?: HTMLAudioElement;
 
   constructor(
     private qnaFormService: QNAFormService,
@@ -73,7 +74,10 @@ export class QNAComponent implements OnChanges, OnDestroy {
     }
 
     const audio = audioMap[status];
+    this.lastPlayingSound?.pause();
+    this.lastPlayingSound = audio;
     Utils.playAudio(audio).then(() => {
+      this.lastPlayingSound = undefined;
       if (this.qnaFormService.areAllAnswered()) {
         Utils.playAudio(this.completeAudio);
         confetti({
