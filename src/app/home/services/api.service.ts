@@ -6,7 +6,6 @@ import {
   defaultIfEmpty,
   finalize,
   forkJoin,
-  from,
   map,
   MonoTypeOperatorFunction,
   Observable,
@@ -465,9 +464,8 @@ export class ApiService {
 
 
     return forkJoin([
-      // forkJoin(photoBlobs).pipe(
-      //   defaultIfEmpty([]),
-      from(photoBlobs[0]).pipe(map(b => ([b])),
+      forkJoin(photoBlobs).pipe(
+        defaultIfEmpty([]),
         switchMap(blobs => {
           const dataGrouped = [firstFormData];
           let i = 0;
@@ -510,13 +508,7 @@ export class ApiService {
         })
       ),
       ...photosToDelete.map(p => this.httpClient.delete(ApiUrls.photos(masterId, p.id)))
-    ]).pipe(
-      tap({
-        next: val => console.log('apiservice photo', val),
-        error: err => console.log('apiservice photo error', err),
-        finalize: () => console.log('apiservice photo finalize')
-      })
-    );
+    ]);
   }
 
   getPhotos(masterId: string): Observable<Photo[]> {
