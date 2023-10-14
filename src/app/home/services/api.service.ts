@@ -555,16 +555,16 @@ export class ApiService {
     );
   }
 
-  private callWithRetry<D>(obs: Observable<D>, confirmationService?: ConfirmationService, confOpts?: {header: string, message: string}): Observable<D> {
+  private callWithRetry<D>(obs: Observable<D>, confirmationService?: ConfirmationService, confOpts?: {header: string, message: string}): Observable<D | undefined> {
     return obs.pipe(
-      catchError<any, Observable<D>>((err: HttpErrorResponse) => {
+      catchError<any, Observable<D | undefined>>((err: HttpErrorResponse) => {
         if (!confirmationService || !confOpts) {
-          return err;
+          return throwError(() => err);
         }
         const respObs$ = new Subject<string>();
 
         if(err.status === 412) {
-          confOpts.message += '(Error: too big)';
+          confOpts.message += ' (Error: too big)';
         }
 
         confirmationService.confirm({
