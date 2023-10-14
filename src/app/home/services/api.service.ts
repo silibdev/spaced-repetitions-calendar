@@ -447,13 +447,14 @@ export class ApiService {
       .map(p =>
         fetch(p.thumbnail)
           .then(r => r.blob())
-          // .then(blob => new Promise<Blob>((resolve, error) => {
-          //   // @ts-ignore
-          //   new CompressorJS(blob, {
-          //     success: (blobCompressed: Blob) => resolve(blobCompressed),
-          //     error: (err: any) => error(err)
-          //   });
-          // }))
+          .then(blob => new Promise<Blob>((resolve, error) => {
+            // @ts-ignore
+            new CompressorJS(blob, {
+              quality: 0.75,
+              success: (blobCompressed: Blob) => resolve(blobCompressed),
+              error: (err: any) => error(err)
+            });
+          }))
           .then(blob => ({name: p.name, blob}))
       );
 
@@ -556,11 +557,15 @@ export class ApiService {
 
   private callWithRetry<D>(obs: Observable<D>, confirmationService?: ConfirmationService, confOpts?: {header: string, message: string}): Observable<D> {
     return obs.pipe(
-      catchError<any, Observable<D>>((err) => {
+      catchError<any, Observable<D>>((err: HttpErrorResponse) => {
         if (!confirmationService || !confOpts) {
           return err;
         }
         const respObs$ = new Subject<string>();
+
+        if(err.status === 412) {
+          confOpts.message += '(Error: too big)';
+        }
 
         confirmationService.confirm({
           icon: 'pi pi-exclamation-triangle',
