@@ -22,6 +22,7 @@ import { ERROR_ANONYMOUS } from './auth.interceptor';
 import { CommonSpacedRepModel, Photo, QNA } from '../models/spaced-rep.model';
 import { AppStorage } from '../../app.storage';
 import { ConfirmationService } from 'primeng/api';
+import * as CompressorJS from 'compressorjs';
 
 const ApiUrls = {
   settings: '/api/settings',

@@ -1,10 +1,10 @@
 import { Component, Input, OnChanges, OnDestroy, SimpleChanges } from '@angular/core';
 import { BehaviorSubject, combineLatestWith, map, Observable, shareReplay } from 'rxjs';
 import { QNA, QNAStatus } from '../../models/spaced-rep.model';
-import { Utils } from '../../../utils';
 import confetti from 'canvas-confetti';
 import { ConfirmationService } from 'primeng/api';
 import { QNAFormService } from '../../services/q-n-a-form.service';
+import { SoundsService } from '../../services/sounds.service';
 
 @Component({
   selector: 'app-q-n-a',
@@ -21,23 +21,12 @@ export class QNAComponent implements OnChanges, OnDestroy {
   enableDelete = false;
 
   private reorder$ = new BehaviorSubject(true);
-  private correctAudio = new Audio();
-  private wrongAudio = new Audio();
-  private completeAudio = new Audio();
-  private lastPlayingSound?: HTMLAudioElement;
 
   constructor(
     private qnaFormService: QNAFormService,
-    private confirmationService: ConfirmationService
+    private confirmationService: ConfirmationService,
+    private soundsService: SoundsService
   ) {
-    this.correctAudio.src = 'assets/sounds/correct.mp3';
-    this.correctAudio.load();
-
-    this.wrongAudio.src = 'assets/sounds/wrong.mp3';
-    this.wrongAudio.load();
-
-    this.completeAudio.src = 'assets/sounds/complete.mp3';
-    this.completeAudio.load();
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -67,19 +56,16 @@ export class QNAComponent implements OnChanges, OnDestroy {
     };
     qna.status = s[status];
 
-    const audioMap: Record<'R' | 'C' | 'W', HTMLAudioElement | undefined> = {
-      C: this.correctAudio,
-      W: this.wrongAudio,
-      R: undefined
+    const audioMap = {
+      C: () => this.soundsService.playSound('correct'),
+      W: () => this.soundsService.playSound('wrong'),
+      R: () => Promise.resolve()
     }
 
-    const audio = audioMap[status];
-    this.lastPlayingSound?.pause();
-    this.lastPlayingSound = audio;
-    Utils.playAudio(audio).then(() => {
-      this.lastPlayingSound = undefined;
+    const audioPromise = audioMap[status]();
+    audioPromise.then(() => {
       if (this.qnaFormService.areAllAnswered()) {
-        Utils.playAudio(this.completeAudio);
+        this.soundsService.playSound('complete');
         confetti({
           zIndex: 999999,
           origin: {
@@ -88,7 +74,7 @@ export class QNAComponent implements OnChanges, OnDestroy {
           },
           shapes: ['circle', 'square', 'star'],
           spread: 90,
-          particleCount: 200,
+          particleCount: 100,
         });
       }
     });

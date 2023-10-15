@@ -22,6 +22,7 @@ import { Image } from 'primeng/image';
 import { SpacedRepService } from '../services/spaced-rep.service';
 import { ApiService } from '../services/api.service';
 import { Utils } from '../../utils';
+import { SoundsService } from '../services/sounds.service';
 
 interface FileSelectEvent {
   /**
@@ -118,7 +119,8 @@ export class EventViewComponent implements OnInit, BlockableUI {
     public settingsService: SettingsService,
     private srService: SpacedRepService,
     private cd: ChangeDetectorRef,
-    private elRef: ElementRef
+    private elRef: ElementRef,
+    private soundsService: SoundsService
   ) {
     this.customColorControl = new UntypedFormControl();
     this.colorOpts = [
@@ -168,16 +170,13 @@ export class EventViewComponent implements OnInit, BlockableUI {
       startWith(this.eventFormService.form.value)
     );
 
-    const doneAudio = new Audio();
-    doneAudio.src = "assets/sounds/done.mp3";
-    doneAudio.load();
 
     const doneControl = this.eventFormService.form.get('done');
     doneControl?.valueChanges.pipe(
       untilDestroyed(this),
       filter((done: boolean) => done),
       tap(() => {
-        Utils.playAudio(doneAudio);
+        this.soundsService.playSound('done');
       })
     ).subscribe()
   }
@@ -278,6 +277,5 @@ export class EventViewComponent implements OnInit, BlockableUI {
     if (this.rotationClass < 0) {
       this.rotationClass += 360;
     }
-    console.log(this.rotationClass);
   }
 }
