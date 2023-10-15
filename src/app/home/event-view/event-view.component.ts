@@ -278,6 +278,5 @@ export class EventViewComponent implements OnInit, BlockableUI {
     if (this.rotationClass < 0) {
       this.rotationClass += 360;
     }
-    console.log(this.rotationClass);
   }
 }
