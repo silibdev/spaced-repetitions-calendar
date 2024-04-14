@@ -3,24 +3,39 @@ import { RepositoryResult } from './utils';
 
 export const LastUpdatesRepository = {
   async getLastUpdates(userId: string): Promise<RepositoryResult<any>> {
-    const result = await DB.execute("SELECT EL.updated_at as el_update, S.updated_at as s_update FROM EventList as EL JOIN Settings as S ON EL.user=S.user WHERE EL.user=:userId", {userId});
-    const row: Record<string, any> = result.rows[0];
-    const eventListUpdate = row && row['el_update'];
-    const settingsUpdate = row && row['s_update'];
+    const result = await DB.from('eventlist')
+      .select(`
+      updated_at,
+      settings (
+        updated_at
+      )
+      `)
+      .eq('user', userId)
+      .maybeSingle();
+    const row = result.data;
+    const eventListUpdate = row?.updated_at;
+    const settingsUpdate = row?.settings?.updated_at;
     console.log({eventListUpdate, settingsUpdate});
 
-    const eventResult = await DB.execute("SELECT DET.id as id, DET.updated_at as det_update, DES.updated_at as des_update FROM EventDetail as DET JOIN EventDescription as DES ON DES.id=DET.id WHERE DET.user=:userId", {userId});
-
+    const eventResult = await DB.from('eventdetail')
+      .select(`
+      id,
+      updated_at,
+      eventdescription (
+        updated_at
+      )
+      `)
+      .eq('user', userId);
     const detUpdates: any[] = [];
     const desUpdates: any[] = [];
 
-    eventResult.rows.forEach((row: any) => {
-      const id = row['id']
+    (eventResult.data || []).forEach((row) => {
+      const id = row.id;
       desUpdates.push({
-        id, updatedAt: row['des_update']
+        id, updatedAt: row.eventdescription?.updated_at
       });
       detUpdates.push({
-        id, updatedAt: row['det_update']
+        id, updatedAt: row.updated_at
       });
     });
 

@@ -1,4 +1,4 @@
-import { DB, db_formatter } from './db-connector';
+import { DB } from './db-connector';
 import {
   bulkCheckLastUpdate,
   BulkRequestBodyData,
@@ -7,52 +7,71 @@ import {
   RepositoryResult,
   RequestBody
 } from './utils';
+import { Tables } from './database.type';
 
 export const EventDetailRepository = {
   async getEventDetail(userId: string, eventId: string): Promise<RepositoryResult<string>> {
-    const result = await DB.execute("SELECT detail, updated_at FROM EventDetail WHERE user=:userId AND id=:id", {userId, id: eventId});
-    const row: Record<string, any> = result.rows[0];
-    console.log(row);
-    const data: string = (row && row['detail']) || '';
+    const result = await DB.from('eventdetail')
+      .select()
+      .eq('user', userId)
+      .eq('id', eventId)
+      .maybeSingle();
+    const row: Tables<'eventdetail'> | null = result.data;
+    const data: string = row?.detail || '';
     const updatedAt = getUpdatedAtFromRow(row);
     console.log('get event detail', eventId);
     return {data, updatedAt};
   },
 
-  async postEventDetail(userId: string, eventId: string, {data: detail, lastUpdatedAt}: RequestBody): Promise<RepositoryResult<string>> {
-    const checkError = await checkLastUpdate(DB.execute("SELECT updated_at FROM EventDetail WHERE user=:userId AND id=:id", {userId, id: eventId}), lastUpdatedAt);
+  async postEventDetail(userId: string, eventId: string, {
+    data: detail,
+    lastUpdatedAt
+  }: RequestBody): Promise<RepositoryResult<string>> {
+    const checkError = await checkLastUpdate(
+      DB.from('eventdetail')
+        .select()
+        .eq('user', userId)
+        .eq('id', eventId),
+      lastUpdatedAt);
     if (checkError) return checkError;
-    const query = "INSERT INTO EventDetail (user, id, detail, updated_at) VALUES(:userId, :id, :detail, :updatedAt) ON DUPLICATE KEY UPDATE detail=:detail, updated_at=:updatedAt";
     const updatedAt = new Date().toISOString();
-    const params = {
-      userId,
+    const values: Tables<'eventdetail'> = {
+      user: userId,
       detail,
       id: eventId,
-      updatedAt
-    }
-    const result = await DB.execute(query, params);
-    console.log('post eventDetail', result.insertId);
+      updated_at: updatedAt
+    };
+    const result = await DB.from('eventdetail').upsert(values);
+    console.log('post eventDetail', result.count);
     return {data: '{"ok":"ok"}', updatedAt};
   },
 
   async deleteEventDetail(userId: string, eventId: string): Promise<RepositoryResult<string>> {
-    const result = await DB.execute("DELETE FROM EventDetail WHERE user=:userId AND id=:id", {userId, id: eventId});
-    const eventDetailRow: Record<string, any> = result.rows[0];
-    const eventDetail: string = (eventDetailRow && eventDetailRow['detail']) || '';
+    const result = await DB.from('eventdetail')
+      .delete()
+      .eq('user', userId)
+      .eq('id', eventId)
+      .select()
+      .maybeSingle();
+    const eventDetailRow: Tables<'eventdetail'> | null = result.data;
+    const eventDetail: string = eventDetailRow?.detail || '';
     const updatedAt = getUpdatedAtFromRow(eventDetailRow);
     console.log('delete eventDetail', eventDetail);
     return {data: eventDetail, updatedAt};
   },
 
   async bulkGetEventDetail(userId: string, ids: string[]): Promise<RepositoryResult<Record<string, RepositoryResult<string>>>> {
-    const result = await DB.execute("SELECT id, detail, updated_at FROM EventDetail WHERE user=:userId AND id IN (:ids)", {userId, ids});
-    const returnData = result.rows.reduce<Record<string, RepositoryResult<string>>>((acc, row: any) => {
+    const result = await DB.from('eventdetail')
+      .select()
+      .eq('user', userId)
+      .in('id', ids);
+    const returnData = (result.data || []).reduce((acc, row: any) => {
       acc['id=' + row['id']] = {
         data: row['detail'],
         updatedAt: getUpdatedAtFromRow(row)
       };
       return acc;
-    }, {});
+    }, {} as Record<string, RepositoryResult<string>>);
     return {data: returnData, updatedAt: new Date().toISOString()};
   },
 
@@ -63,19 +82,28 @@ export const EventDetailRepository = {
       return acc;
     }, {} as Record<string, string>);
 
-    const checkErrors = await bulkCheckLastUpdate(DB.execute("SELECT id, updated_at FROM EventDetail WHERE user=:userId AND id IN (:ids)", {userId, ids}), 'id', bulkLastUpdates);
+    const checkErrors = await bulkCheckLastUpdate(
+      DB.from('eventdetail')
+        .select('id, updated_at')
+        .eq('user', userId)
+        .in('id', ids),
+      'id',
+      bulkLastUpdates);
     if (checkErrors) return checkErrors;
 
     // CREATE QUERY
     const updatedAt = new Date().toISOString();
     // CREATE VALUES FOR QUERY
-    const values = bulkData
-      .map((bd, index) => db_formatter('(?,?,?,?)', [userId, ids[index], bd.body?.data, updatedAt]))
-      .join(',');
-    const query = `INSERT INTO EventDetail (user, id, detail, updated_at) VALUES ${values} ON DUPLICATE KEY UPDATE detail=VALUES(detail), updated_at=VALUES(updated_at)`;
+    const values: Tables<'eventdetail'>[] = bulkData
+      .map((bd, index) => ({
+        user: userId,
+        id: ids[index],
+        detail: bd.body?.data,
+        updated_at: updatedAt
+      }));
 
-    const result = await DB.execute(query);
-    console.log('post eventDetail', result.insertId);
+    const result = await DB.from('eventdetail').upsert(values);
+    console.log('post eventDetail', result.count);
 
     const returnData = bulkData.reduce((acc, bd) => {
       acc[bd.queryParams] = {data: '{"ok":"ok"}', updatedAt};

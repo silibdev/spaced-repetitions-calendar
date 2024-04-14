@@ -3,14 +3,14 @@ import { DB } from './db-connector';
 
 export const DataRepository = {
   async deleteData(userId: string): Promise<RepositoryResult<string>> {
-    const result = await DB.execute(`
-DELETE S, EL, EDES, EDET
-      FROM Settings as S
-      JOIN EventList as EL ON S.user = EL.user
-      JOIN EventDescription as EDES ON S.user = EDES.user
-      JOIN EventDetail as EDET ON S.user = EDET.user
-     WHERE S.user=:userId
-`, {userId});
+    await DB.from('settings').delete().eq('user', userId);
+    await DB.from('eventlist').delete().eq('user', userId);
+    await DB.from('eventdescription').delete().eq('user', userId);
+    await DB.from('eventdetail').delete().eq('user', userId);
+    await DB.from('qnastatus').delete().eq('user', userId);
+    await DB.from('qnatemplate').delete().eq('user', userId);
+    await DB.from('photo').delete().eq('user', userId);
+
     return Promise.resolve({data: 'Done', updatedAt: new Date().toISOString()})
   }
 }

@@ -1,164 +1,125 @@
 import { getUpdatedAtFromRow, RepositoryResult, RequestBody } from './utils';
 import { DB } from './db-connector';
+import { Tables, TablesInsert } from './database.type';
 
 export const QNAsRepository = {
 
   async getQNA(userId: string, masterId: string, eventId: string, qnaId: string): Promise<RepositoryResult<any>> {
     console.log('getQNA', {userId, eventId, qnaId});
-    const {qnaRow, updatedAt} = await DB.transaction(async tx => {
-      //Check if statuses are present
-      const r = await tx.execute(`
-        SELECT id, eventId
-        FROM QNAStatus
-        WHERE user = :userId
-        AND eventId = :eventId
-        AND id = :questionId
-      `, {userId, eventId, qnaId});
-      // If multiple => error
-      if (r.rows.length > 1) {
-        throw new Error(`There should be only one question status for user:${userId}, event:${eventId}, qna:${qnaId}. Instead you got ${r.rows.length}`);
-      }
 
-      // If not present => create it
-      if (r.rows.length === 0) {
-        await tx.execute(`
-          INSERT INTO QNAStatus (user, eventId, id, updated_at)
-          VALUES (:userId, :eventId, :questionId, :updatedAt)
-        `, {userId, eventId, qnaId, updatedAt: new Date().toISOString()});
-      }
+    const values: Tables<'qnastatus'> = {
+      user: userId,
+      id: qnaId,
+      eventid: eventId,
+      updated_at: new Date().toISOString(),
+      status: null
+    };
+    await DB.from('qnastatus').upsert(values, {ignoreDuplicates: true});
 
-      const result = await tx.execute(`
-        SELECT T.id, T.question, T.answer, S.status
-        FROM QNATemplate as T
-        LEFT JOIN QNAStatus as S ON (T.id = S.id AND T.user = S.user)
-        WHERE T.user=:userId AND T.eventId=:masterId AND S.id=:qnaId AND S.eventId=:eventId
-      `, {userId, eventId, qnaId, masterId});
-      const qnaRow: any = result.rows[0];
-      const updatedAt = getUpdatedAtFromRow(qnaRow);
-      console.log('get qna', userId, eventId, 'qnaId', qnaId);
-      return {qnaRow, updatedAt};
-    })
+    const result = await DB.from('qnatemplate')
+      .select('id, question, answer, qnastatus (status)')
+      .eq('user', userId)
+      .eq('eventid', masterId)
+      .eq('id', qnaId)
+      .eq('qnastatus.eventid', eventId)
+      .maybeSingle();
+    const qnaRow = {
+      id: result.data?.id,
+      question: result.data?.question,
+      answer: result.data?.answer,
+      status: result.data?.qnastatus[0].status
+    };
+    const updatedAt = getUpdatedAtFromRow(qnaRow);
+    console.log('get qna', userId, eventId, 'qnaId', qnaId);
+
     return {data: qnaRow, updatedAt};
   },
 
   async getQNAs(userId: string, masterId: string, eventId: string): Promise<RepositoryResult<any>> {
     console.log('getQNAs', {userId, eventId});
-    const qnas = await DB.transaction(async tx => {
-      const updatedAt = new Date().toISOString();
-      //check which statuses are present
-      // 1. get questions ids
-      const r = await tx.execute(`
-          SELECT id
-          FROM QNATemplate
-          WHERE user = :userId
-          AND eventId = :masterId
-        `, {userId, masterId});
-      const questionIds: string[] = r.rows.map((r: any) => r.id);
+    const updatedAt = new Date().toISOString();
 
-      if (questionIds.length) {
-        // 2. get questions without statuses
-        const r2 = await tx.execute(`
-          SELECT id, eventId
-          FROM QNAStatus
-          WHERE user = :userId
-          AND eventId = :eventId
-          AND id in (:questionIds)
-        `, {userId, eventId, questionIds});
-        const questionsWithStatus = r2.rows.map((r: any) => r.id);
-        const missingQuestions = questionIds.filter(id => !questionsWithStatus.includes(id));
+    //check which statuses are present
+    // 1. get questions ids
+    const r = await DB.from('qnatemplate')
+      .select('id')
+      .eq('user', userId)
+      .eq('eventid', masterId);
+    const questionIds: string[] = (r.data || []).map((r) => r.id);
 
-        for (const questionId of missingQuestions) {
-          await tx.execute(`
-            INSERT INTO QNAStatus (user, eventId, id, updated_at)
-            VALUES (:userId, :eventId, :questionId, :updatedAt)
-          `, {userId, eventId, questionId, updatedAt});
-        }
-      }
+    if (questionIds.length) {
+      const values: Tables<'qnastatus'>[] = questionIds.map(id => ({
+        user: userId,
+        eventid: eventId,
+        id,
+        updated_at: updatedAt,
+        status: null
+      }));
+      // 2. Add statuses that are missing
+      await DB.from('qnastatus').upsert(values, {ignoreDuplicates: true});
+    }
 
-      const result = await tx.execute(`
-        SELECT T.id, T.question, T.answer, S.status
-        FROM QNATemplate as T
-        LEFT JOIN QNAStatus as S ON (T.user = S.user AND T.id = S.id)
-        WHERE T.user=:userId AND T.eventId=:masterId AND S.eventId=:eventId
-      `, {userId, eventId, masterId});
-      const qnas: any[] = result.rows;
-      console.log('get qnas', userId, eventId, 'qnas', qnas.length);
-      return qnas;
-    });
+    const result = await DB.from('qnatemplate')
+      .select('id, question, answer, qnastatus (status)')
+      .eq('user', userId)
+      .eq('eventid', masterId)
+      .eq('qnastatus.eventid', eventId);
+    const qnas = (result.data || []).map(qna => ({
+      id: qna.id,
+      question: qna.question,
+      answer: qna.answer,
+      status: qna.qnastatus[0].status
+    }));
+    console.log('get qnas', userId, eventId, 'qnas', qnas.length);
+
     return {data: qnas, updatedAt: ''};
   },
 
   async postQNA(userId: string, masterId: string, eventId: string, {data: qna}: RequestBody<any>): Promise<RepositoryResult<any>> {
     const updatedAt = new Date().toISOString();
-    const [templateResult, statusResult, id] = await DB.transaction(async tx => {
-      await tx.execute('SET @QNAID = COALESCE(:id, UUID())', {id: qna.id});
 
-      const tQuery = `
-        INSERT INTO QNATemplate (user, eventId, id, question, answer, updated_at)
-        VALUES(:userId, :masterId, @QNAID, :question, :answer, :updatedAt)
-        ON DUPLICATE KEY UPDATE question=:question, answer=:answer, updated_at=:updatedAt
-      `;
-      const tParams = {
-        userId,
-        question: qna.question,
-        answer: qna.answer,
-        masterId,
-        updatedAt
-      }
-      const tResult = await tx.execute(tQuery, tParams);
+    const tValues: TablesInsert<'qnatemplate'> = {
+      user: userId,
+      eventid: masterId,
+      id: qna.id,
+      question: qna.question,
+      answer: qna.answer,
+      updated_at: updatedAt
+    };
+    const tResult = await DB.from('qnatemplate').upsert(tValues).select().single();
+    qna.id = tResult.data!.id;
 
-      const sQuery = `
-        INSERT INTO QNAStatus (user, eventId, id, status, updated_at)
-        VALUES(:userId, :eventId, @QNAID, :status, :updatedAt)
-        ON DUPLICATE KEY UPDATE status=:status, updated_at=:updatedAt
-      `;
-      const sParams = {
-        userId,
-        status: qna.status,
-        eventId,
-        updatedAt
-      }
-      const sResult = await tx.execute(sQuery, sParams);
+    const sValues: TablesInsert<'qnastatus'> = {
+      user: userId,
+      eventid: eventId,
+      id: qna.id,
+      status: qna.status,
+      updated_at: updatedAt
+    };
+    const sResult = await DB.from('qnastatus').upsert(sValues).select().single();
 
-      const idResult = await tx.execute('SELECT id FROM QNATemplate WHERE user=:userId AND eventId=:masterId AND id=@QNAID', {
-        userId,
-        masterId
-      });
+    const id = qna.id;
 
-      const id = (idResult.rows[0] as any).id;
-      return [tResult, sResult, id]
-    });
-
-    console.log('post qna', {templateResult, statusResult});
+    console.log('post qna', tResult.data, sResult.data, id);
     return {data: {id}, updatedAt};
   },
 
   // EventId is not used because when deleting a qna you have to delete all statuses for all events
-  async deleteQNA(userId: string, masterId: string, eventId: string, qnaId: string): Promise<RepositoryResult<{ id: string }>> {
-    const [templateResult, statusResult] = await DB.transaction(async tx => {
-      const tQuery = `
-        DELETE FROM QNATemplate WHERE user = :userId AND eventId = :masterId AND id = :qnaId
-      `;
-      const tParams = {
-        userId,
-        qnaId,
-        masterId
-      }
-      const tResult = await tx.execute(tQuery, tParams);
+  async deleteQNA(userId: string, masterId: string, eventId: string, qnaId: string): Promise<RepositoryResult<{
+    id: string
+  }>> {
+    const sResult = await DB.from('qnastatus')
+      .delete()
+      .eq('user', userId)
+      .eq('id', qnaId);
 
-      const sQuery = `
-        DELETE FROM QNAStatus WHERE user = :userId AND id = :qnaId
-      `;
-      const sParams = {
-        userId,
-        qnaId
-      }
-      const sResult = await tx.execute(sQuery, sParams);
+    const tResult = await DB.from('qnatemplate')
+      .delete()
+      .eq('user', userId)
+      .eq('eventid', masterId)
+      .eq('id', qnaId);
 
-      return [tResult.insertId, sResult.insertId]
-    });
-
-    console.log('delete qna', {templateResult, statusResult});
+    console.log('delete qna', tResult.count, sResult.count);
 
     return {data: {id: qnaId}, updatedAt: new Date().toISOString()};
   }
