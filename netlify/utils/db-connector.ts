@@ -1,5 +1,6 @@
-import { connect, format } from '@planetscale/database';
+import { createClient, SupabaseClientOptions } from '@supabase/supabase-js';
 import fetch, { Headers, Request, Response } from 'node-fetch';
+import { Database } from './database.type';
 
 // @ts-ignore
 globalThis.fetch = fetch
@@ -10,11 +11,10 @@ globalThis.Request = Request
 // @ts-ignore
 globalThis.Response = Response
 
-const config = {
-  host: process.env['DATABASE_HOST'],
-  username: process.env['DATABASE_USERNAME'],
-  password: process.env['DATABASE_PASSWORD']
-}
+const url = process.env['DATABASE_URL']!;
+const key = process.env['DATABASE_KEY']!;
+const config: SupabaseClientOptions<'db'> = {
+  db: {schema: 'db'}
+};
 
-export const DB = connect(config);
-export const db_formatter = format;
+export const DB = createClient<Database>(url, key, config);

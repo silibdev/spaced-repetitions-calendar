@@ -1,35 +1,46 @@
 import { DB } from './db-connector';
 import { checkLastUpdate, getUpdatedAtFromRow, RepositoryResult, RequestBody } from './utils';
+import { Tables } from './database.type';
 
 export const EventListRepository = {
   async getEventList(userId: string): Promise<RepositoryResult<string>> {
-    const result = await DB.execute("SELECT list, updated_at FROM EventList WHERE user=:userId", {userId});
-    const eventListRow: Record<string, any> = result.rows[0];
-    const list: string = (eventListRow && eventListRow['list']) || '';
+    const result = await DB.from('eventlist')
+      .select()
+      .eq('user', userId)
+      .maybeSingle();
+    const eventListRow: Tables<'eventlist'> | null = result.data;
+    const list: string = eventListRow?.list || '';
     const updatedAt = getUpdatedAtFromRow(eventListRow);
     console.log('get eventList', userId);
     return {data: list, updatedAt};
   },
 
   async postEventList(userId: string, {data: list, lastUpdatedAt}: RequestBody): Promise<RepositoryResult<string>> {
-    const checkError = await checkLastUpdate(DB.execute("SELECT updated_at FROM EventList WHERE user=:userId", {userId}), lastUpdatedAt);
+    const checkError = await checkLastUpdate(
+      DB.from('eventlist')
+        .select('updated_at')
+        .eq('user', userId),
+      lastUpdatedAt);
     if (checkError) return checkError;
-    const query = "INSERT INTO EventList (user, list, updated_at) VALUES(:userId, :list, :updatedAt) ON DUPLICATE KEY UPDATE list=:list, updated_at=:updatedAt";
     const updatedAt = new Date().toISOString();
-    const params = {
-      userId,
+    const values: Tables<'eventlist'> = {
+      user: userId,
       list,
-      updatedAt
+      updated_at: updatedAt
     }
-    const result = await DB.execute(query, params);
-    console.log('post list', result.insertId);
+    const result = await DB.from('eventlist').upsert(values);
+    console.log('post list', result.count);
     return {data: 'ok', updatedAt};
   },
 
   async deleteEventList(userId: string): Promise<RepositoryResult<string>> {
-    const result = await DB.execute("DELETE FROM EventList WHERE userId=:userId", {userId});
-    const listRow: Record<string, any> = result.rows[0];
-    const list: string = (listRow && listRow['list']) || '';
+    const result = await DB.from('eventlist')
+      .delete()
+      .eq('user', userId)
+      .select()
+      .maybeSingle();
+    const listRow: Tables<'eventlist'> | null = result.data;
+    const list: string = listRow?.list || '';
     const updatedAt = getUpdatedAtFromRow(listRow);
     console.log('delete list', list);
     return {data: list, updatedAt};

@@ -1,6 +1,6 @@
 import { Handler, HandlerContext, HandlerEvent, HandlerResponse } from '@netlify/functions';
-import { ExecutedQuery } from '@planetscale/database/dist';
 import Busboy from 'busboy';
+import { PostgrestSingleResponse } from '@supabase/supabase-js';
 
 export function getUser(context: HandlerContext): { userId: string } | HandlerResponse {
   if (!context.clientContext || !context.clientContext['user']) {
@@ -118,15 +118,15 @@ export function createResponse<T>({data, updatedAt, statusCode}: RepositoryResul
 }
 
 // Undefined means everything is ok
-export async function checkLastUpdate(query: Promise<ExecutedQuery>, lastUpdatedAt?: string): Promise<RepositoryResult<string> | undefined> {
+export async function checkLastUpdate(query: PromiseLike<PostgrestSingleResponse<{ updated_at: string | null }[]>>, lastUpdatedAt?: string | undefined): Promise<RepositoryResult<string> | undefined> {
   if (!lastUpdatedAt) {
     return undefined;
   }
   const updatedAtResult = await query;
-  if (!updatedAtResult.rows.length) {
+  if (!updatedAtResult.data?.length) {
     return undefined;
   }
-  const lastUpdateFromDb = getUpdatedAtFromRow(updatedAtResult.rows[0]);
+  const lastUpdateFromDb = getUpdatedAtFromRow(updatedAtResult.data[0]);
   if (lastUpdateFromDb === lastUpdatedAt) {
     return undefined;
   }
@@ -134,16 +134,16 @@ export async function checkLastUpdate(query: Promise<ExecutedQuery>, lastUpdated
 }
 
 // Undefined means everything is ok
-export async function bulkCheckLastUpdate(query: Promise<ExecutedQuery>, idColumn: string, lastUpdatedAt?: Record<string, string>): Promise<RepositoryResult<Record<string, RepositoryResult<string>>> | undefined> {
+export async function bulkCheckLastUpdate(query: PromiseLike<PostgrestSingleResponse<{ updated_at: string | null }[]>>, idColumn: string, lastUpdatedAt?: Record<string, string>): Promise<RepositoryResult<Record<string, RepositoryResult<string>>> | undefined> {
   if (!lastUpdatedAt) {
     return undefined;
   }
   const updatedAtResult = await query;
-  if (!updatedAtResult.rows.length) {
+  if (!updatedAtResult.data?.length) {
     return undefined;
   }
 
-  const rowsOutOfSync = updatedAtResult.rows
+  const rowsOutOfSync = updatedAtResult.data
     .filter((row: Record<string, any>) => lastUpdatedAt[row[idColumn]] && getUpdatedAtFromRow(row) !== lastUpdatedAt[row[idColumn]])
     .map((row: Record<string, any>) => ({
       id: row[idColumn],
@@ -219,4 +219,12 @@ function parseMultipartForm(event: HandlerEvent) {
     busboy.write(event.body, encoding);
     busboy.end();
   });
+}
+
+export function imageFromDBToAPI(image: string): string {
+  return Buffer.from(image.substring(2), 'hex').toString('base64');
+}
+
+export function imageFromAPIToDB(image: Buffer): string {
+  return '\\x' + image.toString('hex');
 }
