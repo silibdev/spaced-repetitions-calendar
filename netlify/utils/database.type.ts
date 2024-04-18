@@ -97,7 +97,6 @@ export type Database = {
           eventid: string
           id: string
           name: string | null
-          photo: string | null
           thumbnail: string | null
           updated_at: string | null
           user: string
@@ -106,7 +105,6 @@ export type Database = {
           eventid: string
           id?: string
           name?: string | null
-          photo?: string | null
           thumbnail?: string | null
           updated_at?: string | null
           user: string
@@ -115,7 +113,6 @@ export type Database = {
           eventid?: string
           id?: string
           name?: string | null
-          photo?: string | null
           thumbnail?: string | null
           updated_at?: string | null
           user?: string
