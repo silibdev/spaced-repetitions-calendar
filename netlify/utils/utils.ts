@@ -164,6 +164,13 @@ export async function bulkCheckLastUpdate(query: PromiseLike<PostgrestSingleResp
   return {data: errors, statusCode: 500, updatedAt: new Date().toISOString()};
 }
 
+export interface ParsedFile<C = any> {
+  filename: string;
+  mimeType: string;
+  encoding: string;
+  content: C;
+}
+
 function parseMultipartForm(event: HandlerEvent) {
   return new Promise((resolve, reject) => {
     const busboy = Busboy({
@@ -194,7 +201,7 @@ function parseMultipartForm(event: HandlerEvent) {
 
       file.on('end', () => {
         if (content) {
-          const myFile = {
+          const myFile: ParsedFile = {
             filename, mimeType, encoding, content
           };
           addField(fieldname, myFile);
@@ -221,10 +228,8 @@ function parseMultipartForm(event: HandlerEvent) {
   });
 }
 
-export function imageFromDBToAPI(image: string): string {
-  return Buffer.from(image.substring(2), 'hex').toString('base64');
-}
+export const PHOTO_STORAGE = 'db.photo';
 
-export function imageFromAPIToDB(image: Buffer): string {
-  return '\\x' + image.toString('hex');
+export function getPhotoPath(user: string, id:string) {
+  return `${user}/${id}`;
 }

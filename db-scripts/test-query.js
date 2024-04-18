@@ -19,12 +19,15 @@ const config = {
 
 export const DB = createClient(url, key, config);
 
-const userId = '7193e14a-9a8b-4809-989a-efd547666acc'; //Zil1
+// const userId = '7193e14a-9a8b-4809-989a-efd547666acc'; //Zil1
+const userIdAltea = 'b6f09585-8795-4950-bdfe-438fa25f4750';
+const userId = userIdAltea;
 const eventId = '0.624622211023278';
 const qnaMasterEventId = '0.624622211023278';
 const qnaEventId = '0.07939692916690477';
 const qnaId = '13703e8d-6b40-11ee-ab23-ea5db5d63640';
 const photoId = '7faa2962-5899-11ee-b2a8-86b64d8a47d5';
+const storageBucket = 'db.photo';
 
 // SIMPLE READ
 // const result = await DB.from('settings').select();
@@ -70,6 +73,80 @@ const photoId = '7faa2962-5899-11ee-b2a8-86b64d8a47d5';
 // result.data.forEach( qna => {
 //   console.log({id: qna.id, question: qna.question, status: qna.qnastatus[0].status, statusLenght: qna.qnastatus.length});
 // });
+
+// TEST STORAGE
+// const imageBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=';
+// const imageBuffer = Buffer.from(imageBase64, 'base64');
+//
+// const resultUp = await DB.storage.from(storageBucket).upload('myTest.png', imageBuffer, {contentType: 'image/png'});
+// {
+//   path: 'myTest.png',
+//     id: '76dd3da6-49cb-4be8-8c09-8558519a4678',
+//   fullPath: 'db.photo/myTest.png'
+// }
+// console.log('resultUp', resultUp);
+
+// const result = await DB.schema('storage').from('objects').select();
+
+// const result = await DB.storage.from(storageBucket).remove(['fold/myTest.png']);
+// console.log(result);
+
+// MIGRATE TO STORAGE
+// const photoOnDB = await DB.from('eventdetail').select().eq('user', userId)
+//   .then(events => {
+//     const ids = (events.data || [])?.map(e => e.id);
+//     return DB.from('photo').select('id, name, eventid')
+//       .eq('user', userId)
+//       .in('eventid', ids)
+//       .not('photo', 'is', null);
+//   });
+//
+// console.log(photoOnDB.error);
+// console.log(photoOnDB.data?.length);
+// console.log(photoOnDB.data?.map(p => ({id: p.id, name: p.name})));
+//
+// const count = {ok: 0, error: 0, alreadyPresent: 0};
+// const impossible = [];
+// await Promise.all(photoOnDB.data?.map(async (p, i) => {
+//   const alreadyPresent = await DB.schema('storage').from('objects').select().like('name', '%' + p.id + '%').maybeSingle();
+//   if (alreadyPresent.data) {
+//     count.alreadyPresent += 1;
+//     return;
+//   }
+//
+//   const photoDownload = await DB.from('photo').select('photo').eq('id', p.id).single();
+//   if (!photoDownload.data) {
+//     console.log({userId, id: p.id, name: p.name, error: photoDownload.error});
+//     count.error += 1;
+//     impossible.push(p.id);
+//     return;
+//   }
+//   const photo = Buffer.from(photoDownload.data.photo.substring(2), 'hex');
+//   const mimeSplit = p.name.split('.');
+//   const mime = mimeSplit[mimeSplit.length - 1];
+//   const {data, error} = await DB.storage.from(storageBucket).upload(`${userId}/${p.id}`, photo, {contentType: 'image/' + mime});
+//   if (error) {
+//     console.log(2, {userId, id: p.id, name: p.name, error});
+//   }
+//   count.ok += 1;
+// }));
+// console.log({count});
+// console.log(impossible);
+
+// RECOVERY
+// const toMove = [];
+//
+// const photoDB = await DB.from('photo').select('photo, name, id').eq('id', toMove[0].id).single();
+// if (photoDB.error) {
+//   console.log({error: photoDB.error});
+// }
+// const p = photoDB.data;
+// console.log(p.name, p.id);
+// const photo = Buffer.from(p.photo.substring(2), 'hex');
+// const mimeSplit = p.name.split('.');
+// const mime = mimeSplit[mimeSplit.length - 1];
+// const result = await DB.storage.from(storageBucket).upload(`${userId}/${p.id}`, photo, {contentType: 'image/' + mime});
+// console.log(result);
 
 console.log('Done');
 
