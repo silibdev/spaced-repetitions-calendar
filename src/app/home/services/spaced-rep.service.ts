@@ -86,6 +86,7 @@ export class SpacedRepService {
       }
     };
     if (typeof Worker !== 'undefined') {
+      console.log('WebWorker used!');
       // Create a new
       const worker = new Worker(new URL('../../event-list.worker.ts', import.meta.url));
       worker.onmessage = onmessage;
@@ -131,7 +132,7 @@ export class SpacedRepService {
   private loadDb(forceSave?: boolean): Observable<unknown> {
     let updateDB = false;
     this.loaderService.startLoading();
-    // console.time('loadDB');
+    console.time('loadDB');
     return this.apiService.getEventList().pipe(
       distinctUntilChanged(),
       switchMap((savedDb) => {
@@ -160,7 +161,7 @@ export class SpacedRepService {
         );
       }),
       tap(() => this.loaderService.stopLoading()),
-      // tap(() => console.timeEnd('loadDB'))
+      tap(() => console.timeEnd('loadDB'))
     );
   }
 
@@ -226,7 +227,6 @@ export class SpacedRepService {
       this.settingsService.$currentCategory,
       this.$forceReloadGetAll
     ]).pipe(
-      tap((d) => console.log('combined', d)),
       switchMap(([events, category]) => forkJoin(
           events
             .map(e => this.eventDetailService.get(e.linkedSpacedRepId || e.id).pipe(

@@ -38,7 +38,6 @@ export class SoundsService {
       pairwise(),
       tap(([prevSound, nextSound]) => {
         if (prevSound) {
-          console.log('stop prev')
           this.soundsMap[prevSound].stop();
         }
       }),
@@ -48,7 +47,6 @@ export class SoundsService {
               const audio = this.soundsMap[nextSound];
               audio.on('stop', () => resolve(undefined));
               audio.on('end', () => resolve(undefined));
-              console.log('play next');
               audio.play();
             })).pipe(
               map(() => nextSound),
