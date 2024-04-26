@@ -56,7 +56,7 @@ export class AuthService {
     this.user$.pipe(
       switchMap(user => {
         if (user?.token) {
-          return fromEvent(window, 'visibilitychange').pipe(
+          return fromEvent(window, 'focus').pipe(
             filter(() => document.visibilityState === 'visible'),
             switchMap(() => concat(
                 this.spacedRepService.syncPendingChanges(),

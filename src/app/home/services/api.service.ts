@@ -308,7 +308,7 @@ export class ApiService {
     return this.deleteWithCache(ApiUrls.detail(id), {cacheKey: DETAIL_DB_NAME(id)});
   }
 
-  sync(): Observable<unknown> {
+  sync(): Observable<{ gotUpdates: boolean }> {
     this.clearPendingChanges();
     this.resetOutOfSync();
     return this.getLastUpdatesMap().pipe(
@@ -356,7 +356,9 @@ export class ApiService {
           }
         });
 
-        return forkJoin(requests).pipe(defaultIfEmpty(undefined))
+        return forkJoin(requests).pipe(defaultIfEmpty(undefined)).pipe(
+          map(() => ({gotUpdates: !!requests.length}))
+        )
       })
     );
   }
