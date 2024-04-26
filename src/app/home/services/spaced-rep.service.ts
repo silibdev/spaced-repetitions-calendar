@@ -8,7 +8,7 @@ import {
 } from '../models/spaced-rep.model';
 import {
   BehaviorSubject,
-  combineLatestWith,
+  combineLatest,
   defaultIfEmpty,
   distinctUntilChanged,
   first,
@@ -16,7 +16,6 @@ import {
   map,
   Observable,
   of,
-  ReplaySubject,
   skip,
   switchMap,
   tap,
@@ -42,9 +41,10 @@ export class SpacedRepService {
   private spacedReps = new BehaviorSubject<SpecificSpacedRepModel[]>([]);
   private readonly spacedReps$: Observable<SpecificSpacedRepModel[]>;
   private remoteSaveTimer?: number;
-  private category = new ReplaySubject<string>(1);
   private worker: Pick<Worker, 'postMessage'>;
   private prevDBString: string = '';
+  // I'm using true just as a trigger value, I just need to trigger emit of a new event
+  private $forceReloadGetAll: BehaviorSubject<{}> = new BehaviorSubject<{}>({});
 
   private get db(): SpecificSpacedRepModel[] {
     return this.spacedReps.value;
@@ -102,8 +102,13 @@ export class SpacedRepService {
 
   sync(): Observable<unknown> {
     return this.apiService.sync().pipe(
-      switchMap(() => this.settingsService.loadOpts()),
-      switchMap(() => this.loadDb())
+      switchMap((d) => this.settingsService.loadOpts().pipe(map(() => d))),
+      switchMap((d) => this.loadDb().pipe(map(() => d))),
+      tap(syncResult => {
+        if(syncResult.gotUpdates) {
+          this.$forceReloadGetAll.next({});
+        }
+      })
     );
   }
 
@@ -126,6 +131,7 @@ export class SpacedRepService {
   private loadDb(forceSave?: boolean): Observable<unknown> {
     let updateDB = false;
     this.loaderService.startLoading();
+    // console.time('loadDB');
     return this.apiService.getEventList().pipe(
       distinctUntilChanged(),
       switchMap((savedDb) => {
@@ -140,7 +146,6 @@ export class SpacedRepService {
         return this.spacedReps$.pipe(skip(updateDB ? 1 : 0));
       }),
       switchMap(() => new Migrator(this).migrate()()),
-      tap(() => this.category.next(this.settingsService.currentCategory)),
       tap(migrationApplied => migrationApplied && this.settingsService.saveOpts()),
       switchMap((_) => {
         if (!updateDB) {
@@ -154,7 +159,8 @@ export class SpacedRepService {
           )
         );
       }),
-      tap(() => this.loaderService.stopLoading())
+      tap(() => this.loaderService.stopLoading()),
+      // tap(() => console.timeEnd('loadDB'))
     );
   }
 
@@ -212,12 +218,15 @@ export class SpacedRepService {
 
   changeCategory(category: string) {
     this.settingsService.changeCurrentCategory(category);
-    this.category.next(category);
   }
 
   getAll(noCategoryFilter?: boolean): Observable<SpacedRepModel[]> {
-    return this.spacedReps$.pipe(
-      combineLatestWith(this.category),
+    return combineLatest([
+      this.spacedReps$,
+      this.settingsService.$currentCategory,
+      this.$forceReloadGetAll
+    ]).pipe(
+      tap((d) => console.log('combined', d)),
       switchMap(([events, category]) => forkJoin(
           events
             .map(e => this.eventDetailService.get(e.linkedSpacedRepId || e.id).pipe(
@@ -236,7 +245,9 @@ export class SpacedRepService {
                 return true;
               }
               return e.category === category;
-            })))
+            })
+          )
+        )
       )
     );
   }
