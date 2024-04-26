@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Category, Color, DEFAULT_CATEGORY, FullSettings, Options, RepetitionSchema } from '../models/settings.model';
 import { ApiService } from './api.service';
-import { Observable, Observer, of, tap } from 'rxjs';
+import { distinctUntilChanged, Observable, Observer, of, ReplaySubject, shareReplay, tap } from 'rxjs';
 import { Migrator } from '../../migrator';
 
 
@@ -9,6 +9,8 @@ import { Migrator } from '../../migrator';
   providedIn: 'root'
 })
 export class SettingsService {
+  private $currentCategorySubject: ReplaySubject<string> = new ReplaySubject(1);
+
   get repetitionSchemaOpts(): RepetitionSchema[] {
     return this.opts.repetitionSchemaOpts;
   }
@@ -35,6 +37,10 @@ export class SettingsService {
     return this.opts.category.current
   }
 
+  get $currentCategory(): Observable<string> {
+    return this.$currentCategorySubject.asObservable().pipe(distinctUntilChanged(), shareReplay(1));
+  }
+
   private defaultColors = [
     {
       label: 'Blue',
@@ -59,7 +65,7 @@ export class SettingsService {
     {
       label: 'Orange',
       value: '#ff7605'
-    },
+    }
   ];
 
   private defaultCategories = [
@@ -94,9 +100,7 @@ export class SettingsService {
         if (opts) {
           this.opts = opts;
           Migrator.setVersion(this.opts.currentVersion);
-          if (!this.opts.currentVersion) {
-            this.saveOpts();
-          }
+          this.saveOpts();
         } else {
           // it'll save the default options
           this.saveOpts();
@@ -108,17 +112,20 @@ export class SettingsService {
   saveOpts(subscriber?: Partial<Observer<any>>): void {
     this.opts.currentVersion = Migrator.getVersion();
 
-    this.apiService.setSettings(this.opts).subscribe({
-      next: resp => {
-        subscriber?.next && subscriber.next(resp);
-      },
-      error: (error) => {
-        subscriber?.error && subscriber.error(error);
-      },
-      complete: () => {
-        subscriber?.complete && subscriber.complete();
-      }
-    });
+    this.$currentCategorySubject.next(this.opts.category.current);
+    if (!this.opts.currentVersion) {
+      this.apiService.setSettings(this.opts).subscribe({
+        next: resp => {
+          subscriber?.next && subscriber.next(resp);
+        },
+        error: (error) => {
+          subscriber?.error && subscriber.error(error);
+        },
+        complete: () => {
+          subscriber?.complete && subscriber.complete();
+        }
+      })
+    }
   }
 
   saveGeneralOptions(opts: Options): boolean {

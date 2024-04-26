@@ -8,20 +8,18 @@ import {
 } from '../models/spaced-rep.model';
 import {
   BehaviorSubject,
-  combineLatestWith,
+  combineLatest,
   defaultIfEmpty,
   distinctUntilChanged,
   first,
   forkJoin,
   map,
-  mapTo,
   Observable,
   of,
-  ReplaySubject,
+  skip,
   switchMap,
   tap,
-  throwError,
-  withLatestFrom
+  throwError
 } from 'rxjs';
 import { addDays, isAfter, isEqual } from 'date-fns';
 import { DescriptionsService } from './descriptions.service';
@@ -30,10 +28,10 @@ import LZString from 'lz-string';
 import { SettingsService } from './settings.service';
 import { ApiService } from './api.service';
 import { Migrator } from '../../migrator';
-import * as LZUTF8 from 'lzutf8';
 import { DEFAULT_CATEGORY } from '../models/settings.model';
 import { ConfirmationService } from 'primeng/api';
 import { Utils } from '../../utils';
+import { LoaderService } from './loader.service';
 
 
 @Injectable({
@@ -43,7 +41,10 @@ export class SpacedRepService {
   private spacedReps = new BehaviorSubject<SpecificSpacedRepModel[]>([]);
   private readonly spacedReps$: Observable<SpecificSpacedRepModel[]>;
   private remoteSaveTimer?: number;
-  private category = new ReplaySubject<string>(1);
+  private worker: Pick<Worker, 'postMessage'>;
+  private prevDBString: string = '';
+  // I'm using true just as a trigger value, I just need to trigger emit of a new event
+  private $forceReloadGetAll: BehaviorSubject<{}> = new BehaviorSubject<{}>({});
 
   private get db(): SpecificSpacedRepModel[] {
     return this.spacedReps.value;
@@ -59,9 +60,9 @@ export class SpacedRepService {
       if (this.remoteSaveTimer) {
         clearTimeout(this.remoteSaveTimer);
       }
+
       this.remoteSaveTimer = setTimeout(() => {
-        const newCompressedDb = LZUTF8.compress(JSON.stringify(dbToSave), {outputEncoding: 'Base64'});
-        this.apiService.setEventList(newCompressedDb).subscribe();
+        this.worker.postMessage({db: dbToSave});
       }, 250);
     }
     this.spacedReps.next(newDb);
@@ -71,15 +72,43 @@ export class SpacedRepService {
     private settingsService: SettingsService,
     private descriptionService: DescriptionsService,
     private eventDetailService: EventDetailService,
-    private apiService: ApiService
+    private apiService: ApiService,
+    private loaderService: LoaderService
   ) {
     this.spacedReps$ = this.spacedReps.asObservable();
+
+    const onmessage = ({data}: any) => {
+      const {db, decomp, forceSave} = data;
+      if (decomp) {
+        this.setDb(db, forceSave);
+      } else {
+        this.apiService.setEventList(db).subscribe();
+      }
+    };
+    if (typeof Worker !== 'undefined') {
+      // Create a new
+      const worker = new Worker(new URL('../../event-list.worker.ts', import.meta.url));
+      worker.onmessage = onmessage;
+      this.worker = worker;
+    } else {
+      this.worker = {
+        postMessage: (data) => {
+          const response = Utils.manageMessageWebWorker(data);
+          onmessage({data: response});
+        }
+      };
+    }
   }
 
   sync(): Observable<unknown> {
     return this.apiService.sync().pipe(
-      switchMap(() => this.settingsService.loadOpts()),
-      switchMap(() => this.loadDb())
+      switchMap((d) => this.settingsService.loadOpts().pipe(map(() => d))),
+      switchMap((d) => this.loadDb().pipe(map(() => d))),
+      tap(syncResult => {
+        if(syncResult.gotUpdates) {
+          this.$forceReloadGetAll.next({});
+        }
+      })
     );
   }
 
@@ -100,32 +129,38 @@ export class SpacedRepService {
   }
 
   private loadDb(forceSave?: boolean): Observable<unknown> {
+    let updateDB = false;
+    this.loaderService.startLoading();
+    // console.time('loadDB');
     return this.apiService.getEventList().pipe(
       distinctUntilChanged(),
-      tap((savedDb) => {
-        let db: any = [];
-        if (savedDb) {
-          try {
-            db = JSON.parse(savedDb);
-          } catch (e) {
-            try {
-              db = JSON.parse(LZUTF8.decompress(savedDb, {outputEncoding: 'String', inputEncoding: 'Base64'}));
-            } catch (e) {
-              db = JSON.parse(LZString.decompressFromUTF16(savedDb) || '[]');
-            }
-          }
+      switchMap((savedDb) => {
+        if (savedDb && this.prevDBString !== savedDb) {
+          this.worker.postMessage({db: savedDb, decomp: true, forceSave});
+          updateDB = true;
+        } else {
+          updateDB = false;
         }
-        db.forEach((event: any) => event.start = new Date(event.start));
-        this.setDb(db, forceSave);
+        this.prevDBString = savedDb || '';
+        // If update wait for the update (the first will be the old db because spacedReps$ is a Behaviour)
+        return this.spacedReps$.pipe(skip(updateDB ? 1 : 0));
       }),
-      withLatestFrom(this.spacedReps$),
       switchMap(() => new Migrator(this).migrate()()),
-      tap(() => this.category.next(this.settingsService.currentCategory)),
       tap(migrationApplied => migrationApplied && this.settingsService.saveOpts()),
-      switchMap(() => this.getAll(true).pipe(first())),
-      switchMap(db => forkJoin(
-        db.map(e => this.descriptionService.get(e.linkedSpacedRepId || e.id))
-      ).pipe(defaultIfEmpty(undefined)))
+      switchMap((_) => {
+        if (!updateDB) {
+          return of(_);
+        }
+        return this.getAll(true).pipe(
+          first(),
+          switchMap(db => forkJoin(
+              db.map(e => this.descriptionService.get(e.linkedSpacedRepId || e.id))
+            ).pipe(defaultIfEmpty(undefined))
+          )
+        );
+      }),
+      tap(() => this.loaderService.stopLoading()),
+      // tap(() => console.timeEnd('loadDB'))
     );
   }
 
@@ -183,12 +218,15 @@ export class SpacedRepService {
 
   changeCategory(category: string) {
     this.settingsService.changeCurrentCategory(category);
-    this.category.next(category);
   }
 
   getAll(noCategoryFilter?: boolean): Observable<SpacedRepModel[]> {
-    return this.spacedReps$.pipe(
-      combineLatestWith(this.category),
+    return combineLatest([
+      this.spacedReps$,
+      this.settingsService.$currentCategory,
+      this.$forceReloadGetAll
+    ]).pipe(
+      tap((d) => console.log('combined', d)),
       switchMap(([events, category]) => forkJoin(
           events
             .map(e => this.eventDetailService.get(e.linkedSpacedRepId || e.id).pipe(
@@ -207,7 +245,9 @@ export class SpacedRepService {
                 return true;
               }
               return e.category === category;
-            })))
+            })
+          )
+        )
       )
     );
   }
@@ -281,9 +321,9 @@ export class SpacedRepService {
         this.eventDetailService.delete(event.id),
         this.descriptionService.delete(event.id),
         this.savePhotos(event, photos)
-      ]).pipe(mapTo(undefined));
+      ]).pipe(map(() => undefined));
     }
-    return this.spacedReps$.pipe(mapTo(undefined), first());
+    return this.spacedReps$.pipe(map(() => undefined), first());
   }
 
   saveFirstMigration(eventToModify: SpacedRepModel): Observable<void> {
@@ -314,7 +354,7 @@ export class SpacedRepService {
       this.setDb([...db]);
 
       return this.descriptionService.save(masterId as string, description)
-        .pipe(mapTo(undefined));
+        .pipe(map(() => undefined));
     } else {
       return of(undefined);
     }
@@ -346,7 +386,7 @@ export class SpacedRepService {
       this.descriptionService.save(masterId, eventToModify.description || ''),
       this.eventDetailService.save(masterId, commonSpacedRepModel)
     ])
-      .pipe(mapTo(undefined));
+      .pipe(map(() => undefined));
   }
 
   save(eventToModify: SpacedRepModel): Observable<void> {
@@ -370,7 +410,7 @@ export class SpacedRepService {
     ])
       .pipe(
         tap(() => this.setDb(this.db, specificIsChanged)),
-        mapTo(undefined)
+        map(() => undefined)
       );
   }
 
