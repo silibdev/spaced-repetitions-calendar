@@ -100,7 +100,9 @@ export class SettingsService {
         if (opts) {
           this.opts = opts;
           Migrator.setVersion(this.opts.currentVersion);
-          this.saveOpts();
+          if (!this.opts.currentVersion) {
+            this.saveOpts();
+          }
         } else {
           // it'll save the default options
           this.saveOpts();
@@ -113,19 +115,17 @@ export class SettingsService {
     this.opts.currentVersion = Migrator.getVersion();
 
     this.$currentCategorySubject.next(this.opts.category.current);
-    if (!this.opts.currentVersion) {
-      this.apiService.setSettings(this.opts).subscribe({
-        next: resp => {
-          subscriber?.next && subscriber.next(resp);
-        },
-        error: (error) => {
-          subscriber?.error && subscriber.error(error);
-        },
-        complete: () => {
-          subscriber?.complete && subscriber.complete();
-        }
-      })
-    }
+    this.apiService.setSettings(this.opts).subscribe({
+      next: resp => {
+        subscriber?.next && subscriber.next(resp);
+      },
+      error: (error) => {
+        subscriber?.error && subscriber.error(error);
+      },
+      complete: () => {
+        subscriber?.complete && subscriber.complete();
+      }
+    });
   }
 
   saveGeneralOptions(opts: Options): boolean {
