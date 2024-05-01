@@ -99,6 +99,7 @@ export class SettingsService {
       (opts) => {
         if (opts) {
           this.opts = opts;
+          this.$currentCategorySubject.next(this.opts.category.current);
           Migrator.setVersion(this.opts.currentVersion);
           if (!this.opts.currentVersion) {
             this.saveOpts();
