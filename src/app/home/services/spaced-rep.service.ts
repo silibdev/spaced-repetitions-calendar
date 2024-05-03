@@ -106,7 +106,7 @@ export class SpacedRepService {
       switchMap((d) => this.settingsService.loadOpts().pipe(map(() => d))),
       switchMap((d) => this.loadDb().pipe(map(() => d))),
       tap(syncResult => {
-        if(syncResult.gotUpdates) {
+        if (syncResult.gotUpdates) {
           this.$forceReloadGetAll.next({});
         }
       })
@@ -160,6 +160,7 @@ export class SpacedRepService {
           )
         );
       }),
+      first(),
       tap(() => this.loaderService.stopLoading()),
       tap(() => console.timeEnd('loadDB'))
     );
