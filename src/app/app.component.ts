@@ -133,12 +133,12 @@ export class AppComponent {
       // So I need to check that the previous status was actually a loading otherwise
       // I don't have to show the loader at all
       switchMap(([prevLoadingStatus, loadingStatus]) => {
-        if (prevLoadingStatus.total !== 0 && loadingStatus.total === loadingStatus.current) {
+        if (prevLoadingStatus.total !== 0 && loadingStatus.total === loadingStatus.finished) {
           // Wait 250ms before removing loader
           return of('').pipe(delay(250));
         } else {
           return of(loadingStatus.total
-            ? (loadingStatus.current * 100 / loadingStatus.total).toFixed(2)
+            ? (loadingStatus.finished * 100 / loadingStatus.total).toFixed(2)
             : '');
         }
       })

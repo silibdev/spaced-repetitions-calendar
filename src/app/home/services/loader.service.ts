@@ -3,7 +3,7 @@ import { BehaviorSubject, map, Observable } from 'rxjs';
 
 export interface LoadingStatus {
   total: number;
-  current: number;
+  finished: number;
 }
 
 @Injectable({
@@ -11,7 +11,7 @@ export interface LoadingStatus {
 })
 export class LoaderService {
 
-  private loading$ = new BehaviorSubject<LoadingStatus>({current: 0, total: 0});
+  private loading$ = new BehaviorSubject<LoadingStatus>({finished: 0, total: 0});
 
   isLoading$: Observable<boolean>;
 
@@ -19,7 +19,7 @@ export class LoaderService {
 
   constructor() {
     this.isLoading$ = this.loading$.pipe(
-      map( loadingStatus => loadingStatus.current === loadingStatus.total)
+      map( loadingStatus => loadingStatus.finished === loadingStatus.total)
     );
 
     this.loadingStatus$ = this.loading$.asObservable();
@@ -28,16 +28,24 @@ export class LoaderService {
   startLoading(): void {
     const {...loadingStatus} = this.loading$.value;
     loadingStatus.total += 1;
+    console.log('start', loadingStatus);
     this.loading$.next(loadingStatus);
   }
 
   stopLoading(): void {
     const {...loadingStatus} = this.loading$.value;
-    loadingStatus.current += 1;
-    if (loadingStatus.current === loadingStatus.total) {
-      loadingStatus.current = 0;
+    loadingStatus.finished += 1;
+
+    if (loadingStatus.finished > loadingStatus.total) {
+      loadingStatus.finished = loadingStatus.total;
+      console.error('LoaderService: called stop without a start!');
+    }
+
+    if (loadingStatus.finished === loadingStatus.total) {
+      loadingStatus.finished = 0;
       loadingStatus.total = 0;
     }
+    console.log('stop', loadingStatus);
     this.loading$.next(loadingStatus);
   }
 }
