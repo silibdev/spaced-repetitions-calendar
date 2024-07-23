@@ -161,7 +161,7 @@ export class SpacedRepService {
         );
       }),
       first(),
-      tap(() => this.loaderService.stopLoading()),
+      tap({next: () => this.loaderService.stopLoading(), complete: () => this.loaderService.stopLoading()}),
       tap(() => console.timeEnd('loadDB'))
     );
   }
