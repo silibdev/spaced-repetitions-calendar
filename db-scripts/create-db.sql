@@ -58,3 +58,12 @@ CREATE TABLE IF NOT EXISTS `QNAStatus` (
 	`updated_at` TIMESTAMP,
 	PRIMARY KEY (`user`, `eventId`, `id`)
 );
+
+CREATE TABLE IF NOT EXISTS `calendarevent` (
+	`user` text NOT NULL,
+	`id` text NOT NULL,
+	`masterid` text,
+	`start` date NOT NULL,
+	`details` JSON,
+	PRIMARY KEY (`user`, `id`, `start`)
+);

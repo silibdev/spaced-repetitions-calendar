@@ -9,6 +9,30 @@ export type Json =
 export type Database = {
   db: {
     Tables: {
+      calendarevent: {
+        Row: {
+          details: Json | null
+          id: string
+          masterid: string | null
+          start: string
+          user: string
+        }
+        Insert: {
+          details?: Json | null
+          id: string
+          masterid?: string | null
+          start: string
+          user: string
+        }
+        Update: {
+          details?: Json | null
+          id?: string
+          masterid?: string | null
+          start?: string
+          user?: string
+        }
+        Relationships: []
+      }
       eventdescription: {
         Row: {
           description: string | null

@@ -2,6 +2,7 @@ import 'dotenv/config'
 import {createClient} from '@supabase/supabase-js';
 import fetch, {Headers, Request, Response} from 'node-fetch';
 
+
 // @ts-ignore
 globalThis.fetch = fetch
 // @ts-ignore
@@ -19,9 +20,9 @@ const config = {
 
 export const DB = createClient(url, key, config);
 
-// const userId = '7193e14a-9a8b-4809-989a-efd547666acc'; //Zil1
+const userId = '7193e14a-9a8b-4809-989a-efd547666acc'; //Zil1
 const userIdAltea = 'b6f09585-8795-4950-bdfe-438fa25f4750';
-const userId = userIdAltea;
+// const userId = userIdAltea;
 const eventId = '0.624622211023278';
 const qnaMasterEventId = '0.624622211023278';
 const qnaEventId = '0.07939692916690477';
@@ -147,6 +148,73 @@ const storageBucket = 'db.photo';
 // const mime = mimeSplit[mimeSplit.length - 1];
 // const result = await DB.storage.from(storageBucket).upload(`${userId}/${p.id}`, photo, {contentType: 'image/' + mime});
 // console.log(result);
+
+
+/*
+const eventListCompressedResult = await DB.from('eventlist').select().eq('user', userId).single();
+const eventListCompressed = eventListCompressedResult.data.list;
+const eventList = JSON.parse(LZUTF8.decompress(eventListCompressed, {
+  outputEncoding: 'String',
+  inputEncoding: 'Base64'
+}));
+//{"id":"0.7141991718870142","linkedSpacedRepId":"0.07884715725606184","repetitionNumber":90,"start":"2022-03-09T07:46:32.764Z","done":true}
+console.log(eventList.length, ' to insert');
+
+let notInserted = [];
+let batch = [];
+let count = 0;
+for (const event of eventList) {
+  if (batch.length === 0 ) {
+    console.log('Inserted', count);
+  }
+
+  batch.push({
+    user: userId,
+    id: event.id,
+    masterid: event.linkedSpacedRepId,
+    start: new Date(event.start),
+    details: {
+      done: event.done,
+      repetitionNumber: event.repetitionNumber,
+    }
+  });
+
+  if (batch.length === 100) {
+    try {
+      await DB.from('calendarevent').upsert(batch);
+      count += 100;
+    } catch (e) {
+      console.log(e.message);
+      notInserted.push(...batch.map(e => e.id));
+    }
+    batch = [];
+  }
+}
+
+if (batch.length !== 0) {
+  try {
+    await DB.from('calendarevent').upsert(batch);
+    count += batch.length;
+  } catch (e) {
+    console.log(e.message);
+    notInserted.push(...batch.map(e => e.id));
+  }
+  batch = [];
+}
+
+console.log({notInserted});
+console.log({
+  total: eventList.length,
+  notInserted: notInserted.length,
+  diff: eventList.length - notInserted.length,
+  count
+});
+*/
+
+
+const res = await DB.from('calendarevent').select().limit(10);
+console.log(res);
+
 
 console.log('Done');
 
