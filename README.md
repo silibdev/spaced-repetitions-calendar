@@ -14,6 +14,13 @@ Run `ng generate component component-name` to generate a new component. You can 
 
 Run `ng build` to build the project. The build artifacts will be stored in the `dist/` directory.
 
+### Update database.type
+Go in the folder _netlify/utils_.  
+You need an access token too, _export SUPABASE_ACCESS_TOKEN=_.  
+The process may block, check the output file, it could ask for something.
+
+`npx supabase gen types typescript --project-id wwquwqcvoqbrmadllcmo --schema db > database.type.ts`
+
 ## Running unit tests
 
 Run `ng test` to execute the unit tests via [Karma](https://karma-runner.github.io).
