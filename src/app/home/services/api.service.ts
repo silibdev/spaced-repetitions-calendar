@@ -19,14 +19,14 @@ import {
 } from 'rxjs';
 import { FullSettings } from '../models/settings.model';
 import { ERROR_ANONYMOUS } from './auth.interceptor';
-import { CommonSpacedRepModel, Photo, QNA } from '../models/spaced-rep.model';
+import { CommonSpacedRepModel, Photo, QNA, SpecificSpacedRepModel } from '../models/spaced-rep.model';
 import { AppStorage } from '../../app.storage';
 import { ConfirmationService } from 'primeng/api';
 import * as CompressorJS from 'compressorjs';
 
 const ApiUrls = {
   settings: '/api/settings',
-  eventList: '/api/event-list',
+  eventList: (middleDate: Date) => `/api/calendar-event?date=${middleDate.toISOString()}`,
   deleteAllData: '/api/data',
   description: (eventId: string) => `/api/event-descriptions?id=${eventId}`,
   detail: (eventId: string) => `/api/event-details?id=${eventId}`,
@@ -272,13 +272,13 @@ export class ApiService {
     return this.postWithCache(ApiUrls.settings, opts, {cacheKey: OPTS_DB_NAME});
   }
 
-  setEventList(eventListCompressed: string): Observable<string> {
-    return this.postWithCache(ApiUrls.eventList, eventListCompressed, {cacheKey: DB_NAME, dontParse: true});
-  }
+  // setEventList(eventListCompressed: string): Observable<string> {
+  //   return this.postWithCache(ApiUrls.eventList, eventListCompressed, {cacheKey: DB_NAME, dontParse: true});
+  // }
 
-  getEventList(noCache?: boolean): Observable<string | undefined> {
-    return this.getWithCache<string | undefined>(ApiUrls.eventList, {cacheKey: DB_NAME, dontParse: true, noCache})
-      .pipe(ApiService.HANDLE_ANONYMOUS<string | undefined>(undefined));
+  getEventList(middleDate: Date, noCache?: boolean): Observable<SpecificSpacedRepModel[] | undefined> {
+    return this.getWithCache<SpecificSpacedRepModel[] | undefined>(ApiUrls.eventList(middleDate), {cacheKey: DB_NAME, dontParse: true, noCache})
+      .pipe(ApiService.HANDLE_ANONYMOUS<SpecificSpacedRepModel[] | undefined>(undefined));
   }
 
   getEventDescription(id: string, noCache?: boolean): Observable<string> {
@@ -341,7 +341,7 @@ export class ApiService {
         }
 
         if (elTime && isAfter(elTime, this.lastUpdateMap[DB_NAME])) {
-          requests.push(this.getEventList(true));
+          requests.push(this.getEventList(new Date(),true));
         }
 
         edetTime.forEach(({id, updatedAt}) => {

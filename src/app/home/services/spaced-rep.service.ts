@@ -16,7 +16,6 @@ import {
   map,
   Observable,
   of,
-  skip,
   switchMap,
   tap,
   throwError
@@ -41,8 +40,6 @@ export class SpacedRepService {
   private spacedReps = new BehaviorSubject<SpecificSpacedRepModel[]>([]);
   private readonly spacedReps$: Observable<SpecificSpacedRepModel[]>;
   private remoteSaveTimer?: number;
-  private worker: Pick<Worker, 'postMessage'>;
-  private prevDBString: string = '';
   // I'm using true just as a trigger value, I just need to trigger emit of a new event
   private $forceReloadGetAll: BehaviorSubject<{}> = new BehaviorSubject<{}>({});
 
@@ -62,7 +59,8 @@ export class SpacedRepService {
       }
 
       this.remoteSaveTimer = setTimeout(() => {
-        this.worker.postMessage({db: dbToSave});
+        // TODO add remote save
+        //this.worker.postMessage({db: dbToSave});
       }, 250);
     }
     this.spacedReps.next(newDb);
@@ -76,29 +74,6 @@ export class SpacedRepService {
     private loaderService: LoaderService
   ) {
     this.spacedReps$ = this.spacedReps.asObservable();
-
-    const onmessage = ({data}: any) => {
-      const {db, decomp, forceSave} = data;
-      if (decomp) {
-        this.setDb(db, forceSave);
-      } else {
-        this.apiService.setEventList(db).subscribe();
-      }
-    };
-    if (typeof Worker !== 'undefined') {
-      console.log('WebWorker used!');
-      // Create a new
-      const worker = new Worker(new URL('../../event-list.worker.ts', import.meta.url));
-      worker.onmessage = onmessage;
-      this.worker = worker;
-    } else {
-      this.worker = {
-        postMessage: (data) => {
-          const response = Utils.manageMessageWebWorker(data);
-          onmessage({data: response});
-        }
-      };
-    }
   }
 
   sync(): Observable<unknown> {
@@ -133,18 +108,11 @@ export class SpacedRepService {
     let updateDB = false;
     this.loaderService.startLoading();
     console.time('loadDB');
-    return this.apiService.getEventList().pipe(
+    return this.apiService.getEventList(new Date(),true).pipe(
       distinctUntilChanged(),
-      switchMap((savedDb) => {
-        if (savedDb && this.prevDBString !== savedDb) {
-          this.worker.postMessage({db: savedDb, decomp: true, forceSave});
-          updateDB = true;
-        } else {
-          updateDB = false;
-        }
-        this.prevDBString = savedDb || '';
-        // If update wait for the update (the first will be the old db because spacedReps$ is a Behaviour)
-        return this.spacedReps$.pipe(skip(updateDB ? 1 : 0));
+      tap((savedDb) => {
+        (savedDb || []).forEach((event: any) => event.start = new Date(event.start));
+        this.spacedReps.next(savedDb || []);
       }),
       switchMap(() => new Migrator(this).migrate()()),
       tap(migrationApplied => migrationApplied && this.settingsService.saveOpts()),

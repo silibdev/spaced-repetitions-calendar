@@ -28,7 +28,6 @@ export class LoaderService {
   startLoading(): void {
     const {...loadingStatus} = this.loading$.value;
     loadingStatus.total += 1;
-    console.log('start', loadingStatus);
     this.loading$.next(loadingStatus);
   }
 
