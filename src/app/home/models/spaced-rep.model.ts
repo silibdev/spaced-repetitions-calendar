@@ -33,6 +33,24 @@ export type CommonSpacedRepModel = Pick<SpacedRepModel, 'id' | 'allDay' | 'title
 
 export type SpecificSpacedRepModel = Pick<SpacedRepModel, 'id' | 'repetitionNumber' | 'start' | 'linkedSpacedRepId' | 'done'>
 
+export function extractCommonModel(sr: CommonSpacedRepModel | SpacedRepModel): {
+  masterId: string,
+    common: CommonSpacedRepModel
+} {
+  const masterId = 'linkedSpacedRepId' in sr ? sr.linkedSpacedRepId || sr.id : sr.id;
+  const common: CommonSpacedRepModel = {
+    id: masterId,
+    allDay: sr.allDay,
+    shortDescription: sr.shortDescription,
+    boldTitle: sr.boldTitle,
+    highlightTitle: sr.highlightTitle,
+    color: sr.color,
+    title: sr.title,
+    category: sr.category
+  };
+  return {masterId, common};
+}
+
 export interface CreateSpacedReps {
   spacedRep: CommonSpacedRepModel & { description?: string, done?: boolean };
   startDate: Date;

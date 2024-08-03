@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import {
   CommonSpacedRepModel,
   CreateSpacedReps,
-  Photo,
+  extractCommonModel,
   SpacedRepModel,
   SpecificSpacedRepModel
 } from '../models/spaced-rep.model';
@@ -28,9 +28,9 @@ import { SettingsService } from './settings.service';
 import { ApiService } from './api.service';
 import { Migrator } from '../../migrator';
 import { DEFAULT_CATEGORY } from '../models/settings.model';
-import { ConfirmationService } from 'primeng/api';
 import { Utils } from '../../utils';
 import { LoaderService } from './loader.service';
+import { PhotoService } from './photo.service';
 
 
 @Injectable({
@@ -71,7 +71,8 @@ export class SpacedRepService {
     private descriptionService: DescriptionsService,
     private eventDetailService: EventDetailService,
     private apiService: ApiService,
-    private loaderService: LoaderService
+    private loaderService: LoaderService,
+    private photoService: PhotoService
   ) {
     this.spacedReps$ = this.spacedReps.asObservable();
   }
@@ -289,7 +290,7 @@ export class SpacedRepService {
       return forkJoin([
         this.eventDetailService.delete(event.id),
         this.descriptionService.delete(event.id),
-        this.savePhotos(event, photos)
+        this.photoService.savePhotos(event, photos)
       ]).pipe(map(() => undefined));
     }
     return this.spacedReps$.pipe(map(() => undefined), first());
@@ -371,7 +372,7 @@ export class SpacedRepService {
       specificIsChanged = true;
     }
 
-    const {masterId, common} = this.extractCommonModel(eventToModify);
+    const {masterId, common} = extractCommonModel(eventToModify);
 
     return forkJoin([
       this.descriptionService.save(masterId, eventToModify.description || ''),
@@ -425,24 +426,6 @@ export class SpacedRepService {
     );
   }
 
-  private extractCommonModel(sr: CommonSpacedRepModel | SpacedRepModel): {
-    masterId: string,
-    common: CommonSpacedRepModel
-  } {
-    const masterId = 'linkedSpacedRepId' in sr ? sr.linkedSpacedRepId || sr.id : sr.id;
-    const common: CommonSpacedRepModel = {
-      id: masterId,
-      allDay: sr.allDay,
-      shortDescription: sr.shortDescription,
-      boldTitle: sr.boldTitle,
-      highlightTitle: sr.highlightTitle,
-      color: sr.color,
-      title: sr.title,
-      category: sr.category
-    };
-    return {masterId, common};
-  }
-
   desyncLocal() {
     return this.apiService.desyncLocal();
   }
@@ -481,7 +464,7 @@ export class SpacedRepService {
               }
 
               // UPDATE COMMON MODEL
-              const {masterId, common} = this.extractCommonModel(sr);
+              const {masterId, common} = extractCommonModel(sr);
               if (!alreadyProcessed.has(masterId)) {
                 alreadyProcessed.add(masterId);
                 return this.apiService.setEventDetail(masterId, common);
@@ -504,21 +487,5 @@ export class SpacedRepService {
     return this.settingsService.sixthMigration();
   }
 
-  savePhotos(event: CommonSpacedRepModel, photos: Photo[], confirmationService?: ConfirmationService): Observable<unknown> {
-    const {masterId} = this.extractCommonModel(event);
-    if (!photos.length) {
-      return of(undefined);
-    }
-    return this.apiService.savePhotos(masterId, photos, confirmationService);
-  }
 
-  getPhotos(event: SpacedRepModel): Observable<Photo[]> {
-    const {masterId} = this.extractCommonModel(event);
-    return this.apiService.getPhotos(masterId);
-  }
-
-  getPhotoUrl(event: SpacedRepModel, photoId: string): Observable<string> {
-    const {masterId} = this.extractCommonModel(event);
-    return this.apiService.getPhotoUrl(masterId, photoId);
-  }
 }

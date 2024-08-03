@@ -23,6 +23,7 @@ import { SpacedRepService } from '../services/spaced-rep.service';
 import { ApiService } from '../services/api.service';
 import { Utils } from '../../utils';
 import { SoundsService } from '../services/sounds.service';
+import { PhotoService } from '../services/photo.service';
 
 interface FileSelectEvent {
   /**
@@ -123,7 +124,8 @@ export class EventViewComponent implements OnInit, BlockableUI {
     private srService: SpacedRepService,
     private cd: ChangeDetectorRef,
     private elRef: ElementRef,
-    private soundsService: SoundsService
+    private soundsService: SoundsService,
+    private photoService: PhotoService
   ) {
     this.customColorControl = new UntypedFormControl();
     this.colorOpts = [
@@ -245,7 +247,7 @@ export class EventViewComponent implements OnInit, BlockableUI {
       // La immagini senza id, quelle da aggiungere non hanno una vera thumbnail
       return;
     }
-    this.srService.getPhotoUrl(this.event!, photo.id).subscribe(
+    this.photoService.getPhotoUrl(this.event!, photo.id).subscribe(
       url => {
         image.src = url;
         this.cd.detectChanges();

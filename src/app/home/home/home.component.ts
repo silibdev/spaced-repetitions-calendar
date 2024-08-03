@@ -31,6 +31,7 @@ import { SettingsService } from '../services/settings.service';
 import { Category } from '../models/settings.model';
 import { QNAFormService } from '../services/q-n-a-form.service';
 import { QNAService } from '../services/q-n-a.service';
+import { PhotoService } from '../services/photo.service';
 
 @UntilDestroy()
 @Component({
@@ -69,7 +70,8 @@ export class HomeComponent implements OnInit, OnDestroy {
     private spacedRepService: SpacedRepService,
     private confirmationService: ConfirmationService,
     private qnaFormService: QNAFormService,
-    private qnaService: QNAService
+    private qnaService: QNAService,
+    private photoService: PhotoService
   ) {
     // This handle the case of multiple confirmation called in rapid succession
     // the new confirmation object is passed only after the notifier (that emits when the confirmDialog is closed) emits
@@ -165,7 +167,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   private loadPhotos(event: SpacedRepModel, withRetry: boolean): Observable<SpacedRepModel> {
-    return this.spacedRepService.getPhotos(event).pipe(
+    return this.photoService.getPhotos(event).pipe(
       map(photos => {
         event.photos = photos;
         return event;
@@ -263,7 +265,7 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   private savePhotos(event: CommonSpacedRepModel): Observable<unknown> {
     const photos = this.eventFormService.getPhotos();
-    return this.spacedRepService.savePhotos(event, photos, this.confirmationService);
+    return this.photoService.savePhotos(event, photos, this.confirmationService);
   }
 
   saveEvent(autoSaving?: boolean): void {
