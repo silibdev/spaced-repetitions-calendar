@@ -16,7 +16,7 @@ async function getPhotos(userId: string, {id, photoId}: { id: string, photoId?: 
         'Content-Type': 'image/*',
         'Content-disposition': `attachment; filename=${photoInfo.name}`
       },
-      body: photoInfo.photo,
+      body: photoInfo.photo || undefined,
       statusCode: 200,
       isBase64Encoded: true,
     };
