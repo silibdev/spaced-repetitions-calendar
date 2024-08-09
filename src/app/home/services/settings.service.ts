@@ -1,5 +1,14 @@
 import { Injectable } from '@angular/core';
-import { Category, Color, DEFAULT_CATEGORY, FullSettings, Options, RepetitionSchema } from '../models/settings.model';
+import {
+  Category,
+  Color,
+  DEFAULT_CATEGORY,
+  FullSettings,
+  Options,
+  RepetitionSchema,
+  RepetitionType,
+  RepetitionTypeEnum
+} from '../models/settings.model';
 import { ApiService } from './api.service';
 import { distinctUntilChanged, Observable, Observer, of, ReplaySubject, shareReplay, tap } from 'rxjs';
 import { Migrator } from '../../migrator';
@@ -10,6 +19,12 @@ import { Migrator } from '../../migrator';
 })
 export class SettingsService {
   private $currentCategorySubject: ReplaySubject<string> = new ReplaySubject(1);
+
+  repetitionTypeOpts: RepetitionType[] = [
+    {label: 'Custom', value: RepetitionTypeEnum.CUSTOM},
+    {label: 'Every day', value: RepetitionTypeEnum.EVERY_DAY},
+    {label: 'Once a week', value: RepetitionTypeEnum.ONCE_A_WEEK}
+  ];
 
   get repetitionSchemaOpts(): RepetitionSchema[] {
     return this.opts.repetitionSchemaOpts;

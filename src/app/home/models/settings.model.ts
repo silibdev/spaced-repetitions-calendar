@@ -33,3 +33,15 @@ export interface User {
   name: string;
   token?: string;
 }
+
+export enum RepetitionTypeEnum {
+  ONCE_A_WEEK = 'ONCE_A_WEEK',
+  EVERY_DAY = 'EVERY_DAY',
+  CUSTOM = 'CUSTOM',
+  SINGLE = 'SINGLE'
+}
+
+export interface RepetitionType {
+  label: string;
+  value: RepetitionTypeEnum;
+}
