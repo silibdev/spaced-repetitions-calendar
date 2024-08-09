@@ -14,9 +14,9 @@ import { BlockableUI } from 'primeng/api';
 import { Photo, SpacedRepModel } from '../models/spaced-rep.model';
 import { UntypedFormControl } from '@angular/forms';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
-import { distinctUntilChanged, filter, Observable, startWith, tap } from 'rxjs';
+import { distinctUntilChanged, filter, map, Observable, startWith, tap } from 'rxjs';
 import { SettingsService } from '../services/settings.service';
-import { Color } from '../models/settings.model';
+import { Color, RepetitionTypeEnum } from '../models/settings.model';
 import { FileUpload } from 'primeng/fileupload';
 import { Image } from 'primeng/image';
 import { SpacedRepService } from '../services/spaced-rep.service';
@@ -62,6 +62,9 @@ export class EventViewComponent implements OnInit, BlockableUI {
   customColorControl: UntypedFormControl;
 
   titleOptions$?: Observable<{ boldTitle?: boolean, highlightTitle?: boolean }>;
+
+  isCustomRepetitionType$?: Observable<boolean>;
+  minEndRepetition$?: Observable<Date>;
 
   rotationClass = 0;
 
@@ -170,6 +173,16 @@ export class EventViewComponent implements OnInit, BlockableUI {
       startWith(this.eventFormService.form.value)
     );
 
+    const repetitionTypeControl = this.eventFormService.form.get('repetitionType')!;
+    this.isCustomRepetitionType$ = repetitionTypeControl.valueChanges.pipe(
+      startWith(repetitionTypeControl.value),
+      map(repetitionType => repetitionType === RepetitionTypeEnum.CUSTOM)
+    );
+
+    const startControl = this.eventFormService.form.get('start')!;
+    this.minEndRepetition$ = startControl.valueChanges.pipe(
+      startWith(startControl.value)
+    );
 
     const doneControl = this.eventFormService.form.get('done');
     doneControl?.valueChanges.pipe(

@@ -67,28 +67,49 @@
           <ng-template let-item pTemplate="selectedItem">
             <div class="flex align-items-center">
               <span class="color inline-block" [style.background-color]="item.value"></span>
-              <span class="pl-1">{{item.label}}</span>
+              <span class="pl-1">{{ item.label }}</span>
             </div>
           </ng-template>
           <ng-template let-item pTemplate="item">
             <div class="flex align-items-center">
               <span class="color inline-block" [style.background-color]="item.value"></span>
-              <span class="pl-1">{{item.label}}</span>
+              <span class="pl-1">{{ item.label }}</span>
             </div>
           </ng-template>
         </p-dropdown>
         <p-colorPicker class="pl-2" [formControlName]="'color'" appendTo="body"></p-colorPicker>
       </div>
 
-      <div class="col-6 md:col-4 lg:col-3 p-field" *ngIf="!isEdit">
-        <label>RepetitionSchema</label>
-        <p-dropdown
-          appendTo="body"
-          [editable]="true"
-          [options]="settingsService.repetitionSchemaOpts"
-          [formControlName]="'repetitionSchema'"
-          [styleClass]="'w-full'"
-        ></p-dropdown>
+      <div class="col-12" *ngIf="!isEdit">
+        <div class="grid">
+          <div class="col-6 md:col-4 lg:col-3 xl:col-2 p-field">
+            <label>Repetition Type</label>
+            <p-dropdown
+              appendTo="body"
+              [options]="settingsService.repetitionTypeOpts"
+              [formControlName]="'repetitionType'"
+              [styleClass]="'w-full'"
+            ></p-dropdown>
+          </div>
+          <ng-container *ngIf="isCustomRepetitionType$ | async">
+            <div class="col-6 md:col-4 lg:col-3 xl:col-2 p-field" *ngIf="!isEdit">
+              <label>Repetition Schema</label>
+              <p-dropdown
+                appendTo="body"
+                [editable]="true"
+                [options]="settingsService.repetitionSchemaOpts"
+                [formControlName]="'repetitionSchema'"
+                [styleClass]="'w-full'"
+              ></p-dropdown>
+            </div>
+          </ng-container>
+          <ng-container *ngIf="!(isCustomRepetitionType$ | async)">
+            <div class="col-6 md:col-4 lg:col-3 xl:col-2 p-field" *ngIf="!isEdit">
+              <label>Repeat Until</label>
+              <p-calendar [formControlName]="'endRepetition'" [firstDayOfWeek]="1" appendTo="body" [minDate]="$any(minEndRepetition$ | async)"></p-calendar>
+            </div>
+          </ng-container>
+        </div>
       </div>
 
       <div class="col-4 sm:col-3 md:col-2 p-field-checkbox" *ngIf="isEdit">
@@ -204,6 +225,7 @@
     </ng-template>
   </p-tabPanel>
   <p-tabPanel header="Q&A">
-    <app-q-n-a [ids]="event ? {masterId: event.linkedSpacedRepId || event.id, eventId: event.id} : undefined"></app-q-n-a>
+    <app-q-n-a
+      [ids]="event ? {masterId: event.linkedSpacedRepId || event.id, eventId: event.id} : undefined"></app-q-n-a>
   </p-tabPanel>
 </p-tabView>

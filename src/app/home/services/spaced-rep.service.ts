@@ -161,7 +161,7 @@ export class SpacedRepService {
         );
       }),
       first(),
-      tap(() => this.loaderService.stopLoading()),
+      tap({next: () => this.loaderService.stopLoading(), complete: () => this.loaderService.stopLoading()}),
       tap(() => console.timeEnd('loadDB'))
     );
   }
@@ -180,7 +180,7 @@ export class SpacedRepService {
   }
 
   create(createSpacedRep: CreateSpacedReps): Observable<CommonSpacedRepModel> {
-    const repSchema: number[] = createSpacedRep.repetitionSchema.split(';').map(rep => +rep);
+    const repSchema: number[] = createSpacedRep.repetitionSchema ? createSpacedRep.repetitionSchema.split(';').map(rep => +rep) : [];
 
     this.settingsService.saveNewRepetitionSchema(createSpacedRep.repetitionSchema);
 
