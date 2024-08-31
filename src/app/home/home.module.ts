@@ -41,6 +41,7 @@ import { AccordionModule } from 'primeng/accordion';
 import { TagModule } from 'primeng/tag';
 import { InplaceModule } from 'primeng/inplace';
 import { ConfirmPopupModule } from 'primeng/confirmpopup';
+import { SRViewerComponent } from './s-r-viewer/s-r-viewer/s-r-viewer.component';
 
 
 @NgModule({
@@ -54,7 +55,8 @@ import { ConfirmPopupModule } from 'primeng/confirmpopup';
     LoginComponent,
     DayEventsViewComponent,
     MultiSegmentBarComponent,
-    QNAComponent
+    QNAComponent,
+    SRViewerComponent
   ],
   imports: [
     CommonModule,
