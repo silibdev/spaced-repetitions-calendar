@@ -31,6 +31,7 @@ import { DEFAULT_CATEGORY } from '../models/settings.model';
 import { Utils } from '../../utils';
 import { LoaderService } from './loader.service';
 import { PhotoService } from './photo.service';
+import { SettingsService as NewSettingsService } from '../s-r-viewer/state/settings.service';
 
 
 @Injectable({
@@ -68,6 +69,7 @@ export class SpacedRepService {
 
   constructor(
     private settingsService: SettingsService,
+    private newSettingsService: NewSettingsService,
     private descriptionService: DescriptionsService,
     private eventDetailService: EventDetailService,
     private apiService: ApiService,
@@ -79,6 +81,7 @@ export class SpacedRepService {
 
   sync(): Observable<unknown> {
     return this.apiService.sync().pipe(
+      switchMap((d) => this.newSettingsService.loadOpts().pipe(map(() => d))),
       switchMap((d) => this.settingsService.loadOpts().pipe(map(() => d))),
       switchMap((d) => this.loadDb().pipe(map(() => d))),
       tap(syncResult => {
