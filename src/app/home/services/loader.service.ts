@@ -1,5 +1,5 @@
-import { Injectable } from '@angular/core';
-import { BehaviorSubject, map, Observable } from 'rxjs';
+import { Injectable } from "@angular/core";
+import { BehaviorSubject, map, Observable } from "rxjs";
 
 export interface LoadingStatus {
   total: number;
@@ -44,7 +44,6 @@ export class LoaderService {
       loadingStatus.finished = 0;
       loadingStatus.total = 0;
     }
-    console.log('stop', loadingStatus);
     this.loading$.next(loadingStatus);
   }
 }

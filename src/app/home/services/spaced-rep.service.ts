@@ -58,7 +58,7 @@ export class SpacedRepService {
         clearTimeout(this.remoteSaveTimer);
       }
 
-      this.remoteSaveTimer = setTimeout(() => {
+      this.remoteSaveTimer = window.setTimeout(() => {
         // TODO add remote save
         //this.worker.postMessage({db: dbToSave});
       }, 250);

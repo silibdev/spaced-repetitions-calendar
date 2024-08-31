@@ -1,11 +1,11 @@
-import { Injectable } from '@angular/core';
-import { BehaviorSubject, concat, filter, firstValueFrom, from, fromEvent, Observable, of, switchMap, tap } from 'rxjs';
-import * as netlifyIdentity from 'netlify-identity-widget';
-import { User } from '../models/settings.model';
-import { Router } from '@angular/router';
-import { environment } from '../../../environments/environment';
-import { SpacedRepService } from './spaced-rep.service';
-import { SwUpdate } from '@angular/service-worker';
+import { Injectable } from "@angular/core";
+import { BehaviorSubject, concat, filter, firstValueFrom, from, fromEvent, Observable, of, switchMap, tap } from "rxjs";
+import * as netlifyIdentity from "netlify-identity-widget";
+import { User } from "../models/settings.model";
+import { Router } from "@angular/router";
+import { environment } from "../../../environments/environment";
+import { SpacedRepService } from "./spaced-rep.service";
+import { SwUpdate } from "@angular/service-worker";
 
 const USER_DB_NAME = 'src-user-db';
 const LOGIN_STATE_KEY = 'src-login-state';
@@ -61,7 +61,7 @@ export class AuthService {
             switchMap(() => concat(
                 this.spacedRepService.syncPendingChanges(),
                 this.spacedRepService.sync(),
-                this.swUpdate.checkForUpdate().catch(err => console.log('checkUpdateError', err))
+                this.swUpdate.checkForUpdate().catch(err => console.debug('checkUpdateError', err))
               )
             )
           )

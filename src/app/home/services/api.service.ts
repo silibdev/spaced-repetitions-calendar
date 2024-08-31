@@ -1,5 +1,5 @@
-import { Injectable } from '@angular/core';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { Injectable } from "@angular/core";
+import { HttpClient, HttpErrorResponse } from "@angular/common/http";
 import {
   BehaviorSubject,
   catchError,
@@ -16,13 +16,13 @@ import {
   switchMap,
   tap,
   throwError
-} from 'rxjs';
-import { FullSettings } from '../models/settings.model';
-import { ERROR_ANONYMOUS } from './auth.interceptor';
-import { CommonSpacedRepModel, Photo, QNA, SpecificSpacedRepModel } from '../models/spaced-rep.model';
-import { AppStorage } from '../../app.storage';
-import { ConfirmationService } from 'primeng/api';
-import * as CompressorJS from 'compressorjs';
+} from "rxjs";
+import { FullSettings } from "../models/settings.model";
+import { ERROR_ANONYMOUS } from "./auth.interceptor";
+import { CommonSpacedRepModel, Photo, QNA, SpecificSpacedRepModel } from "../models/spaced-rep.model";
+import { AppStorage } from "../../app.storage";
+import { ConfirmationService } from "primeng/api";
+import * as CompressorJS from "compressorjs";
 
 const ApiUrls = {
   settings: '/api/settings',
@@ -138,7 +138,7 @@ export class ApiService {
     if (this.saveLastUpdateMapTimeout) {
       clearTimeout(this.saveLastUpdateMapTimeout);
     }
-    this.saveLastUpdateMapTimeout = setTimeout(() => {
+    this.saveLastUpdateMapTimeout = window.setTimeout(() => {
       localStorage.setItem(LAST_UPDATE_DB_NAME, JSON.stringify(this.lastUpdateMap))
     }, 250);
   }
