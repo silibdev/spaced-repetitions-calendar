@@ -4,25 +4,34 @@ import { Tables } from './database.type';
 import { addMonths } from 'date-fns';
 
 export const CalendarEventRepository = {
-  async getEventList(userId: string, middleDate: Date): Promise<RepositoryResult<any[]>> {
+  async getEventList(
+    userId: string,
+    middleDate: Date,
+  ): Promise<RepositoryResult<any[]>> {
     const prev = addMonths(middleDate, -1).toISOString();
     const next = addMonths(middleDate, 1).toISOString();
-    console.log({prev, next});
+    console.log({ prev, next });
     const result = await DB.from('calendarevent')
       .select()
       .eq('user', userId)
       .gte('start', prev)
       .lte('start', next);
     const eventList: Tables<'calendarevent'>[] | null = result.data;
-    const list = eventList?.map(({id, start, user, details, masterid}) => Object.assign({
-      id,
-      start: new Date(start).toISOString(),
-      linkedSpacedRepId: masterid
-    }, details)) || [];
+    const list =
+      eventList?.map(({ id, start, user, details, masterid }) =>
+        Object.assign(
+          {
+            id,
+            start: new Date(start).toISOString(),
+            linkedSpacedRepId: masterid,
+          },
+          details,
+        ),
+      ) || [];
     const updatedAt = new Date().toISOString();
     console.log('get eventList', userId);
-    return {data: list, updatedAt};
-  }
+    return { data: list, updatedAt };
+  },
 
   // async postEventList(userId: string, {data: list, lastUpdatedAt}: RequestBody): Promise<RepositoryResult<string>> {
   //   const checkError = await checkLastUpdate(
@@ -54,4 +63,4 @@ export const CalendarEventRepository = {
   //   console.log('delete list', list);
   //   return {data: list, updatedAt};
   // }
-}
+};

@@ -1,21 +1,20 @@
-import 'dotenv/config'
-import {createClient} from '@supabase/supabase-js';
-import fetch, {Headers, Request, Response} from 'node-fetch';
+import 'dotenv/config';
+import { createClient } from '@supabase/supabase-js';
+import fetch, { Headers, Request, Response } from 'node-fetch';
 
-
 // @ts-ignore
-globalThis.fetch = fetch
+globalThis.fetch = fetch;
 // @ts-ignore
-globalThis.Headers = Headers
+globalThis.Headers = Headers;
 // @ts-ignore
-globalThis.Request = Request
+globalThis.Request = Request;
 // @ts-ignore
-globalThis.Response = Response
+globalThis.Response = Response;
 
 const url = process.env['DATABASE_URL'];
 const key = process.env['DATABASE_KEY'];
 const config = {
-  db: {schema: 'db'}
+  db: { schema: 'db' },
 };
 
 export const DB = createClient(url, key, config);
@@ -62,7 +61,6 @@ const storageBucket = 'db.photo';
 // }
 // const result = await DB.from('photo').upsert(values).select();
 // console.log(result.data);
-
 
 // JOIN
 // const result = await DB.from('qnatemplate')
@@ -149,7 +147,6 @@ const storageBucket = 'db.photo';
 // const result = await DB.storage.from(storageBucket).upload(`${userId}/${p.id}`, photo, {contentType: 'image/' + mime});
 // console.log(result);
 
-
 /*
 const eventListCompressedResult = await DB.from('eventlist').select().eq('user', userId).single();
 const eventListCompressed = eventListCompressedResult.data.list;
@@ -211,10 +208,7 @@ console.log({
 });
 */
 
-
 const res = await DB.from('calendarevent').select().limit(10);
 console.log(res);
 
-
 console.log('Done');
-

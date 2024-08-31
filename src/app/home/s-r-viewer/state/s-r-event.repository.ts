@@ -1,6 +1,10 @@
 import { Injectable } from '@angular/core';
 import { createStore } from '@ngneat/elf';
-import { selectAllEntities, setEntities, withEntities } from '@ngneat/elf-entities';
+import {
+  selectAllEntities,
+  setEntities,
+  withEntities,
+} from '@ngneat/elf-entities';
 
 export interface SREvent {
   id: string;
@@ -12,12 +16,15 @@ export interface SREvent {
 }
 
 @Injectable({
-  providedIn: "root"
+  providedIn: 'root',
 })
 export class SREventRepository {
-  private static NAME = "s-r-event";
+  private static NAME = 's-r-event';
 
-  private store = createStore({ name: SREventRepository.NAME }, withEntities<SREvent>());
+  private store = createStore(
+    { name: SREventRepository.NAME },
+    withEntities<SREvent>(),
+  );
 
   setList(events: SREvent[]) {
     this.store.update(setEntities(events));

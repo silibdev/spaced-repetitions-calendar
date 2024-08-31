@@ -7,15 +7,13 @@ import { SpacedRepService } from '../../home/services/spaced-rep.service';
 import { ConfirmationService } from 'primeng/api';
 import { LAST_UPDATE_DB_NAME } from '../../home/services/api.service';
 
-
 @Component({
   selector: 'app-manage-data',
   templateUrl: './manage-data.component.html',
   styleUrls: ['./manage-data.component.scss'],
-  providers: [ConfirmationService]
+  providers: [ConfirmationService],
 })
 export class ManageDataComponent implements OnInit {
-
   error?: string;
 
   isNotLoggedIn$: Observable<boolean>;
@@ -24,25 +22,30 @@ export class ManageDataComponent implements OnInit {
   constructor(
     private authService: AuthService,
     private spacedRepService: SpacedRepService,
-    private confirmationService: ConfirmationService
+    private confirmationService: ConfirmationService,
   ) {
-    this.isNotLoggedIn$ = this.authService.getUser$().pipe(map(user => !user?.token), shareReplay());
-    this.isLoggedIn$ = this.authService.getUser$().pipe(map(user => !!user?.token), shareReplay());
+    this.isNotLoggedIn$ = this.authService.getUser$().pipe(
+      map((user) => !user?.token),
+      shareReplay(),
+    );
+    this.isLoggedIn$ = this.authService.getUser$().pipe(
+      map((user) => !!user?.token),
+      shareReplay(),
+    );
   }
 
-  ngOnInit(): void {
-  }
+  ngOnInit(): void {}
 
   export(): void {
-    const backup = JSON.stringify(localStorage, null, 2)
-    fileDownload(backup, `backup-${new Date().toISOString()}.txt`)
+    const backup = JSON.stringify(localStorage, null, 2);
+    fileDownload(backup, `backup-${new Date().toISOString()}.txt`);
   }
 
   backupSelected(event: any, fileUpload: FileUpload): void {
     const backup: File = event.files[0];
 
     this.error = undefined;
-    backup.text().then( content => {
+    backup.text().then((content) => {
       fileUpload.clear();
       try {
         JSON.parse(content);
@@ -57,7 +60,7 @@ export class ManageDataComponent implements OnInit {
   restore(event: any): void {
     const backup: File = event.files[0];
 
-    backup.text().then( content => {
+    backup.text().then((content) => {
       localStorage.clear();
       const newStore = JSON.parse(content);
       for (const key in newStore) {
@@ -73,16 +76,18 @@ export class ManageDataComponent implements OnInit {
   }
 
   deleteAllData(): void {
-    this.spacedRepService.deleteAllData().pipe(
-      tap(() => location.reload())
-    ).subscribe();
+    this.spacedRepService
+      .deleteAllData()
+      .pipe(tap(() => location.reload()))
+      .subscribe();
   }
 
   confirmRemoteDataDeletion() {
     this.confirmationService.confirm({
       header: 'Attention: this action is NOT reversible',
-      message: 'Are you sure you want to delete all your data from your account and log out?',
-      accept: () => this.deleteAllData()
+      message:
+        'Are you sure you want to delete all your data from your account and log out?',
+      accept: () => this.deleteAllData(),
     });
   }
 
@@ -90,15 +95,17 @@ export class ManageDataComponent implements OnInit {
     this.confirmationService.confirm({
       header: 'Attention: this action is NOT reversible',
       message: 'Are you sure you want to delete all your data?',
-      accept: () => this.spacedRepService.desyncLocal().subscribe(() => location.reload())
+      accept: () =>
+        this.spacedRepService.desyncLocal().subscribe(() => location.reload()),
     });
   }
 
   confirmDataImport(event: any) {
     this.confirmationService.confirm({
       header: 'Attention: this action is NOT reversible',
-      message: 'Are you sure you want to import the data? It will replace all current data!',
-      accept: () => alert('Function not implemented yet')
+      message:
+        'Are you sure you want to import the data? It will replace all current data!',
+      accept: () => alert('Function not implemented yet'),
     });
   }
 }

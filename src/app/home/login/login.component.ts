@@ -7,7 +7,7 @@ import { Observable, of } from 'rxjs';
 @Component({
   selector: 'app-login',
   templateUrl: './login.component.html',
-  styleUrls: ['./login.component.scss']
+  styleUrls: ['./login.component.scss'],
 })
 export class LoginComponent implements OnInit {
   somethingIsPresentLocally$: Observable<boolean> = of(false);
@@ -15,7 +15,7 @@ export class LoginComponent implements OnInit {
   constructor(
     private authService: AuthService,
     private router: Router,
-    private spacedRepService: SpacedRepService
+    private spacedRepService: SpacedRepService,
   ) {
     if (this.authService.getUser()) {
       this.router.navigate(['home']);
@@ -23,7 +23,8 @@ export class LoginComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.somethingIsPresentLocally$ = this.spacedRepService.isSomethingPresent();
+    this.somethingIsPresentLocally$ =
+      this.spacedRepService.isSomethingPresent();
   }
 
   login(): void {

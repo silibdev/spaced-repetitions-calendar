@@ -4,14 +4,12 @@ import packageJson from '../../../package.json';
 @Component({
   selector: 'app-about',
   templateUrl: './about.component.html',
-  styleUrls: ['./about.component.scss']
+  styleUrls: ['./about.component.scss'],
 })
 export class AboutComponent implements OnInit {
   version = packageJson.version;
 
-  constructor() { }
+  constructor() {}
 
-  ngOnInit(): void {
-  }
-
+  ngOnInit(): void {}
 }

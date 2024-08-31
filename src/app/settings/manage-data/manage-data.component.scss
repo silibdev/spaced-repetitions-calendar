@@ -1,15 +1,16 @@
 :host .danger-area {
   ::ng-deep {
     .p-fieldset-legend {
-      background: #FFCDD2;
+      background: #ffcdd2;
       border: solid #e60017;
-      .p-fieldset-legend-text, .p-fieldset-toggler {
+      .p-fieldset-legend-text,
+      .p-fieldset-toggler {
         color: #73000c !important;
       }
     }
 
     fieldset {
-      background: #FFCDD2;
+      background: #ffcdd2;
       color: #73000c !important;
       border: solid #e60017;
       border-width: 0 0 0 6px;

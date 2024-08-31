@@ -6,28 +6,24 @@ import { SpacedRepModel } from '../models/spaced-rep.model';
 @Component({
   selector: 'app-search',
   templateUrl: './search.component.html',
-  styleUrls: ['./search.component.scss']
+  styleUrls: ['./search.component.scss'],
 })
 export class SearchComponent implements OnInit {
-
   searchQuery?: string;
   searchQuery$ = new Subject<string>();
-  results$: Observable<SpacedRepModel[]>
+  results$: Observable<SpacedRepModel[]>;
 
   @Output()
   eventClicked = new EventEmitter<SpacedRepModel>();
 
-  constructor(
-    private srService: SpacedRepService
-  ) {
+  constructor(private srService: SpacedRepService) {
     this.results$ = this.searchQuery$.pipe(
       debounceTime(100),
-      switchMap(query => this.srService.search(query))
+      switchMap((query) => this.srService.search(query)),
     );
   }
 
-  ngOnInit(): void {
-  }
+  ngOnInit(): void {}
 
   search(query: string): void {
     this.searchQuery$.next(query);
@@ -35,6 +31,6 @@ export class SearchComponent implements OnInit {
 
   selectResult(sr: SpacedRepModel): void {
     this.eventClicked.emit(sr);
-    setTimeout(() => this.searchQuery = '');
+    setTimeout(() => (this.searchQuery = ''));
   }
 }

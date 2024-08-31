@@ -17,31 +17,34 @@ export interface SRViewerUI {
 }
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class SRViewerUIRepository {
   private static NAME = 's-r-viewer-ui';
 
-  private store = createStore({ name: SRViewerUIRepository.NAME }, withProps<SRViewerUI>({
-    filterDate: new Date(),
-    activeDayOpen: false,
-    categories: []
-  }));
+  private store = createStore(
+    { name: SRViewerUIRepository.NAME },
+    withProps<SRViewerUI>({
+      filterDate: new Date(),
+      activeDayOpen: false,
+      categories: [],
+    }),
+  );
 
-  constructor(
-    private settingsRepository: SettingsRepository
-  ) {
-  }
+  constructor(private settingsRepository: SettingsRepository) {}
 
   getFilter(): Observable<SRFilter> {
     return combineLatest([
-      this.store.pipe(select((state) => state.filterDate), distinctUntilChanged((a, b) => a.toISOString() === b.toISOString())),
-      this.settingsRepository.getActiveCategory().pipe(distinctUntilChanged())
+      this.store.pipe(
+        select((state) => state.filterDate),
+        distinctUntilChanged((a, b) => a.toISOString() === b.toISOString()),
+      ),
+      this.settingsRepository.getActiveCategory().pipe(distinctUntilChanged()),
     ]).pipe(
       map(([filterDate, activeCategory]) => ({
         date: filterDate,
-        activeCategory
-      }))
+        activeCategory,
+      })),
     );
   }
 
@@ -50,31 +53,33 @@ export class SRViewerUIRepository {
   }
 
   getActiveDayOpen() {
-    return this.store.pipe(select(state => state.activeDayOpen));
+    return this.store.pipe(select((state) => state.activeDayOpen));
   }
 
   setActiveDayInfo(newActiveDay: Date) {
-    this.store.update(setProps(state => {
-      const activeMonth = state.filterDate;
+    this.store.update(
+      setProps((state) => {
+        const activeMonth = state.filterDate;
 
-      if (!isSameMonth(activeMonth, newActiveDay)) {
-        return { ...state, filterDate: newActiveDay };
-      }
+        if (!isSameMonth(activeMonth, newActiveDay)) {
+          return { ...state, filterDate: newActiveDay };
+        }
 
-      const oldOpen = state.activeDayOpen;
-      const oldDay = state.filterDate;
-      if (isSameDay(oldDay, newActiveDay)) {
+        const oldOpen = state.activeDayOpen;
+        const oldDay = state.filterDate;
+        if (isSameDay(oldDay, newActiveDay)) {
+          return {
+            ...state,
+            activeDayOpen: !oldOpen,
+          };
+        }
+
         return {
           ...state,
-          activeDayOpen: !oldOpen
+          filterDate: newActiveDay,
+          activeDayOpen: true,
         };
-      }
-
-      return {
-        ...state,
-        filterDate: newActiveDay,
-        activeDayOpen: true
-      };
-    }));
+      }),
+    );
   }
 }

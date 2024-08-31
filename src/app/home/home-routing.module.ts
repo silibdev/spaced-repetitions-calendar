@@ -6,17 +6,16 @@ import { SRViewerComponent } from './s-r-viewer/s-r-viewer/s-r-viewer.component'
 const routes: Routes = [
   {
     path: '',
-    component: HomeComponent
+    component: HomeComponent,
   },
   {
     path: 'new',
-    component: SRViewerComponent
-  }
+    component: SRViewerComponent,
+  },
 ];
 
 @NgModule({
   imports: [RouterModule.forChild(routes)],
-  exports: [RouterModule]
+  exports: [RouterModule],
 })
-export class HomeRoutingModule {
-}
+export class HomeRoutingModule {}

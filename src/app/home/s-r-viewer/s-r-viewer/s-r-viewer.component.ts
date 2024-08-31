@@ -1,17 +1,20 @@
-import { Component, OnInit } from "@angular/core";
-import { ExtendedCalendarView } from "../../calendar-header/calendar-header.component";
-import { Observable } from "rxjs";
-import { CalendarEvent, CalendarView } from "angular-calendar";
-import { Category } from "../../models/settings.model";
-import { SREvent, SREventRepository } from "../state/s-r-event.repository";
-import { SRFilter, SRViewerUIRepository } from "../state/s-r-viewer-ui.repository";
-import { SREventService } from "../state/s-r-event.service";
-import { SettingsRepository } from "../state/settings.repository";
+import { Component, OnInit } from '@angular/core';
+import { ExtendedCalendarView } from '../../calendar-header/calendar-header.component';
+import { Observable } from 'rxjs';
+import { CalendarEvent, CalendarView } from 'angular-calendar';
+import { Category } from '../../models/settings.model';
+import { SREvent, SREventRepository } from '../state/s-r-event.repository';
+import {
+  SRFilter,
+  SRViewerUIRepository,
+} from '../state/s-r-viewer-ui.repository';
+import { SREventService } from '../state/s-r-event.service';
+import { SettingsRepository } from '../state/settings.repository';
 
 @Component({
   selector: 'app-s-r-viewer',
   templateUrl: './s-r-viewer.component.html',
-  styleUrls: ['./s-r-viewer.component.scss']
+  styleUrls: ['./s-r-viewer.component.scss'],
 })
 export class SRViewerComponent implements OnInit {
   view: ExtendedCalendarView = CalendarView.Month;
@@ -23,12 +26,11 @@ export class SRViewerComponent implements OnInit {
   activeCategory$: Observable<string>;
   activeDayOpen$: Observable<boolean>;
 
-
   constructor(
     private srEventRepository: SREventRepository,
     private srViewerUIRepository: SRViewerUIRepository,
     private srEventService: SREventService,
-    private settingsRepository: SettingsRepository
+    private settingsRepository: SettingsRepository,
   ) {
     this.filter$ = this.srViewerUIRepository.getFilter();
     this.events$ = this.srEventRepository.getAll();
@@ -40,8 +42,7 @@ export class SRViewerComponent implements OnInit {
     this.srEventService.load();
   }
 
-  ngOnInit(): void {
-  }
+  ngOnInit(): void {}
 
   changeCategory(category: string) {
     this.settingsRepository.setActiveCategory(category);
@@ -55,9 +56,9 @@ export class SRViewerComponent implements OnInit {
     this.srViewerUIRepository.setFilterDate(viewDate);
   }
 
-  dayClicked({date, events}: { date: Date; events: CalendarEvent[] }): void {
-    if(!events.length) {
-      return
+  dayClicked({ date, events }: { date: Date; events: CalendarEvent[] }): void {
+    if (!events.length) {
+      return;
     }
     this.srViewerUIRepository.setActiveDayInfo(date);
   }

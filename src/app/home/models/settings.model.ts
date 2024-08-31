@@ -8,9 +8,9 @@ export interface FullSettings extends Options {
   currentVersion: number | undefined;
   colors: Color[];
   category: {
-    opts: Category[],
-    current: string
-  }
+    opts: Category[];
+    current: string;
+  };
 }
 
 export interface Color {
@@ -38,7 +38,7 @@ export enum RepetitionTypeEnum {
   ONCE_A_WEEK = 'ONCE_A_WEEK',
   EVERY_DAY = 'EVERY_DAY',
   CUSTOM = 'CUSTOM',
-  SINGLE = 'SINGLE'
+  SINGLE = 'SINGLE',
 }
 
 export interface RepetitionType {

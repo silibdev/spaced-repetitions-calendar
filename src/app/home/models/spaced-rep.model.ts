@@ -29,15 +29,30 @@ export interface SpacedRepModel {
   photos?: Photo[];
 }
 
-export type CommonSpacedRepModel = Pick<SpacedRepModel, 'id' | 'allDay' | 'title' | 'color' | 'shortDescription' | 'boldTitle' | 'highlightTitle' | 'category' | 'photos'>;
+export type CommonSpacedRepModel = Pick<
+  SpacedRepModel,
+  | 'id'
+  | 'allDay'
+  | 'title'
+  | 'color'
+  | 'shortDescription'
+  | 'boldTitle'
+  | 'highlightTitle'
+  | 'category'
+  | 'photos'
+>;
 
-export type SpecificSpacedRepModel = Pick<SpacedRepModel, 'id' | 'repetitionNumber' | 'start' | 'linkedSpacedRepId' | 'done'>
+export type SpecificSpacedRepModel = Pick<
+  SpacedRepModel,
+  'id' | 'repetitionNumber' | 'start' | 'linkedSpacedRepId' | 'done'
+>;
 
 export function extractCommonModel(sr: CommonSpacedRepModel | SpacedRepModel): {
-  masterId: string,
-    common: CommonSpacedRepModel
+  masterId: string;
+  common: CommonSpacedRepModel;
 } {
-  const masterId = 'linkedSpacedRepId' in sr ? sr.linkedSpacedRepId || sr.id : sr.id;
+  const masterId =
+    'linkedSpacedRepId' in sr ? sr.linkedSpacedRepId || sr.id : sr.id;
   const common: CommonSpacedRepModel = {
     id: masterId,
     allDay: sr.allDay,
@@ -46,18 +61,18 @@ export function extractCommonModel(sr: CommonSpacedRepModel | SpacedRepModel): {
     highlightTitle: sr.highlightTitle,
     color: sr.color,
     title: sr.title,
-    category: sr.category
+    category: sr.category,
   };
-  return {masterId, common};
+  return { masterId, common };
 }
 
 export interface CreateSpacedReps {
-  spacedRep: CommonSpacedRepModel & { description?: string, done?: boolean };
+  spacedRep: CommonSpacedRepModel & { description?: string; done?: boolean };
   startDate: Date;
   repetitionSchema: string;
 }
 
-export type QNAStatus = 'correct' | 'wrong' | undefined // undefined = not answered
+export type QNAStatus = 'correct' | 'wrong' | undefined; // undefined = not answered
 
 export interface QNA {
   question: string;

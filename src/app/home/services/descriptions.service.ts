@@ -1,16 +1,12 @@
 import { Injectable } from '@angular/core';
-import { Observable, of } from 'rxjs';
+import { Observable } from 'rxjs';
 import { ApiService } from './api.service';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class DescriptionsService {
-
-  constructor(
-    private apiService: ApiService
-  ) {
-  }
+  constructor(private apiService: ApiService) {}
 
   get(id: string): Observable<string> {
     return this.apiService.getEventDescription(id);

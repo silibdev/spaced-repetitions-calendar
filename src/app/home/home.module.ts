@@ -43,7 +43,6 @@ import { InplaceModule } from 'primeng/inplace';
 import { ConfirmPopupModule } from 'primeng/confirmpopup';
 import { SRViewerComponent } from './s-r-viewer/s-r-viewer/s-r-viewer.component';
 
-
 @NgModule({
   declarations: [
     HomeComponent,
@@ -56,7 +55,7 @@ import { SRViewerComponent } from './s-r-viewer/s-r-viewer/s-r-viewer.component'
     DayEventsViewComponent,
     MultiSegmentBarComponent,
     QNAComponent,
-    SRViewerComponent
+    SRViewerComponent,
   ],
   imports: [
     CommonModule,
@@ -65,7 +64,7 @@ import { SRViewerComponent } from './s-r-viewer/s-r-viewer/s-r-viewer.component'
     HomeRoutingModule,
     FullCalendar.forRoot({
       provide: DateAdapter,
-      useFactory: adapterFactory
+      useFactory: adapterFactory,
     }),
     ButtonModule,
     DialogModule,
@@ -93,8 +92,8 @@ import { SRViewerComponent } from './s-r-viewer/s-r-viewer/s-r-viewer.component'
     AccordionModule,
     TagModule,
     InplaceModule,
-    ConfirmPopupModule
+    ConfirmPopupModule,
   ],
-  providers: []
+  providers: [],
 })
-export class HomeModule { }
+export class HomeModule {}

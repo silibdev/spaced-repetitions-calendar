@@ -1,5 +1,4 @@
 <div class="mb-8">
-
   <div class="grid lg:justify-content-between">
     <div class="col-12 sm:col-8 md:col-5 lg:col-4 xl:col-3">
       <div class="field grid mb-0">
@@ -16,27 +15,42 @@
     </div>
   </div>
 
-<ng-container *ngIf="filter$ | async as filter">
-  <app-calendar-header [(view)]="view" [viewDate]="filter.date"
-                       (viewDateChange)="viewDateChange($event)">
-  </app-calendar-header>
-
-  <div [ngSwitch]="view" class="mt-3 calendar-container" *ngIf="events$ | async as events">
-    <ng-template #openDayEventsTemplate let-events="events" let-isOpen="isOpen" let-eventClicked="eventClicked">
-      <app-day-events-view [events]="events" [isOpen]="isOpen"
-                           (eventClicked)="eventClicked.emit($event)"></app-day-events-view>
-    </ng-template>
-    <ng-container *ngSwitchCase="CalendarView.Month">
-    <mwl-calendar-month-view
+  <ng-container *ngIf="filter$ | async as filter">
+    <app-calendar-header
+      [(view)]="view"
       [viewDate]="filter.date"
-      [events]="events"
-      [weekStartsOn]="1"
-      (dayClicked)="dayClicked($event.day)"
-      (eventClicked)="editEvent($any($event.event))"
-      [activeDayIsOpen]="!!(activeDayOpen$ | async)"
-      [openDayEventsTemplate]="openDayEventsTemplate"
-    ></mwl-calendar-month-view>
-    </ng-container>
-  </div>
-</ng-container>
+      (viewDateChange)="viewDateChange($event)"
+    >
+    </app-calendar-header>
+
+    <div
+      [ngSwitch]="view"
+      class="mt-3 calendar-container"
+      *ngIf="events$ | async as events"
+    >
+      <ng-template
+        #openDayEventsTemplate
+        let-events="events"
+        let-isOpen="isOpen"
+        let-eventClicked="eventClicked"
+      >
+        <app-day-events-view
+          [events]="events"
+          [isOpen]="isOpen"
+          (eventClicked)="eventClicked.emit($event)"
+        ></app-day-events-view>
+      </ng-template>
+      <ng-container *ngSwitchCase="CalendarView.Month">
+        <mwl-calendar-month-view
+          [viewDate]="filter.date"
+          [events]="events"
+          [weekStartsOn]="1"
+          (dayClicked)="dayClicked($event.day)"
+          (eventClicked)="editEvent($any($event.event))"
+          [activeDayIsOpen]="!!(activeDayOpen$ | async)"
+          [openDayEventsTemplate]="openDayEventsTemplate"
+        ></mwl-calendar-month-view>
+      </ng-container>
+    </div>
+  </ng-container>
 </div>

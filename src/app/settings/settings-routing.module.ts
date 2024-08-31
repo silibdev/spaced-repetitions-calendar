@@ -8,24 +8,29 @@ import { CategoriesComponent } from './categories/categories.component';
 
 const routes: Routes = [
   {
-    path: 'rep-schemas', component: RepetitionSchemasComponent
+    path: 'rep-schemas',
+    component: RepetitionSchemasComponent,
   },
   {
-    path: 'manage-data', component: ManageDataComponent,
+    path: 'manage-data',
+    component: ManageDataComponent,
   },
   {
-    path: 'general', component: GeneralComponent,
+    path: 'general',
+    component: GeneralComponent,
   },
   {
-    path: 'colors', component: ColorsComponent
+    path: 'colors',
+    component: ColorsComponent,
   },
   {
-    path: 'categories', component: CategoriesComponent
-  }
+    path: 'categories',
+    component: CategoriesComponent,
+  },
 ];
 
 @NgModule({
   imports: [RouterModule.forChild(routes)],
-  exports: [RouterModule]
+  exports: [RouterModule],
 })
-export class SettingsRoutingModule { }
+export class SettingsRoutingModule {}

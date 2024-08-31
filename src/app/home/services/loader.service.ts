@@ -1,5 +1,5 @@
-import { Injectable } from "@angular/core";
-import { BehaviorSubject, map, Observable } from "rxjs";
+import { Injectable } from '@angular/core';
+import { BehaviorSubject, map, Observable } from 'rxjs';
 
 export interface LoadingStatus {
   total: number;
@@ -7,11 +7,13 @@ export interface LoadingStatus {
 }
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class LoaderService {
-
-  private loading$ = new BehaviorSubject<LoadingStatus>({finished: 0, total: 0});
+  private loading$ = new BehaviorSubject<LoadingStatus>({
+    finished: 0,
+    total: 0,
+  });
 
   isLoading$: Observable<boolean>;
 
@@ -19,20 +21,20 @@ export class LoaderService {
 
   constructor() {
     this.isLoading$ = this.loading$.pipe(
-      map( loadingStatus => loadingStatus.finished === loadingStatus.total)
+      map((loadingStatus) => loadingStatus.finished === loadingStatus.total),
     );
 
     this.loadingStatus$ = this.loading$.asObservable();
   }
 
   startLoading(): void {
-    const {...loadingStatus} = this.loading$.value;
+    const { ...loadingStatus } = this.loading$.value;
     loadingStatus.total += 1;
     this.loading$.next(loadingStatus);
   }
 
   stopLoading(): void {
-    const {...loadingStatus} = this.loading$.value;
+    const { ...loadingStatus } = this.loading$.value;
     loadingStatus.finished += 1;
 
     if (loadingStatus.finished > loadingStatus.total) {
