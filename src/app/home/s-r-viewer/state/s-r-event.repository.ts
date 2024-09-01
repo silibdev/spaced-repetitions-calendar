@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { createStore } from '@ngneat/elf';
 import {
   selectAllEntities,
+  selectManyByPredicate,
   setEntities,
   withEntities,
 } from '@ngneat/elf-entities';
@@ -30,5 +31,18 @@ export class SREventRepository {
 
   setList(events: SREvent[]) {
     this.store.update(setEntities(events));
+  }
+
+  getAllFiltered(query: string) {
+    const regex = new RegExp(query, 'i');
+    return this.store.pipe(
+      selectManyByPredicate(
+        (event) =>
+          // Prevent possible errors, we don't trust the type so much
+          regex.test(event.title || '') ||
+          regex.test(event.shortDescription || ''),
+      ),
+      shareReplay(1),
+    );
   }
 }

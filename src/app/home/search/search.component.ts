@@ -1,7 +1,7 @@
 import { Component, EventEmitter, OnInit, Output } from '@angular/core';
-import { SpacedRepService } from '../services/spaced-rep.service';
 import { debounceTime, Observable, Subject, switchMap } from 'rxjs';
 import { SpacedRepModel } from '../models/spaced-rep.model';
+import { SREventRepository } from '../s-r-viewer/state/s-r-event.repository';
 
 @Component({
   selector: 'app-search',
@@ -16,10 +16,10 @@ export class SearchComponent implements OnInit {
   @Output()
   eventClicked = new EventEmitter<SpacedRepModel>();
 
-  constructor(private srService: SpacedRepService) {
+  constructor(private srEventRepository: SREventRepository) {
     this.results$ = this.searchQuery$.pipe(
       debounceTime(100),
-      switchMap((query) => this.srService.search(query)),
+      switchMap((query) => this.srEventRepository.getAllFiltered(query)),
     );
   }
 

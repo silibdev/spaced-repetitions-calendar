@@ -1,5 +1,8 @@
 import { Component, OnInit } from '@angular/core';
-import { ExtendedCalendarView } from '../../calendar-header/calendar-header.component';
+import {
+  ExtendedCalendarView,
+  SRCCalendarView,
+} from '../../calendar-header/calendar-header.component';
 import { Observable } from 'rxjs';
 import { CalendarEvent, CalendarView } from 'angular-calendar';
 import { Category } from '../../models/settings.model';
@@ -19,6 +22,7 @@ import { SettingsRepository } from '../state/settings.repository';
 export class SRViewerComponent implements OnInit {
   view: ExtendedCalendarView = CalendarView.Month;
   CalendarView = CalendarView;
+  SRCCalendarView = SRCCalendarView;
 
   filter$: Observable<SRFilter>;
   events$: Observable<CalendarEvent[]>;
