@@ -12,40 +12,31 @@ export interface Photo {
   toDelete?: boolean;
 }
 
-export interface SpacedRepModel {
-  allDay?: boolean;
-  boldTitle?: boolean;
-  color?: EventColor;
+export interface SpacedRepModel
+  extends CommonSpacedRepModel,
+    SpecificSpacedRepModel {
   description?: string;
-  done?: boolean;
-  highlightTitle?: boolean;
-  id: string;
-  linkedSpacedRepId?: string;
-  repetitionNumber: number;
-  shortDescription: string;
-  start: Date;
-  title: string;
-  category: string;
-  photos?: Photo[];
 }
 
-export type CommonSpacedRepModel = Pick<
-  SpacedRepModel,
-  | 'id'
-  | 'allDay'
-  | 'title'
-  | 'color'
-  | 'shortDescription'
-  | 'boldTitle'
-  | 'highlightTitle'
-  | 'category'
-  | 'photos'
->;
+export interface CommonSpacedRepModel {
+  allDay?: boolean;
+  boldTitle?: boolean;
+  category: string;
+  color?: EventColor;
+  highlightTitle?: boolean;
+  id: string;
+  photos?: Photo[];
+  shortDescription: string;
+  title: string;
+}
 
-export type SpecificSpacedRepModel = Pick<
-  SpacedRepModel,
-  'id' | 'repetitionNumber' | 'start' | 'linkedSpacedRepId' | 'done'
->;
+export interface SpecificSpacedRepModel {
+  id: string;
+  done?: boolean;
+  linkedSpacedRepId?: string;
+  repetitionNumber: number;
+  start: Date;
+}
 
 export function extractCommonModel(sr: CommonSpacedRepModel | SpacedRepModel): {
   masterId: string;

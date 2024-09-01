@@ -12,7 +12,7 @@ import {
 } from 'rxjs';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { SREventRepository } from './s-r-event.repository';
-import { SRViewerUIRepository } from './s-r-viewer-ui.repository';
+import { SRFilter, SRViewerUIRepository } from './s-r-viewer-ui.repository';
 import { SpacedRepModel } from '../../models/spaced-rep.model';
 import { EventDetailService } from '../../services/event-detail.service';
 import { isSameMonth } from 'date-fns';
@@ -45,26 +45,14 @@ export class SREventService {
           // to a different month (the api returns the entire month data)
           return isSameMonth(aDate, bDate);
         }),
-        switchMap((filter) =>
-          this.loadSREvents(filter.date).pipe(
-            map((events) => {
-              const activeCategory = filter.activeCategory;
-              return events.filter((e: SpacedRepModel) => {
-                if (!e.category && activeCategory === DEFAULT_CATEGORY) {
-                  return true;
-                }
-                return e.category === activeCategory;
-              });
-            }),
-          ),
-        ),
+        switchMap((filter) => this.loadSREvents(filter)),
         tap((events) => this.srEventRepository.setList(events)),
       )
       .subscribe();
   }
 
-  private loadSREvents(middleDate: Date): Observable<SpacedRepModel[]> {
-    return this.apiService.getEventList(middleDate, true).pipe(
+  private loadSREvents(filter: SRFilter): Observable<SpacedRepModel[]> {
+    return this.apiService.getEventList(filter.date, true).pipe(
       map((events) => {
         return (
           events?.map((e) => ({
@@ -85,6 +73,15 @@ export class SREventService {
           ),
         ).pipe(defaultIfEmpty([])),
       ),
+      map((events) => {
+        const activeCategory = filter.activeCategory;
+        return events.filter((e: SpacedRepModel) => {
+          if (!e.category && activeCategory === DEFAULT_CATEGORY) {
+            return true;
+          }
+          return e.category === activeCategory;
+        });
+      }),
     );
   }
 

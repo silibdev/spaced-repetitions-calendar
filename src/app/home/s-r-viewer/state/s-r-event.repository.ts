@@ -5,15 +5,13 @@ import {
   setEntities,
   withEntities,
 } from '@ngneat/elf-entities';
+import {
+  CommonSpacedRepModel,
+  SpecificSpacedRepModel,
+} from '../../models/spaced-rep.model';
+import { shareReplay } from 'rxjs';
 
-export interface SREvent {
-  id: string;
-  linkedSpacedRepId?: string;
-  repetitionNumber: number;
-  start: Date;
-  done?: boolean;
-  title: string; //TODO COME LO PRENDO?
-}
+export type SREvent = CommonSpacedRepModel & SpecificSpacedRepModel;
 
 @Injectable({
   providedIn: 'root',
@@ -26,11 +24,11 @@ export class SREventRepository {
     withEntities<SREvent>(),
   );
 
-  setList(events: SREvent[]) {
-    this.store.update(setEntities(events));
+  getAll() {
+    return this.store.pipe(selectAllEntities(), shareReplay(1));
   }
 
-  getAll() {
-    return this.store.pipe(selectAllEntities());
+  setList(events: SREvent[]) {
+    this.store.update(setEntities(events));
   }
 }

@@ -3,7 +3,13 @@ import { createStore, select, setProps, withProps } from '@ngneat/elf';
 import { isSameDay, isSameMonth } from 'date-fns';
 import { Category } from '../../models/settings.model';
 import { SettingsRepository } from './settings.repository';
-import { combineLatest, distinctUntilChanged, map, Observable } from 'rxjs';
+import {
+  combineLatest,
+  distinctUntilChanged,
+  map,
+  Observable,
+  shareReplay,
+} from 'rxjs';
 
 export interface SRFilter {
   date: Date;
@@ -45,15 +51,16 @@ export class SRViewerUIRepository {
         date: filterDate,
         activeCategory,
       })),
+      shareReplay(1),
     );
-  }
-
-  setFilterDate(filterDate: Date) {
-    this.store.update(setProps({ filterDate, activeDayOpen: false }));
   }
 
   getActiveDayOpen() {
     return this.store.pipe(select((state) => state.activeDayOpen));
+  }
+
+  setFilterDate(filterDate: Date) {
+    this.store.update(setProps({ filterDate, activeDayOpen: false }));
   }
 
   setActiveDayInfo(newActiveDay: Date) {

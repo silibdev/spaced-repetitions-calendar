@@ -2,7 +2,7 @@ import { FullSettings } from '../../models/settings.model';
 import { Injectable } from '@angular/core';
 import { createStore, select, setProp, setProps, withProps } from '@ngneat/elf';
 import { Migrator } from '../../../migrator';
-import { Subject } from 'rxjs';
+import { shareReplay, Subject } from 'rxjs';
 
 const DEFAULT_COLORS = [
   {
@@ -57,6 +57,7 @@ export class SettingsRepository {
     }),
   );
 
+  // TODO replace with actions/effect
   getSaveEvent() {
     return this._saveEvent$.asObservable();
   }
@@ -66,7 +67,21 @@ export class SettingsRepository {
   }
 
   getSettings() {
-    return this.store.asObservable();
+    return this.store.pipe(shareReplay(1));
+  }
+
+  getCategories() {
+    return this.store.pipe(
+      select((state) => state.category.opts),
+      shareReplay(1),
+    );
+  }
+
+  getActiveCategory() {
+    return this.store.pipe(
+      select((state) => state.category.current),
+      shareReplay(1),
+    );
   }
 
   setSettings(
@@ -79,17 +94,9 @@ export class SettingsRepository {
     }
   }
 
-  getActiveCategory() {
-    return this.store.pipe(select((state) => state.category.current));
-  }
-
   setActiveCategory(category: string) {
     this.store.update(
       setProp('category', (state) => ({ ...state, current: category })),
     );
-  }
-
-  getCategories() {
-    return this.store.pipe(select((state) => state.category.opts));
   }
 }
