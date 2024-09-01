@@ -1,8 +1,8 @@
 import { Component, EventEmitter, OnInit, Output } from '@angular/core';
-import { SpacedRepService } from '../services/spaced-rep.service';
 import { map, Observable } from 'rxjs';
 import { SpacedRepModel } from '../models/spaced-rep.model';
-import { SettingsService } from '../services/settings.service';
+import { SREventRepository } from '../s-r-viewer/state/s-r-event.repository';
+import { SettingsRepository } from '../s-r-viewer/state/settings.repository';
 
 @Component({
   selector: 'app-list-view',
@@ -17,17 +17,13 @@ export class ListViewComponent implements OnInit {
   eventClicked = new EventEmitter<SpacedRepModel>();
 
   constructor(
-    private srService: SpacedRepService,
-    private settingsService: SettingsService,
+    private srEventRepository: SREventRepository,
+    private settingsRepository: SettingsRepository,
   ) {
-    this.spacedReps$ = this.srService
-      .getAll()
-      .pipe(
-        map((spacedResp) => spacedResp.filter((sr) => !sr.linkedSpacedRepId)),
-      );
+    this.spacedReps$ = this.srEventRepository.getAllMaster();
 
     const colorNameMap: Record<string, string> =
-      this.settingsService.colors.reduce(
+      this.settingsRepository.settings.colors.reduce(
         (acc, color) => {
           acc[color.value] = color.label;
           return acc;
@@ -36,7 +32,7 @@ export class ListViewComponent implements OnInit {
       );
 
     function isString(v: string | undefined): v is string {
-      return !!v;
+      return typeof v === 'string';
     }
 
     this.possibleColors$ = this.spacedReps$.pipe(

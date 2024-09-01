@@ -14,6 +14,8 @@ import { shareReplay } from 'rxjs';
 
 export type SREvent = CommonSpacedRepModel & SpecificSpacedRepModel;
 
+const isMaster = (event: SREvent) => !event.linkedSpacedRepId;
+
 @Injectable({
   providedIn: 'root',
 })
@@ -38,10 +40,18 @@ export class SREventRepository {
     return this.store.pipe(
       selectManyByPredicate(
         (event) =>
+          isMaster(event) &&
           // Prevent possible errors, we don't trust the type so much
-          regex.test(event.title || '') ||
-          regex.test(event.shortDescription || ''),
+          (regex.test(event.title || '') ||
+            regex.test(event.shortDescription || '')),
       ),
+      shareReplay(1),
+    );
+  }
+
+  getAllMaster() {
+    return this.store.pipe(
+      selectManyByPredicate((event) => isMaster(event)),
       shareReplay(1),
     );
   }

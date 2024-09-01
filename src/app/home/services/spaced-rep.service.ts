@@ -444,36 +444,6 @@ export class SpacedRepService {
     ]);
   }
 
-  search(query: string): Observable<SpacedRepModel[]> {
-    const regex = new RegExp(query, 'i');
-    return forkJoin(
-      this.db
-        .filter((sr) => !sr.linkedSpacedRepId)
-        .map((sr) =>
-          forkJoin([
-            this.descriptionService.get(sr.id as string),
-            this.eventDetailService.get(sr.id as string),
-          ]).pipe(
-            map(([description, details]) => ({
-              ...sr,
-              ...details,
-              description,
-            })),
-          ),
-        ),
-    ).pipe(
-      defaultIfEmpty([]),
-      map((srs) =>
-        srs.filter(
-          (sr) =>
-            sr.title.match(regex) ||
-            sr.shortDescription?.match(regex) ||
-            sr.description?.match(regex),
-        ),
-      ),
-    );
-  }
-
   desyncLocal() {
     return this.apiService.desyncLocal();
   }
