@@ -14,6 +14,7 @@ import {
 } from '../../models/spaced-rep.model';
 import {
   combineLatest,
+  defaultIfEmpty,
   map,
   Observable,
   shareReplay,
@@ -103,6 +104,7 @@ export class SpacedRepRepository {
             ),
           ),
         ).pipe(
+          defaultIfEmpty([]),
           map(() =>
             specificSRs.map((ssr) => {
               const common = commonSRMap[ssr.linkedSpacedRepId || ssr.id];

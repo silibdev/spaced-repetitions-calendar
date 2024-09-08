@@ -1,15 +1,15 @@
 import { DB } from './db-connector';
 import { RepositoryResult, RequestBody } from './utils';
 import { Tables } from './database.type';
-import { addMonths } from 'date-fns';
+import { addMonths, endOfMonth, startOfMonth } from 'date-fns';
 
 export const CalendarEventRepository = {
   async getEventList(
     userId: string,
     middleDate: Date,
   ): Promise<RepositoryResult<any[]>> {
-    const prev = addMonths(middleDate, -1).toISOString();
-    const next = addMonths(middleDate, 1).toISOString();
+    const prev = startOfMonth(addMonths(middleDate, -1)).toISOString();
+    const next = endOfMonth(addMonths(middleDate, 1)).toISOString();
     console.log({ prev, next });
     const result = await DB.from('calendarevent')
       .select()
