@@ -1,4 +1,4 @@
-import { FullSettings } from '../../models/settings.model';
+import { FullSettings, RepetitionSchema } from '../../models/settings.model';
 import { Injectable } from '@angular/core';
 import { createStore, select, setProp, setProps, withProps } from '@ngneat/elf';
 import { Migrator } from '../../../migrator';
@@ -97,6 +97,22 @@ export class SettingsRepository {
   setActiveCategory(category: string) {
     this.store.update(
       setProp('category', (state) => ({ ...state, current: category })),
+    );
+  }
+
+  addRepetitionSchemaOpt(repetitionSchema: RepetitionSchema) {
+    const repetitionSchemaOpts = this.settings.repetitionSchemaOpts;
+    if (
+      repetitionSchemaOpts.find((rs) => rs.value === repetitionSchema.value)
+    ) {
+      return;
+    }
+
+    this.store.update(
+      setProp('repetitionSchemaOpts', [
+        ...repetitionSchemaOpts,
+        repetitionSchema,
+      ]),
     );
   }
 }

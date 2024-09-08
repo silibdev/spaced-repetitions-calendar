@@ -24,6 +24,11 @@ export class SettingsService {
       .subscribe();
   }
 
+  private saveOpts(opts: FullSettings) {
+    console.log('saving', opts);
+    return this.apiService.setSettings(opts);
+  }
+
   loadOpts() {
     return this.apiService.getSettings().pipe(
       tap((opts) => {
@@ -41,8 +46,10 @@ export class SettingsService {
     );
   }
 
-  private saveOpts(opts: FullSettings) {
-    console.log('saving', opts);
-    return this.apiService.setSettings(opts);
+  saveNewRepetitionSchema(repSchema: string): void {
+    this.settingsRepository.addRepetitionSchemaOpt({
+      value: repSchema,
+      label: repSchema,
+    });
   }
 }
