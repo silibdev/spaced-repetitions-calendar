@@ -11,7 +11,11 @@ import {
 } from '@angular/core';
 import { EventFormService } from '../services/event-form.service';
 import { BlockableUI } from 'primeng/api';
-import { Photo, SpacedRepModel } from '../models/spaced-rep.model';
+import {
+  extractCommonModel,
+  Photo,
+  SpacedRepModel,
+} from '../models/spaced-rep.model';
 import { UntypedFormControl } from '@angular/forms';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import {
@@ -264,7 +268,8 @@ export class EventViewComponent implements OnInit, BlockableUI {
       // La immagini senza id, quelle da aggiungere non hanno una vera thumbnail
       return;
     }
-    this.photoService.getPhotoUrl(this.event!, photo.id).subscribe((url) => {
+    const { masterId } = extractCommonModel(this.event!);
+    this.photoService.getPhotoUrl(masterId, photo.id).subscribe((url) => {
       image.src = url;
       this.cd.detectChanges();
 

@@ -1,11 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Observable, of } from 'rxjs';
-import {
-  CommonSpacedRepModel,
-  extractCommonModel,
-  Photo,
-  SpacedRepModel,
-} from '../models/spaced-rep.model';
+import { Photo } from '../models/spaced-rep.model';
 import { ApiService } from './api.service';
 import { UntilDestroy } from '@ngneat/until-destroy';
 import { ConfirmationService } from 'primeng/api';
@@ -18,24 +13,21 @@ export class PhotoService {
   constructor(private apiService: ApiService) {}
 
   savePhotos(
-    event: CommonSpacedRepModel,
+    masterId: string,
     photos: Photo[],
     confirmationService?: ConfirmationService,
   ): Observable<unknown> {
-    const { masterId } = extractCommonModel(event);
     if (!photos.length) {
       return of(undefined);
     }
     return this.apiService.savePhotos(masterId, photos, confirmationService);
   }
 
-  getPhotos(event: SpacedRepModel): Observable<Photo[]> {
-    const { masterId } = extractCommonModel(event);
+  getPhotos(masterId: string): Observable<Photo[]> {
     return this.apiService.getPhotos(masterId);
   }
 
-  getPhotoUrl(event: SpacedRepModel, photoId: string): Observable<string> {
-    const { masterId } = extractCommonModel(event);
+  getPhotoUrl(masterId: string, photoId: string): Observable<string> {
     return this.apiService.getPhotoUrl(masterId, photoId);
   }
 }

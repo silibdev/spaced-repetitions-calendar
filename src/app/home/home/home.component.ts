@@ -25,6 +25,7 @@ import {
 } from 'rxjs';
 import {
   CommonSpacedRepModel,
+  extractCommonModel,
   Photo,
   SpacedRepModel,
 } from '../models/spaced-rep.model';
@@ -195,7 +196,7 @@ export class HomeComponent implements OnInit, OnDestroy {
     event: SpacedRepModel,
     withRetry: boolean,
   ): Observable<SpacedRepModel> {
-    return this.photoService.getPhotos(event).pipe(
+    return this.photoService.getPhotos(extractCommonModel(event).masterId).pipe(
       map((photos) => {
         event.photos = photos;
         return event;
@@ -304,7 +305,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   private savePhotos(event: CommonSpacedRepModel): Observable<unknown> {
     const photos = this.eventFormService.getPhotos();
     return this.photoService.savePhotos(
-      event,
+      extractCommonModel(event).masterId,
       photos,
       this.confirmationService,
     );

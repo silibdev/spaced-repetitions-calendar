@@ -327,7 +327,10 @@ export class SpacedRepService {
       return forkJoin([
         this.eventDetailService.delete(event.id),
         this.descriptionService.delete(event.id),
-        this.photoService.savePhotos(event, photos),
+        this.photoService.savePhotos(
+          extractCommonModel(event).masterId,
+          photos,
+        ),
       ]).pipe(map(() => undefined));
     }
     return this.spacedReps$.pipe(

@@ -4,6 +4,7 @@ import {
   BehaviorSubject,
   catchError,
   defaultIfEmpty,
+  delay,
   finalize,
   forkJoin,
   map,
@@ -347,6 +348,14 @@ export class ApiService {
     );
   }
 
+  createRepeatedEvents(
+    events: SpecificSpacedRepModel[],
+    noCache?: boolean,
+  ): Observable<SpecificSpacedRepModel[]> {
+    console.error('IMPLEMENT ApiService.createEvent!!!!');
+    return of(events).pipe(delay(2000));
+  }
+
   getEventDescription(id: string, noCache?: boolean): Observable<string> {
     return this.getWithCache(ApiUrls.description(id), {
       cacheKey: DESCRIPTIONS_DB_NAME(id),
@@ -563,8 +572,8 @@ export class ApiService {
           .then((blob) => ({ name: p.name, blob })),
       );
 
-    // @ts-ignore
     const getFormDataSize = (fd: FormData) =>
+      // @ts-ignore
       [...fd].reduce(
         (size, [name, value]) =>
           size + (typeof value === 'string' ? value.length : value.size),

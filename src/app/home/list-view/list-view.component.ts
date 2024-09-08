@@ -1,7 +1,7 @@
 import { Component, EventEmitter, OnInit, Output } from '@angular/core';
 import { map, Observable } from 'rxjs';
 import { SpacedRepModel } from '../models/spaced-rep.model';
-import { SREventRepository } from '../s-r-viewer/state/s-r-event.repository';
+import { SpacedRepRepository } from '../s-r-viewer/state/spaced-rep.repository';
 import { SettingsRepository } from '../s-r-viewer/state/settings.repository';
 
 @Component({
@@ -17,7 +17,7 @@ export class ListViewComponent implements OnInit {
   eventClicked = new EventEmitter<SpacedRepModel>();
 
   constructor(
-    private srEventRepository: SREventRepository,
+    private srEventRepository: SpacedRepRepository,
     private settingsRepository: SettingsRepository,
   ) {
     this.spacedReps$ = this.srEventRepository.getAllMaster();
