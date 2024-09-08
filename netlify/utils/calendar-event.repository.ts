@@ -1,5 +1,5 @@
 import { DB } from './db-connector';
-import { RepositoryResult } from './utils';
+import { RepositoryResult, RequestBody } from './utils';
 import { Tables } from './database.type';
 import { addMonths } from 'date-fns';
 
@@ -33,23 +33,31 @@ export const CalendarEventRepository = {
     return { data: list, updatedAt };
   },
 
-  // async postEventList(userId: string, {data: list, lastUpdatedAt}: RequestBody): Promise<RepositoryResult<string>> {
-  //   const checkError = await checkLastUpdate(
-  //     DB.from('eventlist')
-  //       .select('updated_at')
-  //       .eq('user', userId),
-  //     lastUpdatedAt);
-  //   if (checkError) return checkError;
-  //   const updatedAt = new Date().toISOString();
-  //   const values: Tables<'eventlist'> = {
-  //     user: userId,
-  //     list,
-  //     updated_at: updatedAt
-  //   }
-  //   const result = await DB.from('eventlist').upsert(values);
-  //   console.log('post list', result.count);
-  //   return {data: 'ok', updatedAt};
-  // },
+  // any = SpecificSpacedRepModel
+  async postEventList(
+    userId: string,
+    { data: list, lastUpdatedAt }: RequestBody<any[]>,
+  ): Promise<RepositoryResult<string>> {
+    // const checkError = await checkLastUpdate(
+    //   DB.from('eventlist')
+    //     .select('updated_at')
+    //     .eq('user', userId),
+    //   lastUpdatedAt);
+    // if (checkError) return checkError;
+    const updatedAt = new Date().toISOString();
+    const values: Tables<'calendarevent'>[] = list.map(
+      ({ id, linkedSpacedRepId, start, ...details }) => ({
+        user: userId,
+        id: id,
+        masterid: linkedSpacedRepId,
+        start: start,
+        details,
+      }),
+    );
+    const result = await DB.from('calendarevent').upsert(values);
+    console.log('post list', result.count);
+    return { data: 'ok', updatedAt };
+  },
   //
   // async deleteEventList(userId: string): Promise<RepositoryResult<string>> {
   //   const result = await DB.from('eventlist')

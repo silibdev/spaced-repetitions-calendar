@@ -40,11 +40,11 @@ export interface RequestBody<D = string> {
 export type BulkRequestBodyData = { queryParams: string; body?: any };
 export type BulkRequestBody = RequestBody<BulkRequestBodyData[]>;
 
-export interface ResourceHandler {
+export interface ResourceHandler<P> {
   getResource?: (userId: string, queryParams?: any) => Promise<HandlerResponse>;
   postResource?: (
     userId: string,
-    body: RequestBody,
+    body: RequestBody<P>,
     queryParams?: any,
   ) => Promise<HandlerResponse>;
   deleteResource?: (
@@ -57,12 +57,12 @@ export interface ResourceHandler {
   ) => Promise<HandlerResponse>;
 }
 
-export function createHandler({
+export function createHandler<P>({
   getResource,
   postResource,
   deleteResource,
   bulkResource,
-}: ResourceHandler): Handler {
+}: ResourceHandler<P>): Handler {
   return async (event, context) => {
     let response: HandlerResponse | undefined;
     const userOrError = getUser(context);

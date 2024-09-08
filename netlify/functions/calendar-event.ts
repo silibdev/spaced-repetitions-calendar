@@ -1,10 +1,10 @@
 import { Handler, HandlerResponse } from '@netlify/functions';
-import { createHandler, createResponse } from '../utils/utils';
+import { createHandler, createResponse, RequestBody } from '../utils/utils';
 import { CalendarEventRepository } from '../utils/calendar-event.repository';
 
 const handler: Handler = createHandler({
   getResource: getCalendarEvent,
-  // postResource: postEventList
+  postResource: postEventList,
 });
 
 async function getCalendarEvent(
@@ -22,9 +22,12 @@ async function getCalendarEvent(
   return createResponse(eventList);
 }
 
-// async function postEventList(userId: string, body: RequestBody): Promise<HandlerResponse> {
-//   const eventList = await EventListRepository.postEventList(userId, body);
-//   return createResponse(eventList);
-// }
+async function postEventList(
+  userId: string,
+  body: RequestBody<any[]>,
+): Promise<HandlerResponse> {
+  const eventList = await CalendarEventRepository.postEventList(userId, body);
+  return createResponse(eventList);
+}
 
 export { handler };
