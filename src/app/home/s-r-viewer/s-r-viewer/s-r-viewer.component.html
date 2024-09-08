@@ -70,4 +70,50 @@
       ></app-list-view>
     </div>
   </ng-container>
+
+  <button
+    pButton
+    icon="pi pi-plus"
+    class="p-button-lg p-button-rounded fab p-4 m-3 text-lg"
+    (click)="openCreate = true"
+  ></button>
+
+  <p-dialog
+    appMaximized
+    [(visible)]="openCreate"
+    [modal]="true"
+    (onHide)="eventFormService.reset()"
+  >
+    <div *pTemplate="'header'">Create event</div>
+    <ng-container *ngIf="openCreate">
+      <app-event-view #content1 [event]="undefined"></app-event-view>
+      <p-blockUI [target]="content1" [blocked]="loadingCreate">
+        <p-progressSpinner></p-progressSpinner>
+      </p-blockUI>
+    </ng-container>
+    <ng-template pTemplate="footer">
+      <button
+        pButton
+        [label]="'Cancel'"
+        [disabled]="loadingCreate"
+        class="p-button-outlined"
+        [style.float]="'left'"
+        (click)="openCreate = false"
+      ></button>
+      <button
+        pButton
+        [label]="'Create'"
+        [loading]="loadingCreate"
+        (click)="createSpacedRep()"
+      ></button>
+    </ng-template>
+  </p-dialog>
+
 </div>
+<p-confirmDialog
+  icon="pi pi-exclamation-triangle"
+  header="Confirm"
+  acceptButtonStyleClass="p-button-outlined"
+  [defaultFocus]="'reject'"
+  (onHide)="notifier.next(null)"
+></p-confirmDialog>
