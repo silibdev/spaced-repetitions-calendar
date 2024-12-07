@@ -14,10 +14,11 @@ import {
 import { SpacedRepService } from '../state/spaced-rep.service';
 import { SettingsRepository } from '../state/settings.repository';
 import { EventFormService } from '../../services/event-form.service';
-import { untilDestroyed } from '@ngneat/until-destroy';
+import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { ConfirmationService } from 'primeng/api';
 import { QNAFormService } from '../../services/q-n-a-form.service';
 
+@UntilDestroy()
 @Component({
   selector: 'app-s-r-viewer',
   templateUrl: './s-r-viewer.component.html',

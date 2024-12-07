@@ -73,14 +73,16 @@ export class SpacedRepRepository {
   }
 
   private decomposeSREventList(events: SREvent[]) {
-    const commonsEvents: CommonSpacedRepModel[] = [];
+    const commonsEvents: Record<string, CommonSpacedRepModel> = {};
     const specificEvents: SpecificSpacedRepModel[] = [];
     events.forEach((event) => {
       const { common, specific } = this.extractCommonAndSpecific(event);
-      commonsEvents.push(common);
+      if (!commonsEvents[common.id]) {
+        commonsEvents[common.id] = common;
+      }
       specificEvents.push(specific);
     });
-    return { commonsEvents, specificEvents };
+    return { commonsEvents: Object.values(commonsEvents), specificEvents };
   }
 
   getAll(): Observable<SpacedRepModel[]> {

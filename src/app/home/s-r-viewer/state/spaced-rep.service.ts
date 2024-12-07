@@ -101,7 +101,9 @@ export class SpacedRepService {
     );
   }
 
-  load() {}
+  load() {
+    // It's fake, it actually starts loading from constructor when a filter arrives
+  }
 
   createCompleteSpacedRep(
     createSpacedRep: CreateSpacedReps,
@@ -181,6 +183,9 @@ export class SpacedRepService {
     const { description, ...commonSpacedRepModel } = createSpacedRep.spacedRep;
 
     return this.apiService.createRepeatedEvents(newSpacedReps).pipe(
+      tap((newSpecificEvents) =>
+        newSpecificEvents.forEach((e) => (e.start = new Date(e.start))),
+      ),
       switchMap((newSpecificEvents) =>
         forkJoin([
           this.descriptionService.save(id, description || ''),

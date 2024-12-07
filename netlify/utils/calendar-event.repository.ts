@@ -37,7 +37,7 @@ export const CalendarEventRepository = {
   async postEventList(
     userId: string,
     { data: list, lastUpdatedAt }: RequestBody<any[]>,
-  ): Promise<RepositoryResult<string>> {
+  ): Promise<RepositoryResult<any[]>> {
     // const checkError = await checkLastUpdate(
     //   DB.from('eventlist')
     //     .select('updated_at')
@@ -56,7 +56,7 @@ export const CalendarEventRepository = {
     );
     const result = await DB.from('calendarevent').upsert(values);
     console.log('post list', result.count);
-    return { data: 'ok', updatedAt };
+    return { data: list, updatedAt };
   },
   //
   // async deleteEventList(userId: string): Promise<RepositoryResult<string>> {

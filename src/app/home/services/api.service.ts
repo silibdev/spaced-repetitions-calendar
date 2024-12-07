@@ -4,7 +4,6 @@ import {
   BehaviorSubject,
   catchError,
   defaultIfEmpty,
-  delay,
   finalize,
   forkJoin,
   map,
@@ -32,8 +31,9 @@ import * as CompressorJS from 'compressorjs';
 
 const ApiUrls = {
   settings: '/api/settings',
-  eventList: (middleDate: Date) =>
+  eventListFilter: (middleDate: Date) =>
     `/api/calendar-event?date=${middleDate.toISOString()}`,
+  eventList: `/api/calendar-event`,
   deleteAllData: '/api/data',
   description: (eventId: string) => `/api/event-descriptions?id=${eventId}`,
   detail: (eventId: string) => `/api/event-details?id=${eventId}`,
@@ -339,7 +339,7 @@ export class ApiService {
     noCache?: boolean,
   ): Observable<SpecificSpacedRepModel[] | undefined> {
     return this.getWithCache<SpecificSpacedRepModel[] | undefined>(
-      ApiUrls.eventList(middleDate),
+      ApiUrls.eventListFilter(middleDate),
       { cacheKey: DB_NAME, dontParse: true, noCache },
     ).pipe(
       ApiService.HANDLE_ANONYMOUS<SpecificSpacedRepModel[] | undefined>(
@@ -352,8 +352,15 @@ export class ApiService {
     events: SpecificSpacedRepModel[],
     noCache?: boolean,
   ): Observable<SpecificSpacedRepModel[]> {
-    console.error('IMPLEMENT ApiService.createEvent!!!!');
-    return of(events).pipe(delay(2000));
+    return this.postWithCache<SpecificSpacedRepModel[]>(
+      ApiUrls.eventList,
+      events,
+      {
+        cacheKey: DB_NAME,
+        dontParse: true,
+        noCache,
+      },
+    ).pipe(ApiService.HANDLE_ANONYMOUS(events));
   }
 
   getEventDescription(id: string, noCache?: boolean): Observable<string> {
