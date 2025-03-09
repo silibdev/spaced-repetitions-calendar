@@ -1,4 +1,14 @@
-import { first, from, map, mergeMap, Observable, of, reduce, switchMap, tap } from 'rxjs';
+import {
+  first,
+  from,
+  map,
+  mergeMap,
+  Observable,
+  of,
+  reduce,
+  switchMap,
+  tap,
+} from 'rxjs';
 import { SpacedRepService } from './home/services/spaced-rep.service';
 import { AppStorage } from './app.storage';
 
@@ -10,10 +20,7 @@ export class Migrator {
 
   static LATEST_VERSION = 4;
 
-  constructor(
-    private spacedRepsService: SpacedRepService
-  ) {
-  }
+  constructor(private spacedRepsService: SpacedRepService) {}
 
   static setVersion(newVersion: number | undefined): void {
     // From version 3+ we manage the saving of the version on remote too
@@ -27,17 +34,18 @@ export class Migrator {
 
   migrate(): () => Observable<boolean> {
     this.migrationApplied = false;
-    return () => of(undefined).pipe(
-      switchMap(() => this.switchToFirstMigration()),
-      switchMap(() => this.switchToSecondMigration()),
-      switchMap(() => this.switchToThirdMigration()),
-      switchMap(() => this.switchToFourthMigration()),
-      switchMap(() => this.switchToFifthMigration()),
-      switchMap(() => this.switchToSixthMigration()),
-      switchMap(() => this.switchToSeventhMigration()),
-      switchMap(()=> this.switchToEighthMigration()),
-      map(() => this.migrationApplied)
-    )
+    return () =>
+      of(undefined).pipe(
+        switchMap(() => this.switchToFirstMigration()),
+        switchMap(() => this.switchToSecondMigration()),
+        switchMap(() => this.switchToThirdMigration()),
+        switchMap(() => this.switchToFourthMigration()),
+        switchMap(() => this.switchToFifthMigration()),
+        switchMap(() => this.switchToSixthMigration()),
+        switchMap(() => this.switchToSeventhMigration()),
+        switchMap(() => this.switchToEighthMigration()),
+        map(() => this.migrationApplied),
+      );
   }
 
   /**
@@ -51,7 +59,7 @@ export class Migrator {
     const eventsDone = new Set();
     return this.spacedRepsService.getAll().pipe(
       first(),
-      switchMap(events => from(events)),
+      switchMap((events) => from(events)),
       mergeMap((event) => {
         const id = event.linkedSpacedRepId || event.id;
         if (id && !eventsDone.has(id)) {
@@ -61,7 +69,7 @@ export class Migrator {
         return of(undefined);
       }),
       reduce((acc, _) => acc, undefined), // wait for all mergeMap to complete
-      tap(() => Migrator.setVersion(1))
+      tap(() => Migrator.setVersion(1)),
     );
   }
 
@@ -76,8 +84,10 @@ export class Migrator {
     const eventsDone = new Set();
     return this.spacedRepsService.getAllSecondMigration().pipe(
       first(),
-      switchMap(events => from(events)),
-      switchMap(event => this.spacedRepsService.getSecondMigration(event.id as string)),
+      switchMap((events) => from(events)),
+      switchMap((event) =>
+        this.spacedRepsService.getSecondMigration(event.id as string),
+      ),
       mergeMap((event) => {
         const id = event.linkedSpacedRepId || event.id;
         if (id && !eventsDone.has(id)) {
@@ -90,7 +100,7 @@ export class Migrator {
       tap(() => {
         this.secondMigrationRun = true;
         Migrator.setVersion(2);
-      })
+      }),
     );
   }
 
@@ -109,7 +119,7 @@ export class Migrator {
     return this.spacedRepsService.loadDbThirdMigration().pipe(
       switchMap(() => this.switchToSecondMigration(true)),
       switchMap(() => this.spacedRepsService.purgeDB()),
-      tap(() => Migrator.setVersion(3))
+      tap(() => Migrator.setVersion(3)),
     );
   }
 
@@ -117,14 +127,14 @@ export class Migrator {
    * Move 'done' to specific model from common
    * @private
    */
-  private switchToFourthMigration(): Observable<unknown>{
+  private switchToFourthMigration(): Observable<unknown> {
     if (Migrator.getVersion() >= 4) {
       return of(undefined);
     }
     this.migrationApplied = true;
-    return this.spacedRepsService.fourthMigration().pipe(
-      tap(() => Migrator.setVersion(4))
-    );
+    return this.spacedRepsService
+      .fourthMigration()
+      .pipe(tap(() => Migrator.setVersion(4)));
   }
 
   private switchToFifthMigration(): Observable<unknown> {
@@ -132,9 +142,9 @@ export class Migrator {
       return of(undefined);
     }
     this.migrationApplied = true;
-    return this.spacedRepsService.fifthMigration().pipe(
-      tap(() => Migrator.setVersion(5))
-    );
+    return this.spacedRepsService
+      .fifthMigration()
+      .pipe(tap(() => Migrator.setVersion(5)));
   }
 
   private switchToSixthMigration(): Observable<unknown> {
@@ -142,9 +152,9 @@ export class Migrator {
       return of(undefined);
     }
     this.migrationApplied = true;
-    return this.spacedRepsService.sixthMigration().pipe(
-      tap(() => Migrator.setVersion(6))
-    );
+    return this.spacedRepsService
+      .sixthMigration()
+      .pipe(tap(() => Migrator.setVersion(6)));
   }
 
   private switchToSeventhMigration() {
@@ -153,7 +163,7 @@ export class Migrator {
     }
     this.migrationApplied = true;
     return AppStorage.seventhMigration().pipe(
-      tap(() => Migrator.setVersion(7))
+      tap(() => Migrator.setVersion(7)),
     );
   }
 
@@ -162,8 +172,6 @@ export class Migrator {
       return of(undefined);
     }
     this.migrationApplied = true;
-    return AppStorage.eighthMigration().pipe(
-      tap(() => Migrator.setVersion(8))
-    );
+    return AppStorage.eighthMigration().pipe(tap(() => Migrator.setVersion(8)));
   }
 }

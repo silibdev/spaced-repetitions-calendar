@@ -7,14 +7,25 @@ import {
   OnInit,
   Output,
   QueryList,
-  ViewChildren
+  ViewChildren,
 } from '@angular/core';
 import { EventFormService } from '../services/event-form.service';
 import { BlockableUI } from 'primeng/api';
-import { Photo, SpacedRepModel } from '../models/spaced-rep.model';
+import {
+  extractCommonModel,
+  Photo,
+  SpacedRepModel,
+} from '../models/spaced-rep.model';
 import { UntypedFormControl } from '@angular/forms';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
-import { distinctUntilChanged, filter, map, Observable, startWith, tap } from 'rxjs';
+import {
+  distinctUntilChanged,
+  filter,
+  map,
+  Observable,
+  startWith,
+  tap,
+} from 'rxjs';
 import { SettingsService } from '../services/settings.service';
 import { Color, RepetitionTypeEnum } from '../models/settings.model';
 import { FileUpload } from 'primeng/fileupload';
@@ -23,6 +34,7 @@ import { SpacedRepService } from '../services/spaced-rep.service';
 import { ApiService } from '../services/api.service';
 import { Utils } from '../../utils';
 import { SoundsService } from '../services/sounds.service';
+import { PhotoService } from '../services/photo.service';
 
 interface FileSelectEvent {
   /**
@@ -39,13 +51,13 @@ interface FileSelectEvent {
   currentFiles: File[];
 }
 
-type PhotoExt = Photo & { editing?: boolean, oldName?: string };
+type PhotoExt = Photo & { editing?: boolean; oldName?: string };
 
 @UntilDestroy()
 @Component({
   selector: 'app-event-view',
   templateUrl: './event-view.component.html',
-  styleUrls: ['./event-view.component.scss']
+  styleUrls: ['./event-view.component.scss'],
 })
 export class EventViewComponent implements OnInit, BlockableUI {
   maxFileUpload = ApiService.MAX_FILE_UPLOAD;
@@ -54,14 +66,14 @@ export class EventViewComponent implements OnInit, BlockableUI {
 
   private customColor = {
     label: 'Custom',
-    value: 'custom'
+    value: 'custom',
   };
 
   colorOpts: Color[];
 
   customColorControl: UntypedFormControl;
 
-  titleOptions$?: Observable<{ boldTitle?: boolean, highlightTitle?: boolean }>;
+  titleOptions$?: Observable<{ boldTitle?: boolean; highlightTitle?: boolean }>;
 
   isCustomRepetitionType$?: Observable<boolean>;
   minEndRepetition$?: Observable<Date>;
@@ -71,13 +83,13 @@ export class EventViewComponent implements OnInit, BlockableUI {
   @ViewChildren(Image)
   set imageComponents(ics: QueryList<Image>) {
     if (ics) {
-      ics.forEach(im => {
+      ics.forEach((im) => {
         // @ts-ignore
         im.zoomSettings = {
           default: 1,
           step: 0.1,
           max: 4,
-          min: 0.5
+          min: 0.5,
         };
 
         // pathing methods
@@ -108,14 +120,17 @@ export class EventViewComponent implements OnInit, BlockableUI {
     this.isMaster = (event && !event.linkedSpacedRepId) || false;
     this.eventFormService.load(event);
     this._event = event;
-  };
+  }
 
   get event(): SpacedRepModel | undefined {
     return this._event;
   }
 
   @Output()
-  reloadPhotos = new EventEmitter<{ event: SpacedRepModel, callback: (photos?: Photo[]) => void }>();
+  reloadPhotos = new EventEmitter<{
+    event: SpacedRepModel;
+    callback: (photos?: Photo[]) => void;
+  }>();
 
   constructor(
     public eventFormService: EventFormService,
@@ -123,13 +138,11 @@ export class EventViewComponent implements OnInit, BlockableUI {
     private srService: SpacedRepService,
     private cd: ChangeDetectorRef,
     private elRef: ElementRef,
-    private soundsService: SoundsService
+    private soundsService: SoundsService,
+    private photoService: PhotoService,
   ) {
     this.customColorControl = new UntypedFormControl();
-    this.colorOpts = [
-      ...this.settingsService.colors,
-      this.customColor
-    ];
+    this.colorOpts = [...this.settingsService.colors, this.customColor];
   }
 
   ngOnInit(): void {
@@ -138,60 +151,70 @@ export class EventViewComponent implements OnInit, BlockableUI {
       if (!colorControl.value) {
         colorControl.setValue(this.colorOpts[0].value);
       }
-      colorControl.valueChanges.pipe(
-        untilDestroyed(this),
-        distinctUntilChanged(),
-        startWith(colorControl.value),
-        tap((color: string) => {
-          const colorOpt = this.colorOpts.find(c => c.value === color);
-          if (colorOpt && colorOpt.label !== 'Custom') {
-            this.customColorControl.setValue(colorOpt.value);
-            this.eventFormService.disableColorControl();
-          } else {
-            let randomColor: string | undefined;
-            while (!randomColor || this.colorOpts.find(c => c.value === randomColor)) {
-              randomColor = Utils.generateRandomColor();
+      colorControl.valueChanges
+        .pipe(
+          untilDestroyed(this),
+          distinctUntilChanged(),
+          startWith(colorControl.value),
+          tap((color: string) => {
+            const colorOpt = this.colorOpts.find((c) => c.value === color);
+            if (colorOpt && colorOpt.label !== 'Custom') {
+              this.customColorControl.setValue(colorOpt.value);
+              this.eventFormService.disableColorControl();
+            } else {
+              let randomColor: string | undefined;
+              while (
+                !randomColor ||
+                this.colorOpts.find((c) => c.value === randomColor)
+              ) {
+                randomColor = Utils.generateRandomColor();
+              }
+              const colorToSet = color === 'custom' ? randomColor : color;
+              this.customColor.value = colorToSet;
+              this.customColorControl.setValue(colorToSet);
+              this.eventFormService.enableColorControl();
             }
-            const colorToSet = color === 'custom' ? randomColor : color;
-            this.customColor.value = colorToSet;
-            this.customColorControl.setValue(colorToSet);
-            this.eventFormService.enableColorControl();
-          }
-        })
-      ).subscribe();
+          }),
+        )
+        .subscribe();
 
-      this.customColorControl.valueChanges.pipe(
-        untilDestroyed(this),
-        distinctUntilChanged(),
-        tap(newColor => {
-          colorControl.setValue(newColor);
-        })
-      ).subscribe()
+      this.customColorControl.valueChanges
+        .pipe(
+          untilDestroyed(this),
+          distinctUntilChanged(),
+          tap((newColor) => {
+            colorControl.setValue(newColor);
+          }),
+        )
+        .subscribe();
     }
 
     this.titleOptions$ = this.eventFormService.form.valueChanges.pipe(
-      startWith(this.eventFormService.form.value)
+      startWith(this.eventFormService.form.value),
     );
 
-    const repetitionTypeControl = this.eventFormService.form.get('repetitionType')!;
+    const repetitionTypeControl =
+      this.eventFormService.form.get('repetitionType')!;
     this.isCustomRepetitionType$ = repetitionTypeControl.valueChanges.pipe(
       startWith(repetitionTypeControl.value),
-      map(repetitionType => repetitionType === RepetitionTypeEnum.CUSTOM)
+      map((repetitionType) => repetitionType === RepetitionTypeEnum.CUSTOM),
     );
 
     const startControl = this.eventFormService.form.get('start')!;
     this.minEndRepetition$ = startControl.valueChanges.pipe(
-      startWith(startControl.value)
+      startWith(startControl.value),
     );
 
     const doneControl = this.eventFormService.form.get('done');
-    doneControl?.valueChanges.pipe(
-      untilDestroyed(this),
-      filter((done: boolean) => done),
-      tap(() => {
-        this.soundsService.playSound('done');
-      })
-    ).subscribe()
+    doneControl?.valueChanges
+      .pipe(
+        untilDestroyed(this),
+        filter((done: boolean) => done),
+        tap(() => {
+          this.soundsService.playSound('done');
+        }),
+      )
+      .subscribe();
   }
 
   getBlockableElement(): HTMLElement {
@@ -199,13 +222,13 @@ export class EventViewComponent implements OnInit, BlockableUI {
   }
 
   addPhotos(event: FileSelectEvent, uploader: FileUpload) {
-    const photos: Photo[] = []
-    event.currentFiles.forEach(f => {
+    const photos: Photo[] = [];
+    event.currentFiles.forEach((f) => {
       const url = URL.createObjectURL(f);
       photos.push({
         id: '',
         name: f.name,
-        thumbnail: url
+        thumbnail: url,
       });
     });
     this.eventFormService.addPhotos(photos);
@@ -245,17 +268,18 @@ export class EventViewComponent implements OnInit, BlockableUI {
       // La immagini senza id, quelle da aggiungere non hanno una vera thumbnail
       return;
     }
-    this.srService.getPhotoUrl(this.event!, photo.id).subscribe(
-      url => {
-        image.src = url;
-        this.cd.detectChanges();
+    const { masterId } = extractCommonModel(this.event!);
+    this.photoService.getPhotoUrl(masterId, photo.id).subscribe((url) => {
+      image.src = url;
+      this.cd.detectChanges();
 
-        const htmlImage = document.querySelector<HTMLImageElement>('img.p-image-preview');
-        if (htmlImage) {
-          htmlImage.src = url;
-        }
+      const htmlImage = document.querySelector<HTMLImageElement>(
+        'img.p-image-preview',
+      );
+      if (htmlImage) {
+        htmlImage.src = url;
       }
-    );
+    });
   }
 
   onImageHide(image: Image, photo: PhotoExt) {
@@ -270,9 +294,9 @@ export class EventViewComponent implements OnInit, BlockableUI {
         callback: (photos) => {
           this.eventFormService.loadPhotos(photos);
           if (this.event) {
-            this.event.photos = photos
+            this.event.photos = photos;
           }
-        }
+        },
       });
     }
   }

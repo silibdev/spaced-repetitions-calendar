@@ -2,18 +2,54 @@
 <p-toast></p-toast>
 <p-confirmPopup></p-confirmPopup>
 <div class="mx-6">
-  <div *ngFor="let colorGroup of colorsForm.controls; let i = index" class="py-2 w-12 sm:w-8 md:w-6 lg:w-4 xl:w-3">
+  <div
+    *ngFor="let colorGroup of colorsForm.controls; let i = index"
+    class="py-2 w-12 sm:w-8 md:w-6 lg:w-4 xl:w-3"
+  >
     <div class="p-inputgroup" [formGroup]="$any(colorGroup)">
-      <p-colorPicker class="pr-2 w-3rem" [formControlName]="'value'" appendTo="body"></p-colorPicker>
-      <input type="text" pInputText [formControlName]="'label'">
-      <button *ngIf="colorGroup.disabled" type="button" pButton icon="pi pi-pencil" (click)="enableEdit(i)"></button>
-      <button *ngIf="colorGroup.enabled" type="button" pButton icon="pi pi-check" class="p-button-success"
-              (click)="edit(i)"></button>
-      <button *ngIf="colorGroup.enabled" type="button" pButton icon="pi pi-times" class="p-button-danger"
-              (click)="cancel(i)"></button>
-      <button *ngIf="colorGroup.disabled" type="button" pButton icon="pi pi-trash" class="p-button-danger"
-              (click)="confirmDelete($event, i)"></button>
+      <p-colorPicker
+        class="pr-2 w-3rem"
+        [formControlName]="'value'"
+        appendTo="body"
+      ></p-colorPicker>
+      <input type="text" pInputText [formControlName]="'label'" />
+      <button
+        *ngIf="colorGroup.disabled"
+        type="button"
+        pButton
+        icon="pi pi-pencil"
+        (click)="enableEdit(i)"
+      ></button>
+      <button
+        *ngIf="colorGroup.enabled"
+        type="button"
+        pButton
+        icon="pi pi-check"
+        class="p-button-success"
+        (click)="edit(i)"
+      ></button>
+      <button
+        *ngIf="colorGroup.enabled"
+        type="button"
+        pButton
+        icon="pi pi-times"
+        class="p-button-danger"
+        (click)="cancel(i)"
+      ></button>
+      <button
+        *ngIf="colorGroup.disabled"
+        type="button"
+        pButton
+        icon="pi pi-trash"
+        class="p-button-danger"
+        (click)="confirmDelete($event, i)"
+      ></button>
     </div>
   </div>
-  <button *ngIf="!addingNew" pButton label="Add new" (click)="addNew()"></button>
+  <button
+    *ngIf="!addingNew"
+    pButton
+    label="Add new"
+    (click)="addNew()"
+  ></button>
 </div>

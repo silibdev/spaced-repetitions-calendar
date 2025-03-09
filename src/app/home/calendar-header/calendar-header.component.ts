@@ -2,7 +2,7 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CalendarView } from 'angular-calendar';
 
 export enum SRCCalendarView {
-  List
+  List,
 }
 
 export type ExtendedCalendarView = CalendarView | SRCCalendarView;
@@ -10,7 +10,7 @@ export type ExtendedCalendarView = CalendarView | SRCCalendarView;
 @Component({
   selector: 'app-calendar-header',
   templateUrl: 'calendar-header.component.html',
-  styleUrls: ['calendar-header.component.scss']
+  styleUrls: ['calendar-header.component.scss'],
 })
 export class CalendarHeaderComponent {
   @Input() view!: ExtendedCalendarView;
@@ -24,9 +24,9 @@ export class CalendarHeaderComponent {
   SRCCalendarView = SRCCalendarView;
 
   viewsOptions = [
-    {label: 'Month', value: CalendarView.Month},
+    { label: 'Month', value: CalendarView.Month },
     // {label: 'Week', value: CalendarView.Week},
     // {label: 'Day', value: CalendarView.Day},
-    {label: 'List', value: SRCCalendarView.List}
-  ]
+    { label: 'List', value: SRCCalendarView.List },
+  ];
 }

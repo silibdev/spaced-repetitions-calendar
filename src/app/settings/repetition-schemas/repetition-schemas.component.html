@@ -2,17 +2,49 @@
 <p-toast></p-toast>
 <p-confirmPopup></p-confirmPopup>
 <div class="mx-6">
-  <div *ngFor="let rsControl of repSchemasForm.controls; let i = index" class="py-2 w-12 sm:w-8 md:w-6 lg:w-4 xl:w-3">
+  <div
+    *ngFor="let rsControl of repSchemasForm.controls; let i = index"
+    class="py-2 w-12 sm:w-8 md:w-6 lg:w-4 xl:w-3"
+  >
     <div class="p-inputgroup">
-      <input type="text" pInputText [formControl]="$any(rsControl)">
-      <button *ngIf="rsControl.disabled" type="button" pButton icon="pi pi-pencil" (click)="enableEdit(i)"></button>
-      <button *ngIf="rsControl.enabled" type="button" pButton icon="pi pi-check" class="p-button-success"
-              (click)="edit(i)"></button>
-      <button *ngIf="rsControl.enabled" type="button" pButton icon="pi pi-times" class="p-button-danger"
-              (click)="cancel(i)"></button>
-      <button *ngIf="rsControl.disabled" type="button" pButton icon="pi pi-trash" class="p-button-danger"
-              (click)="confirmDelete($event, i)"></button>
+      <input type="text" pInputText [formControl]="$any(rsControl)" />
+      <button
+        *ngIf="rsControl.disabled"
+        type="button"
+        pButton
+        icon="pi pi-pencil"
+        (click)="enableEdit(i)"
+      ></button>
+      <button
+        *ngIf="rsControl.enabled"
+        type="button"
+        pButton
+        icon="pi pi-check"
+        class="p-button-success"
+        (click)="edit(i)"
+      ></button>
+      <button
+        *ngIf="rsControl.enabled"
+        type="button"
+        pButton
+        icon="pi pi-times"
+        class="p-button-danger"
+        (click)="cancel(i)"
+      ></button>
+      <button
+        *ngIf="rsControl.disabled"
+        type="button"
+        pButton
+        icon="pi pi-trash"
+        class="p-button-danger"
+        (click)="confirmDelete($event, i)"
+      ></button>
     </div>
   </div>
-  <button *ngIf="!addingNew" pButton label="Add new" (click)="addNew()"></button>
+  <button
+    *ngIf="!addingNew"
+    pButton
+    label="Add new"
+    (click)="addNew()"
+  ></button>
 </div>

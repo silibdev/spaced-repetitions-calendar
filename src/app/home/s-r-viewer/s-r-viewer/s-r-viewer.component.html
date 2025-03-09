@@ -1,0 +1,168 @@
+<div class="mb-8">
+  <div class="grid lg:justify-content-between">
+    <div class="col-12 sm:col-8 md:col-5 lg:col-4 xl:col-3">
+      <div class="field grid mb-0">
+        <label class="col-fixed">Category</label>
+        <p-dropdown
+          *ngIf="categories$ | async as categories"
+          [options]="categories"
+          [styleClass]="'w-full'"
+          class="col"
+          [ngModel]="activeCategory$ | async"
+          (onChange)="changeCategory($event.value)"
+        ></p-dropdown>
+      </div>
+    </div>
+    <div class="col-12 md:col-7 lg:col-6 xl:col-4">
+      <app-search
+        [class.hidden]="view === SRCCalendarView.List"
+        (eventClicked)="editEvent($event)"
+      ></app-search>
+    </div>
+  </div>
+
+  <ng-container *ngIf="filter$ | async as filter">
+    <app-calendar-header
+      [(view)]="view"
+      [viewDate]="filter.date"
+      (viewDateChange)="viewDateChange($event)"
+    >
+    </app-calendar-header>
+
+    <div
+      [ngSwitch]="view"
+      class="mt-3 calendar-container"
+      *ngIf="events$ | async as events"
+    >
+      <ng-template
+        #openDayEventsTemplate
+        let-events="events"
+        let-isOpen="isOpen"
+        let-eventClicked="eventClicked"
+      >
+        <app-day-events-view
+          [events]="events"
+          [isOpen]="isOpen"
+          (eventClicked)="eventClicked.emit($event)"
+        ></app-day-events-view>
+      </ng-template>
+      <mwl-calendar-month-view
+        *ngSwitchCase="CalendarView.Month"
+        [viewDate]="filter.date"
+        [events]="events"
+        [weekStartsOn]="1"
+        (dayClicked)="dayClicked($event.day)"
+        (eventClicked)="editEvent($any($event.event))"
+        [activeDayIsOpen]="!!(activeDayOpen$ | async)"
+        [openDayEventsTemplate]="openDayEventsTemplate"
+      ></mwl-calendar-month-view>
+
+      <mwl-calendar-week-view
+        *ngSwitchCase="CalendarView.Week"
+        [viewDate]="filter.date"
+        [events]="events"
+        (eventClicked)="editEvent($any($event.event))"
+      ></mwl-calendar-week-view>
+
+      <app-list-view
+        *ngSwitchCase="SRCCalendarView.List"
+        (eventClicked)="editEvent($any($event))"
+      ></app-list-view>
+    </div>
+  </ng-container>
+
+  <button
+    pButton
+    icon="pi pi-plus"
+    class="p-button-lg p-button-rounded fab p-4 m-3 text-lg"
+    (click)="openCreate = true"
+  ></button>
+
+  <p-dialog
+    appMaximized
+    [(visible)]="openCreate"
+    [modal]="true"
+    (onHide)="eventFormService.reset()"
+  >
+    <div *pTemplate="'header'">Create event</div>
+    <ng-container *ngIf="openCreate">
+      <app-event-view #content1 [event]="undefined"></app-event-view>
+      <p-blockUI [target]="content1" [blocked]="loadingCreate">
+        <p-progressSpinner></p-progressSpinner>
+      </p-blockUI>
+    </ng-container>
+    <ng-template pTemplate="footer">
+      <button
+        pButton
+        [label]="'Cancel'"
+        [disabled]="loadingCreate"
+        class="p-button-outlined"
+        [style.float]="'left'"
+        (click)="openCreate = false"
+      ></button>
+      <button
+        pButton
+        [label]="'Create'"
+        [loading]="loadingCreate"
+        (click)="createSpacedRep()"
+      ></button>
+    </ng-template>
+  </p-dialog>
+
+  <p-dialog
+    appMaximized
+    [visible]="openEdit$ | async"
+    [modal]="true"
+    (visibleChange)="closeEditEvent($event)"
+  >
+    <div
+      *pTemplate="'header'"
+      class="flex justify-content-between"
+      [style.width]="'100%'"
+    >
+      <span
+      ><span class="font-bold">{{ (editEvent$ | async)?.title }}</span>
+      </span>
+      <span *ngIf="autoSavingState">{{
+          autoSavingState === 'saving'
+            ? 'Auto saving...'
+            : 'Auto-saved on ' + (lastAutoSave | date: 'M/d/yy, H:mm:ss')
+        }}</span>
+      <span class="pr-4">Rep: {{ (editEvent$ | async)?.repetitionNumber }}</span>
+    </div>
+    <ng-container *ngIf="editEvent$ | async as editEventModel">
+      <app-event-view
+        #content
+        [event]="editEventModel"
+        (reloadPhotos)="reloadPhotos($event)"
+      ></app-event-view>
+      <p-blockUI [target]="content" [blocked]="loadingEdit">
+        <p-progressSpinner></p-progressSpinner>
+      </p-blockUI>
+    </ng-container>
+    <ng-template pTemplate="footer">
+      <button
+        *ngIf="editEvent$ | async as editEventModel"
+        pButton
+        [label]="'Delete'"
+        [disabled]="loadingEdit"
+        class="p-button-danger"
+        [style.float]="'left'"
+        (click)="deleteEvent(editEventModel)"
+      ></button>
+      <button
+        pButton
+        [label]="'Save'"
+        [loading]="loadingEdit"
+        (click)="saveEvent()"
+      ></button>
+    </ng-template>
+  </p-dialog>
+</div>
+<p-confirmDialog
+  icon="pi pi-exclamation-triangle"
+  header="Confirm"
+  acceptButtonStyleClass="p-button-outlined"
+  [defaultFocus]="'reject'"
+  (onHide)="notifier.next(null)"
+></p-confirmDialog>

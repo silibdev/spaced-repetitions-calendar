@@ -1,8 +1,12 @@
 <p-tabView [formGroup]="eventFormService.form" [scrollable]="true">
   <p-tabPanel header="Details">
     <div class="grid pt-2">
-      <p-message *ngIf="isMaster" severity="warn" text="Deleting this will delete the whole series!"
-                 class="col-12"></p-message>
+      <p-message
+        *ngIf="isMaster"
+        severity="warn"
+        text="Deleting this will delete the whole series!"
+        class="col-12"
+      ></p-message>
       <div
         *ngIf="titleOptions$ | async as titleOpts"
         class="col-12 lg:col-9 p-field"
@@ -56,28 +60,45 @@
 
       <div class="col-5 sm:col-3 md:col-2 p-field">
         <label>Date</label>
-        <p-calendar [formControlName]="'start'" [firstDayOfWeek]="1" appendTo="body"></p-calendar>
+        <p-calendar
+          [formControlName]="'start'"
+          [firstDayOfWeek]="1"
+          appendTo="body"
+        ></p-calendar>
       </div>
 
       <div class="col-6 md:col-5 lg:col-4 p-field">
         <label>Color</label>
-        <p-dropdown [options]="colorOpts" [formControl]="customColorControl" appendTo="body"
-                    [styleClass]="'w-8'"
+        <p-dropdown
+          [options]="colorOpts"
+          [formControl]="customColorControl"
+          appendTo="body"
+          [styleClass]="'w-8'"
         >
           <ng-template let-item pTemplate="selectedItem">
             <div class="flex align-items-center">
-              <span class="color inline-block" [style.background-color]="item.value"></span>
+              <span
+                class="color inline-block"
+                [style.background-color]="item.value"
+              ></span>
               <span class="pl-1">{{ item.label }}</span>
             </div>
           </ng-template>
           <ng-template let-item pTemplate="item">
             <div class="flex align-items-center">
-              <span class="color inline-block" [style.background-color]="item.value"></span>
+              <span
+                class="color inline-block"
+                [style.background-color]="item.value"
+              ></span>
               <span class="pl-1">{{ item.label }}</span>
             </div>
           </ng-template>
         </p-dropdown>
-        <p-colorPicker class="pl-2" [formControlName]="'color'" appendTo="body"></p-colorPicker>
+        <p-colorPicker
+          class="pl-2"
+          [formControlName]="'color'"
+          appendTo="body"
+        ></p-colorPicker>
       </div>
 
       <div class="col-12" *ngIf="!isEdit">
@@ -92,7 +113,10 @@
             ></p-dropdown>
           </div>
           <ng-container *ngIf="isCustomRepetitionType$ | async">
-            <div class="col-6 md:col-4 lg:col-3 xl:col-2 p-field" *ngIf="!isEdit">
+            <div
+              class="col-6 md:col-4 lg:col-3 xl:col-2 p-field"
+              *ngIf="!isEdit"
+            >
               <label>Repetition Schema</label>
               <p-dropdown
                 appendTo="body"
@@ -104,16 +128,29 @@
             </div>
           </ng-container>
           <ng-container *ngIf="!(isCustomRepetitionType$ | async)">
-            <div class="col-6 md:col-4 lg:col-3 xl:col-2 p-field" *ngIf="!isEdit">
+            <div
+              class="col-6 md:col-4 lg:col-3 xl:col-2 p-field"
+              *ngIf="!isEdit"
+            >
               <label>Repeat Until</label>
-              <p-calendar [formControlName]="'endRepetition'" [firstDayOfWeek]="1" appendTo="body" [minDate]="$any(minEndRepetition$ | async)"></p-calendar>
+              <p-calendar
+                [formControlName]="'endRepetition'"
+                [firstDayOfWeek]="1"
+                appendTo="body"
+                [minDate]="$any(minEndRepetition$ | async)"
+              ></p-calendar>
             </div>
           </ng-container>
         </div>
       </div>
 
       <div class="col-4 sm:col-3 md:col-2 p-field-checkbox" *ngIf="isEdit">
-        <p-checkbox class="pt-5" [formControlName]="'done'" [binary]="true" label="Done"></p-checkbox>
+        <p-checkbox
+          class="pt-5"
+          [formControlName]="'done'"
+          [binary]="true"
+          label="Done"
+        ></p-checkbox>
       </div>
     </div>
   </p-tabPanel>
@@ -121,18 +158,24 @@
     <p-editor
       (keydown)="keyDown($event)"
       [formControlName]="'description'"
-      [style]="{height: '73vh'}"
+      [style]="{ height: '73vh' }"
     ></p-editor>
   </p-tabPanel>
   <p-tabPanel
-    header="Photos {{!event || event.photos ? '('+ ($any(eventFormService.photosControl?.value)?.length || 0) + ')' : ''}}"
+    header="Photos {{
+      !event || event.photos
+        ? '(' + ($any(eventFormService.photosControl?.value)?.length || 0) + ')'
+        : ''
+    }}"
     [cache]="true"
     [rightIcon]="!event || event.photos ? '' : 'pi pi-exclamation-triangle'"
   >
     <ng-template pTemplate>
       <ng-container *ngIf="event && !event.photos">
         <div class="pt-2">
-          <button pButton [icon]="'pi pi-undo'" (click)="reloadPhotosClick()">Reload</button>
+          <button pButton [icon]="'pi pi-undo'" (click)="reloadPhotosClick()">
+            Reload
+          </button>
         </div>
       </ng-container>
       <ng-container *ngIf="!event || event.photos">
@@ -148,14 +191,24 @@
             (onSelect)="addPhotos($event, fileUpload)"
           ></p-fileUpload>
         </div>
-        <div class="mb-2 grid gap-2" *ngIf="$any(eventFormService.photosControl?.value) as photos">
-          <div *ngFor="let photo of photos" class="grid gap-1 col-12 md:col-6 xl:col-4">
+        <div
+          class="mb-2 grid gap-2"
+          *ngIf="$any(eventFormService.photosControl?.value) as photos"
+        >
+          <div
+            *ngFor="let photo of photos"
+            class="grid gap-1 col-12 md:col-6 xl:col-4"
+          >
             <p-image
               #image
-              src="{{photo.id ? 'data:image/jpeg;base64,' : ''}}{{photo.thumbnail}}"
-              alt="{{photo.name}}"
+              src="{{ photo.id ? 'data:image/jpeg;base64,' : '' }}{{
+                photo.thumbnail
+              }}"
+              alt="{{ photo.name }}"
               width="100%"
-              class="col-3 src-rotate-{{image.previewVisible ? rotationClass : ''}}"
+              class="col-3 src-rotate-{{
+                image.previewVisible ? rotationClass : ''
+              }}"
               [preview]="true"
               (onShow)="onImageShow(image, photo)"
               (onHide)="onImageHide(image, photo)"
@@ -167,8 +220,8 @@
                   pInputText
                   [(ngModel)]="photo.name"
                   [disabled]="!photo.editing"
-                  [ngModelOptions]="{standalone: true}"
-                >
+                  [ngModelOptions]="{ standalone: true }"
+                />
               </div>
               <div class="pt-1">
                 <span class="p-buttonset">
@@ -226,6 +279,11 @@
   </p-tabPanel>
   <p-tabPanel header="Q&A">
     <app-q-n-a
-      [ids]="event ? {masterId: event.linkedSpacedRepId || event.id, eventId: event.id} : undefined"></app-q-n-a>
+      [ids]="
+        event
+          ? { masterId: event.linkedSpacedRepId || event.id, eventId: event.id }
+          : undefined
+      "
+    ></app-q-n-a>
   </p-tabPanel>
 </p-tabView>

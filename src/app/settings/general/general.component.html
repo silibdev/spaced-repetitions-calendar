@@ -2,7 +2,9 @@
 <p-toast></p-toast>
 <div [formGroup]="generalForm" class="mx-6">
   <div class="grid">
-    <div class="col-12 md:col-7 lg:col-8 xl:col-9 my-auto">Auto-saving timer - use 0 to disable</div>
+    <div class="col-12 md:col-7 lg:col-8 xl:col-9 my-auto">
+      Auto-saving timer - use 0 to disable
+    </div>
     <div class="col-12 md:col-5 lg:col-4 xl:col-3 flex">
       <p-inputNumber
         formControlName="autoSavingTimer"
@@ -18,7 +20,9 @@
         [min]="0"
         [max]="15 * 4 * 5"
       ></p-inputNumber>
-      <span class="pl-2 text-sm my-auto">secs ({{autoSavingMinutes$ | async}} minutes)</span>
+      <span class="pl-2 text-sm my-auto"
+        >secs ({{ autoSavingMinutes$ | async }} minutes)</span
+      >
     </div>
   </div>
   <div class="flex justify-content-end pt-4">

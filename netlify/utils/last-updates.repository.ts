@@ -4,27 +4,31 @@ import { RepositoryResult } from './utils';
 export const LastUpdatesRepository = {
   async getLastUpdates(userId: string): Promise<RepositoryResult<any>> {
     const result = await DB.from('eventlist')
-      .select(`
+      .select(
+        `
       updated_at,
       settings (
         updated_at
       )
-      `)
+      `,
+      )
       .eq('user', userId)
       .maybeSingle();
     const row = result.data;
     const eventListUpdate = row?.updated_at;
     const settingsUpdate = row?.settings?.updated_at;
-    console.log({eventListUpdate, settingsUpdate});
+    console.log({ eventListUpdate, settingsUpdate });
 
     const eventResult = await DB.from('eventdetail')
-      .select(`
+      .select(
+        `
       id,
       updated_at,
       eventdescription (
         updated_at
       )
-      `)
+      `,
+      )
       .eq('user', userId);
     const detUpdates: any[] = [];
     const desUpdates: any[] = [];
@@ -32,10 +36,12 @@ export const LastUpdatesRepository = {
     (eventResult.data || []).forEach((row) => {
       const id = row.id;
       desUpdates.push({
-        id, updatedAt: row.eventdescription?.updated_at
+        id,
+        updatedAt: row.eventdescription?.updated_at,
       });
       detUpdates.push({
-        id, updatedAt: row.updated_at
+        id,
+        updatedAt: row.updated_at,
       });
     });
 
@@ -44,9 +50,9 @@ export const LastUpdatesRepository = {
         eventList: eventListUpdate,
         eventDescriptions: desUpdates,
         eventDetails: detUpdates,
-        settings: settingsUpdate
+        settings: settingsUpdate,
       },
-      updatedAt: ''
+      updatedAt: '',
     };
-  }
-}
+  },
+};

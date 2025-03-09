@@ -4,10 +4,9 @@ import { QNA } from '../models/spaced-rep.model';
 import { QNAService } from './q-n-a.service';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class QNAFormService {
-
   get qnas(): QNA[] {
     return this.qnas$.value;
   }
@@ -17,12 +16,12 @@ export class QNAFormService {
 
   private qnas$ = new BehaviorSubject<QNA[]>([]);
 
-  constructor(
-    private qnaService: QNAService
-  ) {
-  }
+  constructor(private qnaService: QNAService) {}
 
-  load(masterId: string | undefined, id: string | undefined): Observable<QNA[]> {
+  load(
+    masterId: string | undefined,
+    id: string | undefined,
+  ): Observable<QNA[]> {
     this.id = id;
     if (!id || !masterId) {
       this.qnasToDelete = [];
@@ -30,11 +29,11 @@ export class QNAFormService {
       return this.qnas$.asObservable();
     }
     return this.qnaService.get(masterId, id).pipe(
-      switchMap(qnas => {
+      switchMap((qnas) => {
         this.qnas$.next(qnas);
         this.qnasToDelete = [];
         return this.qnas$;
-      })
+      }),
     );
   }
 
@@ -42,12 +41,12 @@ export class QNAFormService {
     this.qnas.push({
       question: '',
       status: undefined,
-      answer: ''
+      answer: '',
     });
   }
 
   deleteQNA(qna: QNA) {
-    const index = this.qnas?.findIndex(q => qna === q);
+    const index = this.qnas?.findIndex((q) => qna === q);
     if (typeof index === 'number' && index >= 0) {
       this.qnas?.splice(index, 1);
 
@@ -58,6 +57,6 @@ export class QNAFormService {
   }
 
   areAllAnswered() {
-    return this.qnas.every(q => !!q.status);
+    return this.qnas.every((q) => !!q.status);
   }
 }
