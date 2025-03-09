@@ -11,11 +11,9 @@ export const CalendarEventRepository = {
     const prev = startOfMonth(addMonths(middleDate, -1)).toISOString();
     const next = endOfMonth(addMonths(middleDate, 1)).toISOString();
     console.log({ prev, next });
-    const result = await DB.from('calendarevent')
-      .select()
-      .eq('user', userId)
-      .gte('start', prev)
-      .lte('start', next);
+    const result = await DB.from('calendarevent').select().eq('user', userId);
+    // .gte('start', prev)
+    // .lte('start', next);
     const eventList: Tables<'calendarevent'>[] | null = result.data;
     const list =
       eventList?.map(({ id, start, user, details, masterid }) =>
@@ -58,17 +56,21 @@ export const CalendarEventRepository = {
     console.log('post list', result.count);
     return { data: list, updatedAt };
   },
-  //
-  // async deleteEventList(userId: string): Promise<RepositoryResult<string>> {
-  //   const result = await DB.from('eventlist')
-  //     .delete()
-  //     .eq('user', userId)
-  //     .select()
-  //     .maybeSingle();
-  //   const listRow: Tables<'eventlist'> | null = result.data;
-  //   const list: string = listRow?.list || '';
-  //   const updatedAt = getUpdatedAtFromRow(listRow);
-  //   console.log('delete list', list);
-  //   return {data: list, updatedAt};
-  // }
+
+  async deleteEvent(
+    userId: string,
+    eventId: string,
+  ): Promise<RepositoryResult<any>> {
+    const result = await DB.from('calendarevent')
+      .delete()
+      .eq('user', userId)
+      .or(`id.eq.${eventId},masterid.eq.${eventId}`)
+      .select();
+    const events: Tables<'calendarevent'>[] | null = result.data;
+    console.log(
+      'delete events',
+      events?.map((e) => e.id),
+    );
+    return { data: events, updatedAt: new Date().toISOString() };
+  },
 };

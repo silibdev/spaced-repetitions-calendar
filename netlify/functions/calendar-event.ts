@@ -5,6 +5,7 @@ import { CalendarEventRepository } from '../utils/calendar-event.repository';
 const handler: Handler = createHandler({
   getResource: getCalendarEvent,
   postResource: postEventList,
+  deleteResource: deleteCalendarEvent,
 });
 
 async function getCalendarEvent(
@@ -28,6 +29,14 @@ async function postEventList(
 ): Promise<HandlerResponse> {
   const eventList = await CalendarEventRepository.postEventList(userId, body);
   return createResponse(eventList);
+}
+
+async function deleteCalendarEvent(
+  userId: string,
+  { id }: { id: string },
+): Promise<HandlerResponse> {
+  const events = await CalendarEventRepository.deleteEvent(userId, id);
+  return createResponse(events);
 }
 
 export { handler };
