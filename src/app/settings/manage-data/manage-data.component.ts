@@ -84,6 +84,7 @@ export class ManageDataComponent implements OnInit {
 
   confirmRemoteDataDeletion() {
     this.confirmationService.confirm({
+      key: 'manage-data-confirm',
       header: 'Attention: this action is NOT reversible',
       message:
         'Are you sure you want to delete all your data from your account and log out?',
@@ -93,6 +94,7 @@ export class ManageDataComponent implements OnInit {
 
   confirmLocalDataDeletion() {
     this.confirmationService.confirm({
+      key: 'manage-data-confirm',
       header: 'Attention: this action is NOT reversible',
       message: 'Are you sure you want to delete all your data?',
       accept: () =>
@@ -102,6 +104,7 @@ export class ManageDataComponent implements OnInit {
 
   confirmDataImport(event: any) {
     this.confirmationService.confirm({
+      key: 'manage-data-confirm',
       header: 'Attention: this action is NOT reversible',
       message:
         'Are you sure you want to import the data? It will replace all current data!',
