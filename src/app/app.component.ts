@@ -92,6 +92,7 @@ export class AppComponent {
           switch (updateEvent.type) {
             case 'VERSION_DETECTED':
               this.confirmationService.confirm({
+                key: 'app-confirm',
                 header: 'New version is available!',
                 message: 'Wait for the download and update :)',
                 rejectVisible: false,
@@ -101,6 +102,7 @@ export class AppComponent {
             case 'VERSION_READY':
               this.loaderService.stopLoading();
               this.confirmationService.confirm({
+                key: 'app-confirm',
                 header: 'New version is ready to install',
                 message: 'Update app to new version :)',
                 rejectVisible: false,
@@ -226,6 +228,7 @@ export class AppComponent {
         tap((outOfSync) => {
           if (outOfSync) {
             this.confirmationService.confirm({
+              key: 'app-confirm',
               header: 'ATTENTION',
               message:
                 'You have modified stale data. You need to synchronize your data: this operation will cancel all the current changes. Are you ok with this?',
@@ -240,6 +243,7 @@ export class AppComponent {
 
   logout(): void {
     this.confirmationService.confirm({
+      key: 'app-confirm',
       header: 'Confirmation',
       message: 'Do you really want to logout?',
       accept: () => this.authService.logout(),
