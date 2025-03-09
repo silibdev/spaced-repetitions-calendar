@@ -23,7 +23,13 @@ export class AppStorage {
 
   static getItem<T = string>(key: string): Observable<T | null> {
     if (AppStorage.keyCanBeStored(key)) {
-      return from(localforage.getItem<T>(key));
+      return from(localforage.getItem<T>(key))
+        .pipe
+        // tap({
+        //   next: (val) => console.log({ key, val }),
+        //   error: (err) => console.error(err),
+        // }),
+        ();
     }
     return of(localStorage.getItem(key) as unknown as any);
   }

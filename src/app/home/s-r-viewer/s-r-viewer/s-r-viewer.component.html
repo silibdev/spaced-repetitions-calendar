@@ -109,6 +109,55 @@
     </ng-template>
   </p-dialog>
 
+  <p-dialog
+    appMaximized
+    [visible]="openEdit$ | async"
+    [modal]="true"
+    (visibleChange)="closeEditEvent($event)"
+  >
+    <div
+      *pTemplate="'header'"
+      class="flex justify-content-between"
+      [style.width]="'100%'"
+    >
+      <span
+      ><span class="font-bold">{{ (editEvent$ | async)?.title }}</span>
+      </span>
+      <span *ngIf="autoSavingState">{{
+          autoSavingState === 'saving'
+            ? 'Auto saving...'
+            : 'Auto-saved on ' + (lastAutoSave | date: 'M/d/yy, H:mm:ss')
+        }}</span>
+      <span class="pr-4">Rep: {{ (editEvent$ | async)?.repetitionNumber }}</span>
+    </div>
+    <ng-container *ngIf="editEvent$ | async as editEventModel">
+      <app-event-view
+        #content
+        [event]="editEventModel"
+        (reloadPhotos)="reloadPhotos($event)"
+      ></app-event-view>
+      <p-blockUI [target]="content" [blocked]="loadingEdit">
+        <p-progressSpinner></p-progressSpinner>
+      </p-blockUI>
+    </ng-container>
+    <ng-template pTemplate="footer">
+      <button
+        *ngIf="editEvent$ | async as editEventModel"
+        pButton
+        [label]="'Delete'"
+        [disabled]="loadingEdit"
+        class="p-button-danger"
+        [style.float]="'left'"
+        (click)="deleteEvent(editEventModel)"
+      ></button>
+      <button
+        pButton
+        [label]="'Save'"
+        [loading]="loadingEdit"
+        (click)="saveEvent()"
+      ></button>
+    </ng-template>
+  </p-dialog>
 </div>
 <p-confirmDialog
   icon="pi pi-exclamation-triangle"

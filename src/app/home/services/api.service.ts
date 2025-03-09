@@ -34,6 +34,7 @@ const ApiUrls = {
   eventListFilter: (middleDate: Date) =>
     `/api/calendar-event?date=${middleDate.toISOString()}`,
   eventList: `/api/calendar-event`,
+  eventListId: (eventId: string) => `/api/calendar-event?id=${eventId}`,
   deleteAllData: '/api/data',
   description: (eventId: string) => `/api/event-descriptions?id=${eventId}`,
   detail: (eventId: string) => `/api/event-details?id=${eventId}`,
@@ -361,6 +362,14 @@ export class ApiService {
         noCache,
       },
     ).pipe(ApiService.HANDLE_ANONYMOUS(events));
+  }
+
+  deleteRepeatedEvent(id: string, noCache?: boolean) {
+    return this.deleteWithCache(ApiUrls.eventListId(id), {
+      cacheKey: DB_NAME,
+      dontParse: true,
+      noCache,
+    });
   }
 
   getEventDescription(id: string, noCache?: boolean): Observable<string> {

@@ -125,13 +125,13 @@
       [style.width]="'100%'"
     >
       <span
-        ><span class="font-bold">{{ editEventModel?.title }}</span>
+      ><span class="font-bold">{{ editEventModel?.title }}</span>
       </span>
       <span *ngIf="autoSavingState">{{
-        autoSavingState === 'saving'
-          ? 'Auto saving...'
-          : 'Auto-saved on ' + (lastAutoSave | date: 'M/d/yy, H:mm:ss')
-      }}</span>
+          autoSavingState === 'saving'
+            ? 'Auto saving...'
+            : 'Auto-saved on ' + (lastAutoSave | date: 'M/d/yy, H:mm:ss')
+        }}</span>
       <span class="pr-4">Rep: {{ editEventModel?.repetitionNumber }}</span>
     </div>
     <ng-container *ngIf="editEventModel">
@@ -162,10 +162,3 @@
     </ng-template>
   </p-dialog>
 </div>
-<p-confirmDialog
-  icon="pi pi-exclamation-triangle"
-  header="Confirm"
-  acceptButtonStyleClass="p-button-outlined"
-  [defaultFocus]="'reject'"
-  (onHide)="notifier.next(null)"
-></p-confirmDialog>

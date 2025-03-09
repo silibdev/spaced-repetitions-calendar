@@ -4,24 +4,27 @@ import {
   debounceTime,
   defaultIfEmpty,
   distinctUntilChanged,
+  filter,
   forkJoin,
   map,
   Observable,
+  of,
   switchMap,
   tap,
 } from 'rxjs';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
-import { SpacedRepRepository } from './spaced-rep.repository';
+import { SpacedRepRepository, SREvent } from './spaced-rep.repository';
 import { SRFilter, SRViewerUIRepository } from './s-r-viewer-ui.repository';
 import {
   CreateSpacedReps,
+  extractCommonModel,
   Photo,
   QNA,
   SpacedRepModel,
   SpecificSpacedRepModel,
 } from '../../models/spaced-rep.model';
 import { EventDetailService } from '../../services/event-detail.service';
-import { addDays, isSameMonth } from 'date-fns';
+import { addDays } from 'date-fns';
 import { DEFAULT_CATEGORY } from '../../models/settings.model';
 import { Utils } from '../../../utils';
 import { SettingsService } from './settings.service';
@@ -29,12 +32,13 @@ import { DescriptionsService } from '../../services/descriptions.service';
 import { ConfirmationService } from 'primeng/api';
 import { PhotoService } from '../../services/photo.service';
 import { QNAService } from '../../services/q-n-a.service';
+import { EffectFn } from '@ngneat/effects-ng';
 
 @UntilDestroy()
 @Injectable({
   providedIn: 'root',
 })
-export class SpacedRepService {
+export class SpacedRepService extends EffectFn {
   constructor(
     private apiService: ApiService,
     private srViewerUIService: SRViewerUIRepository,
@@ -45,6 +49,7 @@ export class SpacedRepService {
     private photoService: PhotoService,
     private qnaService: QNAService,
   ) {
+    super();
     this.srViewerUIService
       .getFilter()
       .pipe(
@@ -59,7 +64,8 @@ export class SpacedRepService {
           // otherwise the only difference could be the date
           // but in our case the date is different only if it refers
           // to a different month (the api returns the entire month data)
-          return isSameMonth(aDate, bDate);
+          // return isSameMonth(aDate, bDate);
+          return true; // Check only the rest, not the date
         }),
         switchMap((filter) => this.loadSREvents(filter)),
         tap((events) => this.srEventRepository.setEvents(events)),
@@ -196,6 +202,7 @@ export class SpacedRepService {
               newSpecificEvents.map((specific) => ({
                 ...commonSpacedRepModel,
                 ...specific,
+                description,
               })),
             );
           }),
@@ -204,4 +211,106 @@ export class SpacedRepService {
       map(() => specificSpacedRepModel),
     );
   }
+
+  loadEventToEdit = this.createEffectFn((sr$: Observable<SREvent | null>) =>
+    sr$.pipe(
+      filter((sr): sr is SREvent => !!sr),
+      switchMap((srEvent) => {
+        const id = srEvent.linkedSpacedRepId || srEvent.id;
+        return this.apiService.getEventDescription(id).pipe(
+          tap((description) => {
+            this.srEventRepository.setDescription(id, description);
+            this.srEventRepository.selectEditEvent(id);
+          }),
+        );
+      }),
+    ),
+  );
+
+  private internalDeleteEvent = this.createEffectFn(
+    (srEvent$: Observable<SpacedRepModel | undefined>) =>
+      srEvent$.pipe(
+        switchMap((srEvent) => {
+          if (!srEvent) {
+            return of(null);
+          }
+          const isMaster = !srEvent.linkedSpacedRepId;
+          const deleteCalls = [this.apiService.deleteRepeatedEvent(srEvent.id)];
+          if (isMaster) {
+            const photos = (srEvent.photos || [])
+              .filter((p) => !!p.id)
+              .map((p) => {
+                p.toDelete = true;
+                return p;
+              });
+            deleteCalls.push(
+              this.eventDetailService.delete(srEvent.id),
+              this.descriptionService.delete(srEvent.id),
+              this.photoService.savePhotos(
+                extractCommonModel(srEvent).masterId,
+                photos,
+              ),
+            );
+          }
+          return forkJoin(deleteCalls).pipe(
+            tap(() => {
+              this.srEventRepository.resetEditEvent();
+              this.srEventRepository.deleteEvents(srEvent.id);
+            }),
+          );
+        }),
+      ),
+  );
+
+  deleteEditEvent = this.createEffectFn(
+    (
+      params$: Observable<{
+        srEvent: SpacedRepModel | undefined;
+        cs: ConfirmationService;
+      }>,
+    ) =>
+      params$.pipe(
+        tap(({ srEvent, cs }) => {
+          const eventToModify = this.srEventRepository.currentEditEvent();
+          const isMasterMessage = !eventToModify?.linkedSpacedRepId
+            ? ' (Deleting this will delete the whole series!)'
+            : '';
+          cs.confirm({
+            message:
+              'Are you sure do you want to delete this repetition?' +
+              isMasterMessage,
+            accept: () => this.internalDeleteEvent(srEvent),
+          });
+        }),
+      ),
+  );
+
+  updateSREvent = this.createEffectFn(
+    (
+      params$: Observable<{
+        srModel: SpacedRepModel;
+        qnas: QNA[];
+        qnasToDelete: QNA[];
+        onDone: () => void;
+        cs: ConfirmationService;
+      }>,
+    ) =>
+      params$.pipe(
+        switchMap(({ srModel, qnas, qnasToDelete, onDone, cs }) => {
+          const { masterId, common } = extractCommonModel(srModel);
+
+          return forkJoin([
+            this.descriptionService.save(masterId, srModel.description || ''),
+            this.eventDetailService.save(masterId, common),
+            srModel.photos
+              ? this.photoService.savePhotos(masterId, srModel.photos, cs)
+              : of(null),
+            this.qnaService.save(masterId, srModel.id, qnas, qnasToDelete, cs),
+          ]).pipe(
+            tap(() => onDone()),
+            tap(() => this.srEventRepository.update(srModel)),
+          );
+        }),
+      ),
+  );
 }

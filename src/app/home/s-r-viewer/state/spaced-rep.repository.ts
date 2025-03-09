@@ -2,9 +2,19 @@ import { Injectable } from '@angular/core';
 import { createStore } from '@ngneat/elf';
 import {
   addEntities,
+  deleteEntities,
+  deleteEntitiesByPredicate,
+  getActiveEntity,
+  getEntity,
+  resetActiveId,
+  selectActiveEntity,
   selectAllEntities,
-  selectEntityByPredicate,
+  selectEntity,
+  setActiveId,
   setEntities,
+  updateEntities,
+  upsertEntities,
+  withActiveId,
   withEntities,
 } from '@ngneat/elf-entities';
 import {
@@ -40,6 +50,7 @@ export class SpacedRepRepository {
   private specificSRStore = createStore(
     { name: SpacedRepRepository.NAME },
     withEntities<SpecificSpacedRepModel>(),
+    withActiveId(),
   );
 
   private descriptionSRStore = createStore(
@@ -123,9 +134,7 @@ export class SpacedRepRepository {
   }
 
   getCommonSR(id: string) {
-    return this.commonSRStore.pipe(
-      selectEntityByPredicate((csr) => csr.id === id),
-    );
+    return this.commonSRStore.pipe(selectEntity(id));
   }
 
   setEvents(events: SpacedRepModel[]) {
@@ -134,10 +143,44 @@ export class SpacedRepRepository {
     this.specificSRStore.update(setEntities(specificEvents));
   }
 
-  addEvents(events: SREvent[]) {
+  addEvents(events: SpacedRepModel[]) {
     const { commonsEvents, specificEvents } = this.decomposeSREventList(events);
+    const descriptionEnt = events
+      .filter((e) => !e.linkedSpacedRepId)
+      .map((e) => ({
+        id: e.id,
+        description: e.description || '',
+      }));
     this.commonSRStore.update(addEntities(commonsEvents));
     this.specificSRStore.update(addEntities(specificEvents));
+    this.descriptionSRStore.update(addEntities(descriptionEnt));
+  }
+
+  update(event: SpacedRepModel) {
+    const { common, specific } = this.extractCommonAndSpecific(event);
+
+    this.commonSRStore.update(
+      updateEntities(common.id, {
+        allDay: common.allDay,
+        boldTitle: common.boldTitle,
+        category: common.category,
+        color: common.color,
+        highlightTitle: common.highlightTitle,
+        shortDescription: common.shortDescription,
+        title: common.title,
+      }),
+    );
+    this.specificSRStore.update(
+      updateEntities(specific.id, {
+        done: specific.done,
+        start: specific.start,
+      }),
+    );
+    this.descriptionSRStore.update(
+      updateEntities(event.id, {
+        description: event.description,
+      }),
+    );
   }
 
   getAllFiltered(query: string) {
@@ -161,5 +204,50 @@ export class SpacedRepRepository {
       map((events) => events.filter((event) => isMaster(event))),
       shareReplay(1),
     );
+  }
+
+  getEditEvent() {
+    return this.specificSRStore.pipe(
+      selectActiveEntity(),
+      map((srEvent) => {
+        if (!srEvent) {
+          return null;
+        }
+        const id = srEvent.linkedSpacedRepId || srEvent.id;
+        const common = this.commonSRStore.query(getEntity(id));
+        const descriptionEnt = this.descriptionSRStore.query(getEntity(id));
+        return {
+          ...common!,
+          ...srEvent,
+          description: descriptionEnt!.description,
+        };
+      }),
+    );
+  }
+
+  currentEditEvent() {
+    return this.specificSRStore.query(getActiveEntity());
+  }
+
+  selectEditEvent(id: string) {
+    this.specificSRStore.update(setActiveId(id));
+  }
+
+  resetEditEvent() {
+    this.specificSRStore.update(resetActiveId());
+  }
+
+  setDescription(id: any, description: string) {
+    this.descriptionSRStore.update(upsertEntities({ id, description }));
+  }
+
+  deleteEvents(id: string) {
+    this.specificSRStore.update(
+      deleteEntitiesByPredicate(
+        (e) => e.id === id || e.linkedSpacedRepId === id,
+      ),
+    );
+    this.commonSRStore.update(deleteEntities(id));
+    this.descriptionSRStore.update(deleteEntities(id));
   }
 }
