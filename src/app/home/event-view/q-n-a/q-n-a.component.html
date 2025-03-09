@@ -1,6 +1,6 @@
 <p-confirmPopup></p-confirmPopup>
 <p-panel
-  *ngFor="let qna of (qna$ | async)"
+  *ngFor="let qna of qna$ | async"
   [styleClass]="'pt-2'"
   [toggleable]="true"
   [collapsed]="!!qna.id"
@@ -16,7 +16,8 @@
               class="inline-block"
               [style.white-space]="'break-spaces'"
               [style.word-break]="'break-word'"
-            >{{qna.question}}</span>
+            >{{ qna.question }}</span
+            >
           </ng-template>
           <ng-template pTemplate="content">
             <textarea
@@ -25,7 +26,7 @@
               rows="3"
               [style.resize]="'vertical'"
               [(ngModel)]="qna.question"
-              [ngModelOptions]="{standalone: true}"
+              [ngModelOptions]="{ standalone: true }"
             ></textarea>
             <button
               pButton
@@ -42,8 +43,11 @@
             [severity]="qna.status === 'correct' ? 'success' : 'danger'"
             [rounded]="true"
           >
-            <span>{{qna.status === 'correct' ? 'Correct' : 'Wrong'}}</span>
-            <span class="pi pi-times cursor-pointer ml-2" (click)="setStatus(qna, 'R')"></span>
+            <span>{{ qna.status === 'correct' ? 'Correct' : 'Wrong' }}</span>
+            <span
+              class="pi pi-times cursor-pointer ml-2"
+              (click)="setStatus(qna, 'R')"
+            ></span>
           </p-tag>
         </ng-container>
         <ng-container *ngIf="!qna.status">
@@ -74,14 +78,11 @@
     </div>
   </ng-template>
   <ng-template pTemplate="content">
-    <p-editor
-      (keydown)="keyDown($event)"
-      [(ngModel)]="qna.answer"
-    ></p-editor>
+    <p-editor (keydown)="keyDown($event)" [(ngModel)]="qna.answer"></p-editor>
   </ng-template>
 </p-panel>
 
-<div class="mt-3 flex justify-content-between">
+<div class="mt-2 flex justify-content-between">
   <button
     pButton
     [style.visibility]="enableDelete ? 'hidden' : 'visible'"
@@ -89,7 +90,7 @@
     (click)="addQNA()"
   ></button>
 
-  <ng-container *ngIf="(qna$ | async) as qna">
+  <ng-container *ngIf="qna$ | async as qna">
     <ng-container *ngIf="qna.length > 0">
       <button
         *ngIf="!enableDelete"

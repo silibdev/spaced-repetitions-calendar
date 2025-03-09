@@ -24,10 +24,7 @@ import { LOADER_INTERCEPTOR_PROVIDER } from './home/services/loader.interceptor'
 import { OUT_OF_SYNC_INTERCEPTOR_PROVIDER } from './home/services/out-of-sync.interceptor';
 
 @NgModule({
-  declarations: [
-    AppComponent,
-    AboutComponent
-  ],
+  declarations: [AppComponent, AboutComponent],
   imports: [
     BrowserModule,
     BrowserAnimationsModule,
@@ -41,27 +38,26 @@ import { OUT_OF_SYNC_INTERCEPTOR_PROVIDER } from './home/services/out-of-sync.in
       enabled: environment.production,
       // Register the ServiceWorker as soon as the application is stable
       // or after 30 seconds (whichever comes first).
-      registrationStrategy: 'registerWhenStable:30000'
+      registrationStrategy: 'registerWhenStable:30000',
     }),
     MenuModule,
     BadgeModule,
     ConfirmDialogModule,
     ToastModule,
-    ProgressBarModule
+    ProgressBarModule,
   ],
   providers: [
     {
       provide: APP_INITIALIZER,
       useFactory: (authService: AuthService) => authService.init,
       deps: [AuthService],
-      multi: true
+      multi: true,
     },
     LOADER_INTERCEPTOR_PROVIDER,
     OUT_OF_SYNC_INTERCEPTOR_PROVIDER,
     BULK_INTERCEPTOR_PROVIDER,
-    AUTH_INTERCEPTOR_PROVIDER
+    AUTH_INTERCEPTOR_PROVIDER,
   ],
-  bootstrap: [AppComponent]
+  bootstrap: [AppComponent],
 })
-export class AppModule {
-}
+export class AppModule {}

@@ -7,23 +7,30 @@ import {
   Options,
   RepetitionSchema,
   RepetitionType,
-  RepetitionTypeEnum
+  RepetitionTypeEnum,
 } from '../models/settings.model';
 import { ApiService } from './api.service';
-import { distinctUntilChanged, Observable, Observer, of, ReplaySubject, shareReplay, tap } from 'rxjs';
+import {
+  distinctUntilChanged,
+  Observable,
+  Observer,
+  of,
+  ReplaySubject,
+  shareReplay,
+  tap,
+} from 'rxjs';
 import { Migrator } from '../../migrator';
 
-
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class SettingsService {
   private $currentCategorySubject: ReplaySubject<string> = new ReplaySubject(1);
 
   repetitionTypeOpts: RepetitionType[] = [
-    {label: 'Custom', value: RepetitionTypeEnum.CUSTOM},
-    {label: 'Every day', value: RepetitionTypeEnum.EVERY_DAY},
-    {label: 'Once a week', value: RepetitionTypeEnum.ONCE_A_WEEK}
+    { label: 'Custom', value: RepetitionTypeEnum.CUSTOM },
+    { label: 'Every day', value: RepetitionTypeEnum.EVERY_DAY },
+    { label: 'Once a week', value: RepetitionTypeEnum.ONCE_A_WEEK },
   ];
 
   get repetitionSchemaOpts(): RepetitionSchema[] {
@@ -36,7 +43,7 @@ export class SettingsService {
 
   get generalOptions(): Options {
     return {
-      autoSavingTimer: this.opts.autoSavingTimer
+      autoSavingTimer: this.opts.autoSavingTimer,
     };
   }
 
@@ -49,69 +56,68 @@ export class SettingsService {
   }
 
   get currentCategory(): string {
-    return this.opts.category.current
+    return this.opts.category.current;
   }
 
   get $currentCategory(): Observable<string> {
-    return this.$currentCategorySubject.asObservable().pipe(distinctUntilChanged(), shareReplay(1));
+    return this.$currentCategorySubject
+      .asObservable()
+      .pipe(distinctUntilChanged(), shareReplay(1));
   }
 
   private defaultColors = [
     {
       label: 'Blue',
-      value: '#0072c3'
+      value: '#0072c3',
     },
     {
       label: 'Green',
-      value: '#00d011'
+      value: '#00d011',
     },
     {
       label: 'Yellow',
-      value: '#ffe016'
+      value: '#ffe016',
     },
     {
       label: 'Red',
-      value: '#da1e28'
+      value: '#da1e28',
     },
     {
       label: 'Purple',
-      value: '#8a3ffc'
+      value: '#8a3ffc',
     },
     {
       label: 'Orange',
-      value: '#ff7605'
-    }
+      value: '#ff7605',
+    },
   ];
 
   private defaultCategories = [
-    {label: 'Default', value: DEFAULT_CATEGORY},
-    {label: 'Category 1', value: 'cod1'}
-  ]
+    { label: 'Default', value: DEFAULT_CATEGORY },
+    { label: 'Category 1', value: 'cod1' },
+  ];
 
   // This default are merged with the already present ones
   // it is a shallow merge so be careful in using nested objects!
   private opts: FullSettings = {
     repetitionSchemaOpts: [
-      {label: '1;7;30;90', value: '1;7;30;90'},
-      {label: '1;5;15;30', value: '1;5;15;30'}
+      { label: '1;7;30;90', value: '1;7;30;90' },
+      { label: '1;5;15;30', value: '1;5;15;30' },
     ],
     autoSavingTimer: 15,
     currentVersion: Migrator.LATEST_VERSION,
     colors: this.defaultColors,
     category: {
       opts: this.defaultCategories,
-      current: DEFAULT_CATEGORY
-    }
+      current: DEFAULT_CATEGORY,
+    },
   };
 
-  constructor(
-    private apiService: ApiService
-  ) {
-  }
+  constructor(private apiService: ApiService) {}
 
   loadOpts(): Observable<unknown> {
-    return this.apiService.getSettings().pipe(tap(
-      (opts) => {
+    return this.apiService.getSettings().pipe(
+      tap((opts) => {
         if (opts) {
           this.opts = opts;
           this.$currentCategorySubject.next(this.opts.category.current);
@@ -123,8 +129,8 @@ export class SettingsService {
           // it'll save the default options
           this.saveOpts();
         }
-      }
-    ));
+      }),
+    );
   }
 
   saveOpts(subscriber?: Partial<Observer<any>>): void {
@@ -132,7 +138,7 @@ export class SettingsService {
 
     this.$currentCategorySubject.next(this.opts.category.current);
     this.apiService.setSettings(this.opts).subscribe({
-      next: resp => {
+      next: (resp) => {
         subscriber?.next && subscriber.next(resp);
       },
       error: (error) => {
@@ -140,12 +146,12 @@ export class SettingsService {
       },
       complete: () => {
         subscriber?.complete && subscriber.complete();
-      }
+      },
     });
   }
 
   saveGeneralOptions(opts: Options): boolean {
-    const {autoSavingTimer} = opts;
+    const { autoSavingTimer } = opts;
     if (autoSavingTimer < 0) {
       return false;
     }
@@ -155,10 +161,10 @@ export class SettingsService {
   }
 
   saveNewRepetitionSchema(repSchema: string): boolean {
-    if (!this.repetitionSchemaOpts.find(rs => rs.value === repSchema)) {
+    if (!this.repetitionSchemaOpts.find((rs) => rs.value === repSchema)) {
       this.opts.repetitionSchemaOpts.push({
         value: repSchema,
-        label: repSchema
+        label: repSchema,
       });
       this.saveOpts();
       return true;
@@ -168,7 +174,7 @@ export class SettingsService {
   }
 
   editRepetitionSchema(index: number, repSchema: string): boolean {
-    if (!this.repetitionSchemaOpts.find(rs => rs.value === repSchema)) {
+    if (!this.repetitionSchemaOpts.find((rs) => rs.value === repSchema)) {
       const repSchemaOpt = this.repetitionSchemaOpts[index];
       // could be an out of bound (how?)
       if (repSchemaOpt) {
@@ -186,7 +192,9 @@ export class SettingsService {
 
   deleteRepetitionSchema(index: number): void {
     const repSchema = this.repetitionSchemaOpts[index].value;
-    this.opts.repetitionSchemaOpts = this.repetitionSchemaOpts.filter(rs => rs.value !== repSchema);
+    this.opts.repetitionSchemaOpts = this.repetitionSchemaOpts.filter(
+      (rs) => rs.value !== repSchema,
+    );
     this.saveOpts();
   }
 
@@ -196,7 +204,7 @@ export class SettingsService {
     }
     this.opts.colors = this.defaultColors;
     this.saveOpts();
-    return new Observable<undefined>(subscriber => {
+    return new Observable<undefined>((subscriber) => {
       this.saveOpts(subscriber);
     });
   }
@@ -207,9 +215,9 @@ export class SettingsService {
     }
     this.opts.category = {
       opts: this.defaultCategories,
-      current: DEFAULT_CATEGORY
-    }
-    return new Observable<undefined>(subscriber => {
+      current: DEFAULT_CATEGORY,
+    };
+    return new Observable<undefined>((subscriber) => {
       this.saveOpts(subscriber);
     });
   }
@@ -231,8 +239,8 @@ export class SettingsService {
   }
 
   private saveNewColor(color: Color) {
-    if (!this.colors.find(cl => cl.value === color.value)) {
-      this.opts.colors.push({...color});
+    if (!this.colors.find((cl) => cl.value === color.value)) {
+      this.opts.colors.push({ ...color });
       this.saveOpts();
       return true;
     } else {
@@ -242,7 +250,7 @@ export class SettingsService {
 
   deleteColor(index: number) {
     const color = this.colors[index].value;
-    this.opts.colors = this.colors.filter(cl => cl.value !== color);
+    this.opts.colors = this.colors.filter((cl) => cl.value !== color);
     this.saveOpts();
   }
 
@@ -271,8 +279,8 @@ export class SettingsService {
   }
 
   private saveNewCategory(category: Category) {
-    if (!this.categories.find(cat => cat.value === category.value)) {
-      this.opts.category.opts.push({...category});
+    if (!this.categories.find((cat) => cat.value === category.value)) {
+      this.opts.category.opts.push({ ...category });
       this.saveOpts();
       return true;
     } else {

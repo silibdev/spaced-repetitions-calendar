@@ -12,34 +12,58 @@ export interface Photo {
   toDelete?: boolean;
 }
 
-export interface SpacedRepModel {
-  allDay?: boolean;
-  boldTitle?: boolean;
-  color?: EventColor;
+export interface SpacedRepModel
+  extends CommonSpacedRepModel,
+    SpecificSpacedRepModel {
   description?: string;
-  done?: boolean;
-  highlightTitle?: boolean;
-  id: string;
-  linkedSpacedRepId?: string;
-  repetitionNumber: number;
-  shortDescription: string;
-  start: Date;
-  title: string;
-  category: string;
-  photos?: Photo[];
 }
 
-export type CommonSpacedRepModel = Pick<SpacedRepModel, 'id' | 'allDay' | 'title' | 'color' | 'shortDescription' | 'boldTitle' | 'highlightTitle' | 'category' | 'photos'>;
+export interface CommonSpacedRepModel {
+  allDay?: boolean;
+  boldTitle?: boolean;
+  category: string;
+  color?: EventColor;
+  highlightTitle?: boolean;
+  id: string;
+  photos?: Photo[];
+  shortDescription: string;
+  title: string;
+}
 
-export type SpecificSpacedRepModel = Pick<SpacedRepModel, 'id' | 'repetitionNumber' | 'start' | 'linkedSpacedRepId' | 'done'>
+export interface SpecificSpacedRepModel {
+  id: string;
+  done?: boolean;
+  linkedSpacedRepId?: string;
+  repetitionNumber: number;
+  start: Date;
+}
+
+export function extractCommonModel(sr: CommonSpacedRepModel | SpacedRepModel): {
+  masterId: string;
+  common: CommonSpacedRepModel;
+} {
+  const masterId =
+    'linkedSpacedRepId' in sr ? sr.linkedSpacedRepId || sr.id : sr.id;
+  const common: CommonSpacedRepModel = {
+    id: masterId,
+    allDay: sr.allDay,
+    shortDescription: sr.shortDescription,
+    boldTitle: sr.boldTitle,
+    highlightTitle: sr.highlightTitle,
+    color: sr.color,
+    title: sr.title,
+    category: sr.category,
+  };
+  return { masterId, common };
+}
 
 export interface CreateSpacedReps {
-  spacedRep: CommonSpacedRepModel & { description?: string, done?: boolean };
+  spacedRep: CommonSpacedRepModel & { description?: string; done?: boolean };
   startDate: Date;
   repetitionSchema: string;
 }
 
-export type QNAStatus = 'correct' | 'wrong' | undefined // undefined = not answered
+export type QNAStatus = 'correct' | 'wrong' | undefined; // undefined = not answered
 
 export interface QNA {
   question: string;

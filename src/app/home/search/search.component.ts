@@ -1,33 +1,29 @@
 import { Component, EventEmitter, OnInit, Output } from '@angular/core';
-import { SpacedRepService } from '../services/spaced-rep.service';
 import { debounceTime, Observable, Subject, switchMap } from 'rxjs';
 import { SpacedRepModel } from '../models/spaced-rep.model';
+import { SpacedRepRepository } from '../s-r-viewer/state/spaced-rep.repository';
 
 @Component({
   selector: 'app-search',
   templateUrl: './search.component.html',
-  styleUrls: ['./search.component.scss']
+  styleUrls: ['./search.component.scss'],
 })
 export class SearchComponent implements OnInit {
-
   searchQuery?: string;
   searchQuery$ = new Subject<string>();
-  results$: Observable<SpacedRepModel[]>
+  results$: Observable<SpacedRepModel[]>;
 
   @Output()
   eventClicked = new EventEmitter<SpacedRepModel>();
 
-  constructor(
-    private srService: SpacedRepService
-  ) {
+  constructor(private srEventRepository: SpacedRepRepository) {
     this.results$ = this.searchQuery$.pipe(
       debounceTime(100),
-      switchMap(query => this.srService.search(query))
+      switchMap((query) => this.srEventRepository.getAllFiltered(query)),
     );
   }
 
-  ngOnInit(): void {
-  }
+  ngOnInit(): void {}
 
   search(query: string): void {
     this.searchQuery$.next(query);
@@ -35,6 +31,6 @@ export class SearchComponent implements OnInit {
 
   selectResult(sr: SpacedRepModel): void {
     this.eventClicked.emit(sr);
-    setTimeout(() => this.searchQuery = '');
+    setTimeout(() => (this.searchQuery = ''));
   }
 }

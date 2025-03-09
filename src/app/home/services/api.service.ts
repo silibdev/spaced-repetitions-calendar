@@ -15,25 +15,35 @@ import {
   Subject,
   switchMap,
   tap,
-  throwError
+  throwError,
 } from 'rxjs';
 import { FullSettings } from '../models/settings.model';
 import { ERROR_ANONYMOUS } from './auth.interceptor';
-import { CommonSpacedRepModel, Photo, QNA } from '../models/spaced-rep.model';
+import {
+  CommonSpacedRepModel,
+  Photo,
+  QNA,
+  SpecificSpacedRepModel,
+} from '../models/spaced-rep.model';
 import { AppStorage } from '../../app.storage';
 import { ConfirmationService } from 'primeng/api';
 import * as CompressorJS from 'compressorjs';
 
 const ApiUrls = {
   settings: '/api/settings',
-  eventList: '/api/event-list',
+  eventListFilter: (middleDate: Date) =>
+    `/api/calendar-event?date=${middleDate.toISOString()}`,
+  eventList: `/api/calendar-event`,
+  eventListId: (eventId: string) => `/api/calendar-event?id=${eventId}`,
   deleteAllData: '/api/data',
   description: (eventId: string) => `/api/event-descriptions?id=${eventId}`,
   detail: (eventId: string) => `/api/event-details?id=${eventId}`,
   lastUpdates: '/api/last-updates',
-  photos: (eventId: string, photoId?: string) => `/api/photos?id=${eventId}${photoId ? '&photoId=' + photoId : ''}`,
-  qnas: (masterId: string, eventId: string, qnaId?: string) => `/api/qnas?id=${eventId}&masterId=${masterId}${qnaId ? '&qnaId=' + qnaId : ''}`
-}
+  photos: (eventId: string, photoId?: string) =>
+    `/api/photos?id=${eventId}${photoId ? '&photoId=' + photoId : ''}`,
+  qnas: (masterId: string, eventId: string, qnaId?: string) =>
+    `/api/qnas?id=${eventId}&masterId=${masterId}${qnaId ? '&qnaId=' + qnaId : ''}`,
+};
 
 const OPTS_DB_NAME = 'src-opts-db';
 
@@ -49,17 +59,17 @@ export const LAST_UPDATE_DB_NAME = 'src-last-update-db';
 export const DB_NAME = 'src-db';
 
 interface Extra {
-  cacheKey: string,
-  noCache?: boolean,
-  dontParse?: boolean
+  cacheKey: string;
+  noCache?: boolean;
+  dontParse?: boolean;
 }
 
-type LastUpdateOp = 'U' | 'R' | 'none'
+type LastUpdateOp = 'U' | 'R' | 'none';
 
 interface LastUpdateRemote {
   eventList: string;
-  eventDescriptions: { id: string, updatedAt: string }[];
-  eventDetails: { id: string, updatedAt: string }[];
+  eventDescriptions: { id: string; updatedAt: string }[];
+  eventDetails: { id: string; updatedAt: string }[];
   settings: string;
 }
 
@@ -73,35 +83,42 @@ function isAfter(dateA?: string, dateB?: string): boolean {
 }
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class ApiService {
-  public static MAX_FILE_UPLOAD = 6 * 1000 * 1000 //6MB
+  public static MAX_FILE_UPLOAD = 6 * 1000 * 1000; //6MB
 
   private outOfSync$ = new BehaviorSubject(false);
 
-  private MAP_DATA<T extends { data: string, updatedAt?: string }, R>(cacheKey: string, extra: {
-    dontParse?: boolean,
-    lastUpdateOp: LastUpdateOp
-  }): OperatorFunction<T, R> {
-    return (obs) => obs.pipe(
-      map((resp) => {
-        const {data, updatedAt} = resp;
-        if (updatedAt) {
-          this.saveLastUpdateMap(cacheKey, updatedAt, extra.lastUpdateOp);
-        }
-        return (extra.dontParse || !data) ? data : JSON.parse(data)
-      })
-    );
+  private MAP_DATA<T extends { data: string; updatedAt?: string }, R>(
+    cacheKey: string,
+    extra: {
+      dontParse?: boolean;
+      lastUpdateOp: LastUpdateOp;
+    },
+  ): OperatorFunction<T, R> {
+    return (obs) =>
+      obs.pipe(
+        map((resp) => {
+          const { data, updatedAt } = resp;
+          if (updatedAt) {
+            this.saveLastUpdateMap(cacheKey, updatedAt, extra.lastUpdateOp);
+          }
+          return extra.dontParse || !data ? data : JSON.parse(data);
+        }),
+      );
   }
 
   private static HANDLE_ANONYMOUS<R>(data: R): MonoTypeOperatorFunction<R> {
-    return (obs) => obs.pipe(catchError(error => {
-      if (error === ERROR_ANONYMOUS) {
-        return of(data);
-      }
-      return throwError(() => error);
-    }))
+    return (obs) =>
+      obs.pipe(
+        catchError((error) => {
+          if (error === ERROR_ANONYMOUS) {
+            return of(data);
+          }
+          return throwError(() => error);
+        }),
+      );
   }
 
   private requestOptimizer = new Map<string, Observable<any>>();
@@ -112,17 +129,21 @@ export class ApiService {
   private lastUpdateMap: LastUpdate = {};
   private saveLastUpdateMapTimeout?: number;
 
-  constructor(
-    private httpClient: HttpClient
-  ) {
+  constructor(private httpClient: HttpClient) {
     this.initLastUpdateMap();
   }
 
   private initLastUpdateMap(): void {
-    this.lastUpdateMap = JSON.parse(localStorage.getItem(LAST_UPDATE_DB_NAME) || '{}');
+    this.lastUpdateMap = JSON.parse(
+      localStorage.getItem(LAST_UPDATE_DB_NAME) || '{}',
+    );
   }
 
-  private saveLastUpdateMap(key: string, value: string, op: LastUpdateOp): void {
+  private saveLastUpdateMap(
+    key: string,
+    value: string,
+    op: LastUpdateOp,
+  ): void {
     if (op === 'none') {
       return;
     }
@@ -138,8 +159,11 @@ export class ApiService {
     if (this.saveLastUpdateMapTimeout) {
       clearTimeout(this.saveLastUpdateMapTimeout);
     }
-    this.saveLastUpdateMapTimeout = setTimeout(() => {
-      localStorage.setItem(LAST_UPDATE_DB_NAME, JSON.stringify(this.lastUpdateMap))
+    this.saveLastUpdateMapTimeout = window.setTimeout(() => {
+      localStorage.setItem(
+        LAST_UPDATE_DB_NAME,
+        JSON.stringify(this.lastUpdateMap),
+      );
     }, 250);
   }
 
@@ -163,15 +187,20 @@ export class ApiService {
   }
 
   private getLastUpdatesMap(): Observable<LastUpdateRemote> {
-    return this.httpClient.get<any>(ApiUrls.lastUpdates).pipe(this.MAP_DATA('', {
-      dontParse: true,
-      lastUpdateOp: 'none'
-    }));
+    return this.httpClient.get<any>(ApiUrls.lastUpdates).pipe(
+      this.MAP_DATA('', {
+        dontParse: true,
+        lastUpdateOp: 'none',
+      }),
+    );
   }
 
-  private getWithCache<R>(url: string, {cacheKey, noCache, dontParse}: Extra): Observable<R> {
+  private getWithCache<R>(
+    url: string,
+    { cacheKey, noCache, dontParse }: Extra,
+  ): Observable<R> {
     return AppStorage.getItem(cacheKey).pipe(
-      switchMap(cachedItem => {
+      switchMap((cachedItem) => {
         if (!noCache && (cachedItem || cachedItem === '')) {
           return dontParse ? of(cachedItem) : of(JSON.parse(cachedItem));
         }
@@ -180,57 +209,81 @@ export class ApiService {
           return cachedRequest;
         }
         const request = this.httpClient.get(url).pipe(
-          switchMap((resp: any) => AppStorage.setItem(cacheKey, resp.data).pipe(
-            map(() => resp))
+          switchMap((resp: any) =>
+            AppStorage.setItem(cacheKey, resp.data).pipe(map(() => resp)),
           ),
-          this.MAP_DATA<any, R>(cacheKey, {dontParse: dontParse, lastUpdateOp: 'U'}),
+          this.MAP_DATA<any, R>(cacheKey, {
+            dontParse: dontParse,
+            lastUpdateOp: 'U',
+          }),
           tap(() => this.requestOptimizer.delete(url)),
-          shareReplay()
+          shareReplay(),
         );
-        this.requestOptimizer.set(url, request)
+        this.requestOptimizer.set(url, request);
         return request;
-      })
+      }),
     );
   }
 
-  private postWithCache<R>(url: string, data: R, {cacheKey, dontParse}: Extra): Observable<R> {
-    const itemToCache = dontParse ? data as unknown as string : JSON.stringify(data);
+  private postWithCache<R>(
+    url: string,
+    data: R,
+    { cacheKey, dontParse }: Extra,
+  ): Observable<R> {
+    const itemToCache = dontParse
+      ? (data as unknown as string)
+      : JSON.stringify(data);
     return AppStorage.setItem(cacheKey, itemToCache).pipe(
       switchMap(() => {
         const lastUpdatedAt = this.lastUpdateMap[cacheKey];
-        const request = this.httpClient.post(url, {data: itemToCache, lastUpdatedAt})
+        const request = this.httpClient
+          .post(url, { data: itemToCache, lastUpdatedAt })
           .pipe(
-            this.MAP_DATA<any, R>(cacheKey, {dontParse: dontParse, lastUpdateOp: 'U'}),
-            ApiService.HANDLE_ANONYMOUS(data)
+            this.MAP_DATA<any, R>(cacheKey, {
+              dontParse: dontParse,
+              lastUpdateOp: 'U',
+            }),
+            ApiService.HANDLE_ANONYMOUS(data),
           );
         return request.pipe(
           catchError(() => {
             this.addPendingChanges(url, request);
             return of(data);
-          })
+          }),
         );
-      })
+      }),
     );
   }
 
-  private deleteWithCache<R>(url: string, {cacheKey, dontParse}: Extra): Observable<R> {
+  private deleteWithCache<R>(
+    url: string,
+    { cacheKey, dontParse }: Extra,
+  ): Observable<R> {
     return AppStorage.getItem(cacheKey).pipe(
-      map(cachedItem => dontParse ? cachedItem : JSON.parse(cachedItem || 'null')),
-      switchMap(data => AppStorage.removeItem(cacheKey).pipe(map(() => (data)))),
-      switchMap(data => {
+      map((cachedItem) =>
+        dontParse ? cachedItem : JSON.parse(cachedItem || 'null'),
+      ),
+      switchMap((data) =>
+        AppStorage.removeItem(cacheKey).pipe(map(() => data)),
+      ),
+      switchMap((data) => {
         const lastUpdatedAt = this.lastUpdateMap[cacheKey];
-        const request = this.httpClient.delete(url, {body: {lastUpdatedAt}})
+        const request = this.httpClient
+          .delete(url, { body: { lastUpdatedAt } })
           .pipe(
-            this.MAP_DATA<any, R>(cacheKey, {dontParse: dontParse, lastUpdateOp: 'R'}),
-            ApiService.HANDLE_ANONYMOUS(data)
+            this.MAP_DATA<any, R>(cacheKey, {
+              dontParse: dontParse,
+              lastUpdateOp: 'R',
+            }),
+            ApiService.HANDLE_ANONYMOUS(data),
           );
         return request.pipe(
           catchError(() => {
             this.addPendingChanges(url, request);
             return of(data);
-          })
+          }),
         );
-      })
+      }),
     );
   }
 
@@ -243,69 +296,127 @@ export class ApiService {
   }
 
   syncPendingChanges(): Observable<number> {
-    const requestMap: Observable<{ done: boolean, url: string }>[] = [];
-    this.pendingChangesMap.forEach((request, url) => requestMap.push(request.pipe(
-      map(() => ({done: true, url})),
-      catchError(() => of({done: false, url}))
-    )));
-    return forkJoin(
-      requestMap
-    ).pipe(
-      defaultIfEmpty([]),
-      tap(results =>
-        results
-          .filter(({done}) => done)
-          .forEach(({url}) => {
-            this.removePendingChanges(url);
-          })
+    const requestMap: Observable<{ done: boolean; url: string }>[] = [];
+    this.pendingChangesMap.forEach((request, url) =>
+      requestMap.push(
+        request.pipe(
+          map(() => ({ done: true, url })),
+          catchError(() => of({ done: false, url })),
+        ),
       ),
-      map(() => this.pendingChangesMap.size)
+    );
+    return forkJoin(requestMap).pipe(
+      defaultIfEmpty([]),
+      tap((results) =>
+        results
+          .filter(({ done }) => done)
+          .forEach(({ url }) => {
+            this.removePendingChanges(url);
+          }),
+      ),
+      map(() => this.pendingChangesMap.size),
     );
   }
 
   getSettings(noCache?: boolean): Observable<FullSettings | undefined> {
-    return this.getWithCache<FullSettings | undefined>(ApiUrls.settings, {cacheKey: OPTS_DB_NAME, noCache})
-      .pipe(ApiService.HANDLE_ANONYMOUS<FullSettings | undefined>(undefined));
+    return this.getWithCache<FullSettings | undefined>(ApiUrls.settings, {
+      cacheKey: OPTS_DB_NAME,
+      noCache,
+    }).pipe(ApiService.HANDLE_ANONYMOUS<FullSettings | undefined>(undefined));
   }
 
   setSettings(opts: FullSettings): Observable<FullSettings> {
-    return this.postWithCache(ApiUrls.settings, opts, {cacheKey: OPTS_DB_NAME});
+    return this.postWithCache(ApiUrls.settings, opts, {
+      cacheKey: OPTS_DB_NAME,
+    });
   }
 
-  setEventList(eventListCompressed: string): Observable<string> {
-    return this.postWithCache(ApiUrls.eventList, eventListCompressed, {cacheKey: DB_NAME, dontParse: true});
+  // setEventList(eventListCompressed: string): Observable<string> {
+  //   return this.postWithCache(ApiUrls.eventList, eventListCompressed, {cacheKey: DB_NAME, dontParse: true});
+  // }
+
+  getEventList(
+    middleDate: Date,
+    noCache?: boolean,
+  ): Observable<SpecificSpacedRepModel[] | undefined> {
+    return this.getWithCache<SpecificSpacedRepModel[] | undefined>(
+      ApiUrls.eventListFilter(middleDate),
+      { cacheKey: DB_NAME, dontParse: true, noCache },
+    ).pipe(
+      ApiService.HANDLE_ANONYMOUS<SpecificSpacedRepModel[] | undefined>(
+        undefined,
+      ),
+    );
   }
 
-  getEventList(noCache?: boolean): Observable<string | undefined> {
-    return this.getWithCache<string | undefined>(ApiUrls.eventList, {cacheKey: DB_NAME, dontParse: true, noCache})
-      .pipe(ApiService.HANDLE_ANONYMOUS<string | undefined>(undefined));
+  createRepeatedEvents(
+    events: SpecificSpacedRepModel[],
+    noCache?: boolean,
+  ): Observable<SpecificSpacedRepModel[]> {
+    return this.postWithCache<SpecificSpacedRepModel[]>(
+      ApiUrls.eventList,
+      events,
+      {
+        cacheKey: DB_NAME,
+        dontParse: true,
+        noCache,
+      },
+    ).pipe(ApiService.HANDLE_ANONYMOUS(events));
+  }
+
+  deleteRepeatedEvent(id: string, noCache?: boolean) {
+    return this.deleteWithCache(ApiUrls.eventListId(id), {
+      cacheKey: DB_NAME,
+      dontParse: true,
+      noCache,
+    });
   }
 
   getEventDescription(id: string, noCache?: boolean): Observable<string> {
-    return this.getWithCache(ApiUrls.description(id), {cacheKey: DESCRIPTIONS_DB_NAME(id), dontParse: true, noCache});
+    return this.getWithCache(ApiUrls.description(id), {
+      cacheKey: DESCRIPTIONS_DB_NAME(id),
+      dontParse: true,
+      noCache,
+    });
   }
 
   setEventDescription(id: string, description: string): Observable<string> {
     return this.postWithCache(ApiUrls.description(id), description, {
       cacheKey: DESCRIPTIONS_DB_NAME(id),
-      dontParse: true
+      dontParse: true,
     });
   }
 
   deleteEventDescription(id: string): Observable<string> {
-    return this.deleteWithCache(ApiUrls.description(id), {cacheKey: DESCRIPTIONS_DB_NAME(id), dontParse: true});
+    return this.deleteWithCache(ApiUrls.description(id), {
+      cacheKey: DESCRIPTIONS_DB_NAME(id),
+      dontParse: true,
+    });
   }
 
-  getEventDetail(id: string, noCache?: boolean): Observable<CommonSpacedRepModel> {
-    return this.getWithCache(ApiUrls.detail(id), {cacheKey: DETAIL_DB_NAME(id), noCache});
+  getEventDetail(
+    id: string,
+    noCache?: boolean,
+  ): Observable<CommonSpacedRepModel> {
+    return this.getWithCache(ApiUrls.detail(id), {
+      cacheKey: DETAIL_DB_NAME(id),
+      noCache,
+    });
   }
 
-  setEventDetail(id: string, detail: CommonSpacedRepModel): Observable<CommonSpacedRepModel> {
-    return this.postWithCache(ApiUrls.detail(id), detail, {cacheKey: DETAIL_DB_NAME(id)});
+  setEventDetail(
+    id: string,
+    detail: CommonSpacedRepModel,
+  ): Observable<CommonSpacedRepModel> {
+    return this.postWithCache(ApiUrls.detail(id), detail, {
+      cacheKey: DETAIL_DB_NAME(id),
+    });
   }
 
   deleteEventDetail(id: string): Observable<string> {
-    return this.deleteWithCache(ApiUrls.detail(id), {cacheKey: DETAIL_DB_NAME(id)});
+    return this.deleteWithCache(ApiUrls.detail(id), {
+      cacheKey: DETAIL_DB_NAME(id),
+    });
   }
 
   sync(): Observable<{ gotUpdates: boolean }> {
@@ -314,14 +425,17 @@ export class ApiService {
     return this.getLastUpdatesMap().pipe(
       catchError((error: string | HttpErrorResponse) => {
         // No network
-        if ((error instanceof HttpErrorResponse && [504, 0].includes(error.status))
+        if (
+          (error instanceof HttpErrorResponse &&
+            [504, 0].includes(error.status)) ||
           // Anonymous login
-          || error === ERROR_ANONYMOUS) {
+          error === ERROR_ANONYMOUS
+        ) {
           return of({
             eventList: '',
             eventDescriptions: [],
             eventDetails: [],
-            settings: ''
+            settings: '',
           });
         }
         return throwError(() => error);
@@ -333,7 +447,7 @@ export class ApiService {
           eventList: elTime,
           eventDescriptions: edesTime,
           eventDetails: edetTime,
-          settings: setTime
+          settings: setTime,
         } = lastUpdateMap;
 
         if (setTime && isAfter(setTime, this.lastUpdateMap[OPTS_DB_NAME])) {
@@ -341,36 +455,38 @@ export class ApiService {
         }
 
         if (elTime && isAfter(elTime, this.lastUpdateMap[DB_NAME])) {
-          requests.push(this.getEventList(true));
+          requests.push(this.getEventList(new Date(), true));
         }
 
-        edetTime.forEach(({id, updatedAt}) => {
+        edetTime.forEach(({ id, updatedAt }) => {
           if (isAfter(updatedAt, this.lastUpdateMap[DETAIL_DB_NAME(id)])) {
             requests.push(this.getEventDetail(id, true));
           }
         });
 
-        edesTime.forEach(({id, updatedAt}) => {
-          if (isAfter(updatedAt, this.lastUpdateMap[DESCRIPTIONS_DB_NAME(id)])) {
+        edesTime.forEach(({ id, updatedAt }) => {
+          if (
+            isAfter(updatedAt, this.lastUpdateMap[DESCRIPTIONS_DB_NAME(id)])
+          ) {
             requests.push(this.getEventDescription(id, true));
           }
         });
 
-        return forkJoin(requests).pipe(defaultIfEmpty(undefined)).pipe(
-          map(() => ({gotUpdates: !!requests.length}))
-        )
-      })
+        return forkJoin(requests)
+          .pipe(defaultIfEmpty(undefined))
+          .pipe(map(() => ({ gotUpdates: !!requests.length })));
+      }),
     );
   }
 
   purgeDescriptions(ids: Set<string>) {
     const internalIds = new Set<string>();
-    ids.forEach(id => {
+    ids.forEach((id) => {
       const internalId = DESCRIPTIONS_DB_NAME(id);
       internalIds.add(internalId);
     });
 
-    Object.keys(localStorage).forEach(key => {
+    Object.keys(localStorage).forEach((key) => {
       if (key.includes(DESCRIPTIONS_DB_NAME_PREFIX) && !internalIds.has(key)) {
         localStorage.removeItem(key);
       }
@@ -381,14 +497,14 @@ export class ApiService {
 
   purgeDetails(ids: Set<string>): Observable<unknown> {
     const internalIds = new Set<string>();
-    ids.forEach(id => {
+    ids.forEach((id) => {
       const internalId = DESCRIPTIONS_DB_NAME(id);
       internalIds.add(internalId);
     });
 
-    Object.keys(localStorage).forEach(key => {
+    Object.keys(localStorage).forEach((key) => {
       if (key.includes(OLD_SHORT_DESCRIPTION_DB_NAME)) {
-        localStorage.removeItem(key)
+        localStorage.removeItem(key);
       }
       if (key.includes(DESCRIPTIONS_DB_NAME_PREFIX) && !internalIds.has(key)) {
         localStorage.removeItem(key);
@@ -400,18 +516,18 @@ export class ApiService {
 
   getSecondMigrationEventDetail(id: string): Observable<string> {
     const internalId = OLD_SHORT_DESCRIPTION_DB_NAME + id;
-    const shortDescription = localStorage.getItem(internalId)
+    const shortDescription = localStorage.getItem(internalId);
     return of(shortDescription || '');
   }
 
   desyncLocal(): Observable<unknown> {
     Object.keys(localStorage)
-      .filter(k => k.startsWith('src-'))
-      .forEach(k => localStorage.removeItem(k));
+      .filter((k) => k.startsWith('src-'))
+      .forEach((k) => localStorage.removeItem(k));
     return AppStorage.desyncLocal().pipe(
       tap(() => {
         this.initLastUpdateMap();
-      })
+      }),
     );
   }
 
@@ -425,7 +541,7 @@ export class ApiService {
 
   isSomethingPresent(): Observable<boolean> {
     return AppStorage.getItem(DB_NAME).pipe(
-      map(data => !!data && !!localStorage.getItem(OPTS_DB_NAME))
+      map((data) => !!data && !!localStorage.getItem(OPTS_DB_NAME)),
     );
   }
 
@@ -433,48 +549,61 @@ export class ApiService {
     return this.httpClient.delete(ApiUrls.deleteAllData);
   }
 
-  savePhotos(masterId: string, photos: Photo[], confirmationService?: ConfirmationService): Observable<unknown> {
+  savePhotos(
+    masterId: string,
+    photos: Photo[],
+    confirmationService?: ConfirmationService,
+  ): Observable<unknown> {
     let somethingToSaveIsPresent = false;
     const firstFormData = new FormData();
     firstFormData.set('id', masterId);
-    photos.filter(p => p.id && !p.toDelete).forEach(p => {
-        firstFormData.append('photoMetadata', JSON.stringify({id: p.id, name: p.name, toDelete: p.toDelete}));
+    photos
+      .filter((p) => p.id && !p.toDelete)
+      .forEach((p) => {
+        firstFormData.append(
+          'photoMetadata',
+          JSON.stringify({ id: p.id, name: p.name, toDelete: p.toDelete }),
+        );
         somethingToSaveIsPresent = true;
-      }
-    );
+      });
 
-    const photosToDelete = photos.filter(p => p.toDelete);
+    const photosToDelete = photos.filter((p) => p.toDelete);
 
     const photoBlobs = photos
-      .filter(p => !p.id)
-      .map(p =>
+      .filter((p) => !p.id)
+      .map((p) =>
         fetch(p.thumbnail)
-          .then(r => r.blob())
-          .then(blob => new Promise<Blob>((resolve, error) => {
-            // @ts-ignore
-            new CompressorJS(blob, {
-              quality: 0.75,
-              success: (blobCompressed: Blob) => resolve(blobCompressed),
-              error: (err: any) => error(err)
-            });
-          }))
-          .then(blob => ({name: p.name, blob}))
+          .then((r) => r.blob())
+          .then(
+            (blob) =>
+              new Promise<Blob>((resolve, error) => {
+                // @ts-ignore
+                new CompressorJS(blob, {
+                  quality: 0.75,
+                  success: (blobCompressed: Blob) => resolve(blobCompressed),
+                  error: (err: any) => error(err),
+                });
+              }),
+          )
+          .then((blob) => ({ name: p.name, blob })),
       );
 
-    // @ts-ignore
-    const getFormDataSize = (fd: FormData) => [...fd].reduce((size, [name, value]) =>
-      size + (typeof value === 'string' ? value.length : value.size), 0
-    );
-
+    const getFormDataSize = (fd: FormData) =>
+      // @ts-ignore
+      [...fd].reduce(
+        (size, [name, value]) =>
+          size + (typeof value === 'string' ? value.length : value.size),
+        0,
+      );
 
     return forkJoin([
       forkJoin(photoBlobs).pipe(
         defaultIfEmpty([]),
-        switchMap(blobs => {
+        switchMap((blobs) => {
           const dataGrouped = [firstFormData];
           let i = 0;
           let currSize = getFormDataSize(dataGrouped[i]);
-          blobs.forEach(b => {
+          blobs.forEach((b) => {
             const blobSize = b.blob.size;
             currSize += blobSize;
             if (currSize > ApiService.MAX_FILE_UPLOAD) {
@@ -491,74 +620,104 @@ export class ApiService {
             return of(undefined);
           }
           return forkJoin(
-            dataGrouped.map(data =>
-            {
-              const message = 'There are problems with '
-                + data.getAll('newPhotos').map(f => typeof f !== 'string' ? `"${f.name}"` : '').join(', ') + '. '
-                + 'You can retry the saving or you can just skip. '
-                + 'If you skip the save the changes done to the photo, if any, will NOT be saved.';
+            dataGrouped.map((data) => {
+              const message =
+                'There are problems with ' +
+                data
+                  .getAll('newPhotos')
+                  .map((f) => (typeof f !== 'string' ? `"${f.name}"` : ''))
+                  .join(', ') +
+                '. ' +
+                'You can retry the saving or you can just skip. ' +
+                'If you skip the save the changes done to the photo, if any, will NOT be saved.';
 
               return this.callWithRetry(
                 this.httpClient.post(ApiUrls.photos(masterId), data),
                 confirmationService,
                 {
-                  header:'Error while saving photos',
-                  message
-                }
-              )
-            }
-            )
+                  header: 'Error while saving photos',
+                  message,
+                },
+              );
+            }),
           );
-        })
+        }),
       ),
-      ...photosToDelete.map(p => this.httpClient.delete(ApiUrls.photos(masterId, p.id)))
+      ...photosToDelete.map((p) =>
+        this.httpClient.delete(ApiUrls.photos(masterId, p.id)),
+      ),
     ]);
   }
 
   getPhotos(masterId: string): Observable<Photo[]> {
-    return this.httpClient.get(ApiUrls.photos(masterId)).pipe(
-      map<any, Photo[]>(res => res.data)
-    );
+    return this.httpClient
+      .get(ApiUrls.photos(masterId))
+      .pipe(map<any, Photo[]>((res) => res.data));
   }
 
   getPhotoUrl(masterId: string, photoId: string): Observable<string> {
-    return this.httpClient.get(ApiUrls.photos(masterId, photoId), {responseType: 'blob'}).pipe(
-      map<Blob, string>(res => {
-        return URL.createObjectURL(res);
-      })
-    );
+    return this.httpClient
+      .get(ApiUrls.photos(masterId, photoId), { responseType: 'blob' })
+      .pipe(
+        map<Blob, string>((res) => {
+          return URL.createObjectURL(res);
+        }),
+      );
   }
 
   getQNA(masterId: string, eventId: string): Observable<QNA[]> {
-    return this.httpClient.get(ApiUrls.qnas(masterId, eventId)).pipe(
-      map<any, QNA[]>(res => res.data)
+    return this.httpClient
+      .get(ApiUrls.qnas(masterId, eventId))
+      .pipe(map<any, QNA[]>((res) => res.data));
+  }
+
+  setQNA(
+    masterId: string,
+    eventId: string,
+    qna: QNA,
+    confirmationService?: ConfirmationService,
+  ): Observable<{ id: string } | undefined> {
+    const question =
+      qna.question.length > 50
+        ? qna.question.substring(0, 50) + '...'
+        : qna.question;
+    return this.callWithRetry(
+      this.httpClient
+        .post(ApiUrls.qnas(masterId, eventId, qna.id), { data: qna })
+        .pipe(map<any, { id: string }>((res) => res.data)),
+      confirmationService,
+      {
+        header: 'Error while saving Q&A',
+        message: `"${question}" could not be saved. Try again or skip it.`,
+      },
     );
   }
 
-  setQNA(masterId: string, eventId: string, qna: QNA, confirmationService?: ConfirmationService): Observable<{id: string} | undefined> {
-    const question = qna.question.length > 50 ? qna.question.substring(0, 50) + '...' : qna.question;
-    return this.callWithRetry(this.httpClient.post(ApiUrls.qnas(masterId, eventId, qna.id), {data: qna}).pipe(
-      map<any, {id: string}>(res => res.data)
-    ),
-      confirmationService, {
-      header: 'Error while saving Q&A',
-      message: `"${question}" could not be saved. Try again or skip it.`
-    });
-  }
-
-  deleteQNA(masterId: string, eventId: string, qna: QNA, confirmationService?: ConfirmationService): Observable<unknown> {
-    const question = qna.question.length > 50 ? qna.question.substring(0, 50) + '...' : qna.question;
+  deleteQNA(
+    masterId: string,
+    eventId: string,
+    qna: QNA,
+    confirmationService?: ConfirmationService,
+  ): Observable<unknown> {
+    const question =
+      qna.question.length > 50
+        ? qna.question.substring(0, 50) + '...'
+        : qna.question;
     return this.callWithRetry(
       this.httpClient.delete(ApiUrls.qnas(masterId, eventId, qna.id)),
       confirmationService,
       {
         header: 'Error while deleting Q&A',
-        message: `"${question}" could not be deleted. Try again or skip it.`
-      }
+        message: `"${question}" could not be deleted. Try again or skip it.`,
+      },
     );
   }
 
-  private callWithRetry<D>(obs: Observable<D>, confirmationService?: ConfirmationService, confOpts?: {header: string, message: string}): Observable<D | undefined> {
+  private callWithRetry<D>(
+    obs: Observable<D>,
+    confirmationService?: ConfirmationService,
+    confOpts?: { header: string; message: string },
+  ): Observable<D | undefined> {
     return obs.pipe(
       catchError<any, Observable<D | undefined>>((err: HttpErrorResponse) => {
         if (!confirmationService || !confOpts) {
@@ -566,7 +725,7 @@ export class ApiService {
         }
         const respObs$ = new Subject<string>();
 
-        if(err.status === 412) {
+        if (err.status === 412) {
           confOpts.message += ' (Error: too big)';
         }
 
@@ -579,11 +738,11 @@ export class ApiService {
           accept: () => respObs$.next('skip'),
           rejectLabel: 'Retry',
           rejectIcon: 'hidden',
-          reject: () => respObs$.next('retry')
+          reject: () => respObs$.next('retry'),
         });
 
         return respObs$.pipe(
-          switchMap(retry => {
+          switchMap((retry) => {
             let retObs$;
             if (retry === 'retry') {
               retObs$ = this.callWithRetry(obs, confirmationService, confOpts);
@@ -594,11 +753,11 @@ export class ApiService {
               // https://stackoverflow.com/questions/47031924/when-using-rxjs-why-doesnt-switchmap-trigger-a-complete-event
               // L'outer non completa in automatico se l'inner completa
               // @ts-ignore
-              finalize(() => respObs$.complete())
+              finalize(() => respObs$.complete()),
             );
-          })
+          }),
         );
-      })
+      }),
     );
   }
 }

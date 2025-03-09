@@ -14,6 +14,14 @@ Run `ng generate component component-name` to generate a new component. You can 
 
 Run `ng build` to build the project. The build artifacts will be stored in the `dist/` directory.
 
+### Update database.type
+
+Go in the folder _netlify/utils_.  
+You need an access token too, _export SUPABASE_ACCESS_TOKEN=_.  
+The process may block, check the output file, it could ask for something.
+
+`npx supabase gen types typescript --project-id wwquwqcvoqbrmadllcmo --schema db > database.type.ts`
+
 ## Running unit tests
 
 Run `ng test` to execute the unit tests via [Karma](https://karma-runner.github.io).
@@ -27,9 +35,11 @@ Run `ng e2e` to execute the end-to-end tests via a platform of your choice. To u
 To get more help on the Angular CLI use `ng help` or go check out the [Angular CLI Overview and Command Reference](https://angular.io/cli) page.
 
 ## Release
+
 Do a release with git-flow, update the version with npm and then finish the release deleting the tag created by npm (we're using the git-flow one).
 
 Example:
+
 ```bash
 $ git-flow release start 1.6.1
 $ npm version 1.6.1

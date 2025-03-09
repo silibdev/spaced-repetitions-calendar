@@ -7,10 +7,9 @@ import { SettingsService } from '../../home/services/settings.service';
   selector: 'app-repetition-schemas',
   templateUrl: './repetition-schemas.component.html',
   styleUrls: ['./repetition-schemas.component.scss'],
-  providers: [MessageService, ConfirmationService]
+  providers: [MessageService, ConfirmationService],
 })
 export class RepetitionSchemasComponent implements OnInit {
-
   repSchemasForm: UntypedFormArray;
   addingNew = false;
 
@@ -18,16 +17,19 @@ export class RepetitionSchemasComponent implements OnInit {
     private settingsService: SettingsService,
     private formBuilder: UntypedFormBuilder,
     private messageService: MessageService,
-    private confirmationService: ConfirmationService
+    private confirmationService: ConfirmationService,
   ) {
-    this.repSchemasForm = formBuilder.array(this.settingsService.repetitionSchemaOpts.map(rs => ([{
-      value: rs.value,
-      disabled: true
-    }])));
+    this.repSchemasForm = formBuilder.array(
+      this.settingsService.repetitionSchemaOpts.map((rs) => [
+        {
+          value: rs.value,
+          disabled: true,
+        },
+      ]),
+    );
   }
 
-  ngOnInit(): void {
-  }
+  ngOnInit(): void {}
 
   enableEdit(index: number): void {
     this.repSchemasForm.at(index).enable();
@@ -35,7 +37,7 @@ export class RepetitionSchemasComponent implements OnInit {
 
   private cancelOperation(index: number, success: boolean): void {
     this.repSchemasForm.at(index).disable();
-    if ((index + 1) === this.repSchemasForm.length && this.addingNew) {
+    if (index + 1 === this.repSchemasForm.length && this.addingNew) {
       this.addingNew = false;
       if (!success) {
         this.repSchemasForm.removeAt(index);
@@ -49,13 +51,13 @@ export class RepetitionSchemasComponent implements OnInit {
     if (success) {
       this.messageService.add({
         summary: 'Saved!',
-        severity: 'success'
+        severity: 'success',
       });
     } else {
       this.messageService.add({
         summary: 'Error!',
         detail: 'Schema is already present.',
-        severity: 'error'
+        severity: 'error',
       });
     }
     this.cancelOperation(index, success);
@@ -77,7 +79,7 @@ export class RepetitionSchemasComponent implements OnInit {
       icon: 'pi pi-exclamation-triangle',
       accept: () => {
         this.delete(index);
-      }
+      },
     });
   }
 
@@ -86,7 +88,7 @@ export class RepetitionSchemasComponent implements OnInit {
     this.repSchemasForm.removeAt(index);
     this.messageService.add({
       summary: 'Deleted!',
-      severity: 'success'
+      severity: 'success',
     });
     this.cancelOperation(index, true);
   }

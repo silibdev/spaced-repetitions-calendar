@@ -7,30 +7,30 @@ import { Category } from '../../home/models/settings.model';
 @Component({
   selector: 'app-categories',
   templateUrl: './categories.component.html',
-  styleUrls: ['./categories.component.scss']
+  styleUrls: ['./categories.component.scss'],
 })
 export class CategoriesComponent implements OnInit {
-
-//Array of group label-value
+  //Array of group label-value
   categoriesForm: UntypedFormArray;
   addingNew = false;
 
   constructor(
     private settingsService: SettingsService,
     private formBuilder: UntypedFormBuilder,
-    private messageService: MessageService
+    private messageService: MessageService,
   ) {
-    this.categoriesForm = formBuilder.array(this.settingsService.categories.map(category =>
-      this.formBuilder.group({
-        label: category.label,
-        value: category.value
-      })
-    ));
+    this.categoriesForm = formBuilder.array(
+      this.settingsService.categories.map((category) =>
+        this.formBuilder.group({
+          label: category.label,
+          value: category.value,
+        }),
+      ),
+    );
     this.categoriesForm.disable();
   }
 
-  ngOnInit(): void {
-  }
+  ngOnInit(): void {}
 
   enableEdit(index: number): void {
     this.categoriesForm.at(index).enable();
@@ -38,7 +38,7 @@ export class CategoriesComponent implements OnInit {
 
   private cancelOperation(index: number, success: boolean): void {
     this.categoriesForm.at(index).disable();
-    if ((index + 1) === this.categoriesForm.length && this.addingNew) {
+    if (index + 1 === this.categoriesForm.length && this.addingNew) {
       this.addingNew = false;
       if (!success) {
         this.categoriesForm.removeAt(index);
@@ -52,13 +52,13 @@ export class CategoriesComponent implements OnInit {
     if (success) {
       this.messageService.add({
         summary: 'Saved!',
-        severity: 'success'
+        severity: 'success',
       });
     } else {
       this.messageService.add({
         summary: 'Error!',
         detail: 'Category is already present.',
-        severity: 'error'
+        severity: 'error',
       });
     }
     this.cancelOperation(index, success);
@@ -74,10 +74,12 @@ export class CategoriesComponent implements OnInit {
   }
 
   addNew(): void {
-    this.categoriesForm.push(this.formBuilder.group({
-      value: 'cod' + Date.now(),
-      label: 'New category'
-    }));
+    this.categoriesForm.push(
+      this.formBuilder.group({
+        value: 'cod' + Date.now(),
+        label: 'New category',
+      }),
+    );
     this.addingNew = true;
   }
 }

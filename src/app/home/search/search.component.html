@@ -8,18 +8,15 @@
     (onSelect)="selectResult($event)"
   >
     <ng-template let-sr pTemplate="item">
-          <span [style.white-space]="'normal'">
-            <span
-              class="pi pi-circle-fill"
-              [style.color]="sr.color.primary"
-            ></span>
-            {{sr.title}}
-          </span>
-      <br>
-      <span [style.white-space]="'normal'">{{sr.shortDescription}}</span>
+      <span [style.white-space]="'normal'">
+        <span class="pi pi-circle-fill" [style.color]="sr.color.primary"></span>
+        {{ sr.title }}
+      </span>
+      <br />
+      <span [style.white-space]="'normal'">{{ sr.shortDescription }}</span>
     </ng-template>
   </p-autoComplete>
   <span class="p-inputgroup-addon">
-      <span class="pi pi-search"></span>
-    </span>
+    <span class="pi pi-search"></span>
+  </span>
 </div>

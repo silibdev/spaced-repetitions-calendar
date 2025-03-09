@@ -1,22 +1,35 @@
 <p-confirmDialog icon="pi pi-exclamation-triangle"></p-confirmDialog>
 <p-toast></p-toast>
 <!--<button (click)="loaderService.startLoading()">Start</button>-->
-<div class="p-component loader-container" *ngIf="loadingValuePerc$ | async as progressPerc">
+<div
+  class="p-component loader-container"
+  *ngIf="loadingValuePerc$ | async as progressPerc"
+>
   <div class="loader-bkg">
-    <img class="loader h-6rem md:h-10rem" alt="Loading" src="assets/{{loaderAsset$ | async}}"/>
+    <img
+      class="loader h-6rem md:h-10rem"
+      alt="Loading"
+      src="assets/{{ loaderAsset$ | async }}"
+    />
     <div class="loader-text">Loading</div>
   </div>
-  <p-progressBar [style.width]="'90vw'" [mode]="'determinate'"
-                 [value]="progressPerc"></p-progressBar>
-<!--  <div [style.z-index]="0">-->
-<!--    <button (click)="loaderService.startLoading()">Start</button>-->
-<!--    <button (click)="loaderService.stopLoading()">Stop</button>-->
-<!--  </div>-->
+  <p-progressBar
+    [style.width]="'90vw'"
+    [mode]="'determinate'"
+    [value]="progressPerc"
+  ></p-progressBar>
+  <!--  <div [style.z-index]="0">-->
+  <!--    <button (click)="loaderService.startLoading()">Start</button>-->
+  <!--    <button (click)="loaderService.stopLoading()">Stop</button>-->
+  <!--  </div>-->
 </div>
 <div>
   <p-menubar [model]="(menu$ | async) || []">
     <ng-template pTemplate="start">
-      <p-button styleClass="py-0 px-2 p-button-text p-button-plain" routerLink="home">
+      <p-button
+        styleClass="py-0 px-2 p-button-text p-button-plain"
+        routerLink="home"
+      >
         <ng-template pTemplate="content">
           <span class="pi pi-calendar pr-2"></span>
           <span class="lg:text-xl md:text-lg">Spaced Repetition Calendar</span>
@@ -25,13 +38,13 @@
     </ng-template>
     <ng-template pTemplate="end">
       <p-button
-        *ngIf="(user$ | async) as user"
+        *ngIf="user$ | async as user"
         [styleClass]="'p-button-text p-button-plain'"
         (click)="menu.toggle($event)"
       >
         <ng-template pTemplate="content">
           <span class="pi pi-user md:pr-2"></span>
-          <span class="hidden md:block">{{user.name}}</span>
+          <span class="hidden md:block">{{ user.name }}</span>
           <p-badge
             *ngIf="pendingChanges$ | async as pendingChanges"
             [value]="pendingChanges"

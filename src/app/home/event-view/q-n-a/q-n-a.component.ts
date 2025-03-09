@@ -1,5 +1,17 @@
-import { Component, Input, OnChanges, OnDestroy, SimpleChanges } from '@angular/core';
-import { BehaviorSubject, combineLatestWith, map, Observable, shareReplay } from 'rxjs';
+import {
+  Component,
+  Input,
+  OnChanges,
+  OnDestroy,
+  SimpleChanges,
+} from '@angular/core';
+import {
+  BehaviorSubject,
+  combineLatestWith,
+  map,
+  Observable,
+  shareReplay,
+} from 'rxjs';
 import { QNA, QNAStatus } from '../../models/spaced-rep.model';
 import confetti from 'canvas-confetti';
 import { ConfirmationService } from 'primeng/api';
@@ -10,12 +22,11 @@ import { SoundsService } from '../../services/sounds.service';
   selector: 'app-q-n-a',
   templateUrl: './q-n-a.component.html',
   styleUrls: ['./q-n-a.component.scss'],
-  providers: [ConfirmationService]
+  providers: [ConfirmationService],
 })
 export class QNAComponent implements OnChanges, OnDestroy {
-
   @Input()
-  ids: { masterId: string, eventId: string } | undefined;
+  ids: { masterId: string; eventId: string } | undefined;
 
   qna$?: Observable<QNA[]>;
   enableDelete = false;
@@ -25,9 +36,8 @@ export class QNAComponent implements OnChanges, OnDestroy {
   constructor(
     private qnaFormService: QNAFormService,
     private confirmationService: ConfirmationService,
-    private soundsService: SoundsService
-  ) {
-  }
+    private soundsService: SoundsService,
+  ) {}
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['ids']) {
@@ -35,12 +45,12 @@ export class QNAComponent implements OnChanges, OnDestroy {
     }
   }
 
-  private loadQNA(ids: { masterId: string, eventId: string } | undefined) {
+  private loadQNA(ids: { masterId: string; eventId: string } | undefined) {
     this.enableDelete = false;
     this.qna$ = this.qnaFormService.load(ids?.masterId, ids?.eventId).pipe(
       combineLatestWith(this.reorder$),
       map(([qna]) => qna.sort((a, b) => a.question.localeCompare(b.question))),
-      shareReplay(1)
+      shareReplay(1),
     );
   }
 
@@ -48,19 +58,20 @@ export class QNAComponent implements OnChanges, OnDestroy {
     this.reorder$.next(true);
   }
 
-  setStatus(qna: QNA, status: 'R' | 'C' | 'W') { // Reset | Correct | Wrong
+  setStatus(qna: QNA, status: 'R' | 'C' | 'W') {
+    // Reset | Correct | Wrong
     const s: Record<string, QNAStatus> = {
       R: undefined,
       C: 'correct',
-      W: 'wrong'
+      W: 'wrong',
     };
     qna.status = s[status];
 
     const audioMap = {
       C: () => this.soundsService.playSound('correct'),
       W: () => this.soundsService.playSound('wrong'),
-      R: () => Promise.resolve()
-    }
+      R: () => Promise.resolve(),
+    };
 
     const audioPromise = audioMap[status]();
     audioPromise.then(() => {
@@ -70,7 +81,7 @@ export class QNAComponent implements OnChanges, OnDestroy {
           zIndex: 999999,
           origin: {
             x: 0.5,
-            y: 0.75
+            y: 0.75,
           },
           shapes: ['circle', 'square', 'star'],
           spread: 90,
@@ -95,7 +106,7 @@ export class QNAComponent implements OnChanges, OnDestroy {
       icon: 'pi pi-exclamation-triangle',
       accept: () => {
         this.deleteQNA(qna);
-      }
+      },
     });
   }
 

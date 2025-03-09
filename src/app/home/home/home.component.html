@@ -1,5 +1,4 @@
 <div class="mb-8">
-
   <div class="grid lg:justify-content-between">
     <div class="col-12 sm:col-8 md:col-5 lg:col-4 xl:col-3">
       <div class="field grid mb-0">
@@ -21,14 +20,29 @@
     </div>
   </div>
 
-
-
-  <app-calendar-header [(view)]="view" [viewDate]="viewDate" (viewDateChange)="viewDateChange($event)">
+  <app-calendar-header
+    [(view)]="view"
+    [viewDate]="viewDate"
+    (viewDateChange)="viewDateChange($event)"
+  >
   </app-calendar-header>
 
-  <div [ngSwitch]="view" class="mt-3 calendar-container" *ngIf="events$ | async as events">
-    <ng-template #openDayEventsTemplate let-events="events" let-isOpen="isOpen" let-eventClicked="eventClicked">
-      <app-day-events-view [events]="events" [isOpen]="isOpen" (eventClicked)="eventClicked.emit($event)"></app-day-events-view>
+  <div
+    [ngSwitch]="view"
+    class="mt-3 calendar-container"
+    *ngIf="events$ | async as events"
+  >
+    <ng-template
+      #openDayEventsTemplate
+      let-events="events"
+      let-isOpen="isOpen"
+      let-eventClicked="eventClicked"
+    >
+      <app-day-events-view
+        [events]="events"
+        [isOpen]="isOpen"
+        (eventClicked)="eventClicked.emit($event)"
+      ></app-day-events-view>
     </ng-template>
     <mwl-calendar-month-view
       *ngSwitchCase="CalendarView.Month"
@@ -67,10 +81,13 @@
     (click)="open = true"
   ></button>
 
-  <p-dialog appMaximized [(visible)]="open" [modal]="true" (onHide)="eventFormService.reset()">
-    <div *pTemplate="'header'">
-      Create event
-    </div>
+  <p-dialog
+    appMaximized
+    [(visible)]="open"
+    [modal]="true"
+    (onHide)="eventFormService.reset()"
+  >
+    <div *pTemplate="'header'">Create event</div>
     <ng-container *ngIf="open">
       <app-event-view #content1 [event]="undefined"></app-event-view>
       <p-blockUI [target]="content1" [blocked]="loading">
@@ -78,34 +95,70 @@
       </p-blockUI>
     </ng-container>
     <ng-template pTemplate="footer">
-      <button pButton [label]="'Cancel'" [disabled]="loading" class="p-button-outlined" [style.float]="'left'" (click)="open = false"></button>
-      <button pButton [label]="'Create'" [loading]="loading" (click)="createSpacedRep()"></button>
+      <button
+        pButton
+        [label]="'Cancel'"
+        [disabled]="loading"
+        class="p-button-outlined"
+        [style.float]="'left'"
+        (click)="open = false"
+      ></button>
+      <button
+        pButton
+        [label]="'Create'"
+        [loading]="loading"
+        (click)="createSpacedRep()"
+      ></button>
     </ng-template>
   </p-dialog>
 
-
-  <p-dialog appMaximized [(visible)]="openEdit" [modal]="true" (onHide)="closeEditEvent()" (onShow)="showEditEvent()">
-    <div *pTemplate="'header'" class="flex justify-content-between" [style.width]="'100%'">
-      <span><span class="font-bold">{{editEventModel?.title}}</span> </span>
-      <span *ngIf="autoSavingState">{{autoSavingState === 'saving' ? 'Auto saving...' : 'Auto-saved on '  + (lastAutoSave | date : 'M/d/yy, H:mm:ss')}}</span>
-      <span class="pr-4">Rep: {{editEventModel?.repetitionNumber}}</span>
+  <p-dialog
+    appMaximized
+    [(visible)]="openEdit"
+    [modal]="true"
+    (onHide)="closeEditEvent()"
+    (onShow)="showEditEvent()"
+  >
+    <div
+      *pTemplate="'header'"
+      class="flex justify-content-between"
+      [style.width]="'100%'"
+    >
+      <span
+      ><span class="font-bold">{{ editEventModel?.title }}</span>
+      </span>
+      <span *ngIf="autoSavingState">{{
+          autoSavingState === 'saving'
+            ? 'Auto saving...'
+            : 'Auto-saved on ' + (lastAutoSave | date: 'M/d/yy, H:mm:ss')
+        }}</span>
+      <span class="pr-4">Rep: {{ editEventModel?.repetitionNumber }}</span>
     </div>
     <ng-container *ngIf="editEventModel">
-      <app-event-view #content [event]="editEventModel" (reloadPhotos)="reloadPhotos($event)"></app-event-view>
+      <app-event-view
+        #content
+        [event]="editEventModel"
+        (reloadPhotos)="reloadPhotos($event)"
+      ></app-event-view>
       <p-blockUI [target]="content" [blocked]="loading">
         <p-progressSpinner></p-progressSpinner>
       </p-blockUI>
     </ng-container>
     <ng-template pTemplate="footer">
-      <button pButton [label]="'Delete'" [disabled]="loading" class="p-button-danger" [style.float]="'left'" (click)="confirmDeleteEvent()"></button>
-      <button pButton [label]="'Save'" [loading]="loading" (click)="saveEvent()"></button>
+      <button
+        pButton
+        [label]="'Delete'"
+        [disabled]="loading"
+        class="p-button-danger"
+        [style.float]="'left'"
+        (click)="confirmDeleteEvent()"
+      ></button>
+      <button
+        pButton
+        [label]="'Save'"
+        [loading]="loading"
+        (click)="saveEvent()"
+      ></button>
     </ng-template>
   </p-dialog>
 </div>
-<p-confirmDialog
-  icon="pi pi-exclamation-triangle"
-  header="Confirm"
-  acceptButtonStyleClass="p-button-outlined"
-  [defaultFocus]="'reject'"
-  (onHide)="notifier.next(null)"
-></p-confirmDialog>

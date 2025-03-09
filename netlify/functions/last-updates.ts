@@ -1,10 +1,10 @@
-import { Handler, HandlerResponse } from "@netlify/functions";
+import { Handler, HandlerResponse } from '@netlify/functions';
 import { createHandler, createResponse } from '../utils/utils';
 import { LastUpdatesRepository } from '../utils/last-updates.repository';
 
 const handler: Handler = createHandler({
-  getResource: getLastUpdates
-})
+  getResource: getLastUpdates,
+});
 
 async function getLastUpdates(userId: string): Promise<HandlerResponse> {
   const eventList = await LastUpdatesRepository.getLastUpdates(userId);

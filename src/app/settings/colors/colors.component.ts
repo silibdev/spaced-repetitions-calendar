@@ -7,10 +7,9 @@ import { ConfirmationService, MessageService } from 'primeng/api';
   selector: 'app-colors',
   templateUrl: './colors.component.html',
   styleUrls: ['./colors.component.scss'],
-  providers: [MessageService, ConfirmationService]
+  providers: [MessageService, ConfirmationService],
 })
 export class ColorsComponent implements OnInit {
-
   //Array of group label-value
   colorsForm: UntypedFormArray;
   addingNew = false;
@@ -19,19 +18,20 @@ export class ColorsComponent implements OnInit {
     private settingsService: SettingsService,
     private formBuilder: UntypedFormBuilder,
     private messageService: MessageService,
-    private confirmationService: ConfirmationService
+    private confirmationService: ConfirmationService,
   ) {
-    this.colorsForm = formBuilder.array(this.settingsService.colors.map(color =>
-      this.formBuilder.group({
-        label: color.label,
-        value: color.value
-      })
-    ));
+    this.colorsForm = formBuilder.array(
+      this.settingsService.colors.map((color) =>
+        this.formBuilder.group({
+          label: color.label,
+          value: color.value,
+        }),
+      ),
+    );
     this.colorsForm.disable();
   }
 
-  ngOnInit(): void {
-  }
+  ngOnInit(): void {}
 
   enableEdit(index: number): void {
     this.colorsForm.at(index).enable();
@@ -39,7 +39,7 @@ export class ColorsComponent implements OnInit {
 
   private cancelOperation(index: number, success: boolean): void {
     this.colorsForm.at(index).disable();
-    if ((index + 1) === this.colorsForm.length && this.addingNew) {
+    if (index + 1 === this.colorsForm.length && this.addingNew) {
       this.addingNew = false;
       if (!success) {
         this.colorsForm.removeAt(index);
@@ -53,13 +53,13 @@ export class ColorsComponent implements OnInit {
     if (success) {
       this.messageService.add({
         summary: 'Saved!',
-        severity: 'success'
+        severity: 'success',
       });
     } else {
       this.messageService.add({
         summary: 'Error!',
         detail: 'Color is already present.',
-        severity: 'error'
+        severity: 'error',
       });
     }
     this.cancelOperation(index, success);
@@ -81,7 +81,7 @@ export class ColorsComponent implements OnInit {
       icon: 'pi pi-exclamation-triangle',
       accept: () => {
         this.delete(index);
-      }
+      },
     });
   }
 
@@ -90,16 +90,18 @@ export class ColorsComponent implements OnInit {
     this.colorsForm.removeAt(index);
     this.messageService.add({
       summary: 'Deleted!',
-      severity: 'success'
+      severity: 'success',
     });
     this.cancelOperation(index, true);
   }
 
   addNew(): void {
-    this.colorsForm.push(this.formBuilder.group({
-      value: '#000',
-      label: undefined
-    }));
+    this.colorsForm.push(
+      this.formBuilder.group({
+        value: '#000',
+        label: undefined,
+      }),
+    );
     this.addingNew = true;
   }
 }

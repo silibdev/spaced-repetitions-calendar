@@ -20,14 +20,13 @@ import { ColorsComponent } from './colors/colors.component';
 import { ColorPickerModule } from 'primeng/colorpicker';
 import { CategoriesComponent } from './categories/categories.component';
 
-
 @NgModule({
   declarations: [
     RepetitionSchemasComponent,
     ManageDataComponent,
     GeneralComponent,
     ColorsComponent,
-    CategoriesComponent
+    CategoriesComponent,
   ],
   imports: [
     CommonModule,
@@ -43,7 +42,7 @@ import { CategoriesComponent } from './categories/categories.component';
     InputNumberModule,
     FieldsetModule,
     ConfirmDialogModule,
-    ColorPickerModule
-  ]
+    ColorPickerModule,
+  ],
 })
-export class SettingsModule { }
+export class SettingsModule {}

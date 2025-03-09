@@ -21,23 +21,39 @@ import {
   Subscription,
   switchMap,
   tap,
-  zip
+  zip,
 } from 'rxjs';
-import { CommonSpacedRepModel, Photo, SpacedRepModel } from '../models/spaced-rep.model';
-import { addMonths, format, isSameDay, isSameMonth, setDate, subMonths } from 'date-fns';
+import {
+  CommonSpacedRepModel,
+  extractCommonModel,
+  Photo,
+  SpacedRepModel,
+} from '../models/spaced-rep.model';
+import {
+  addMonths,
+  format,
+  isSameDay,
+  isSameMonth,
+  setDate,
+  subMonths,
+} from 'date-fns';
 import { ConfirmationService } from 'primeng/api';
-import { ExtendedCalendarView, SRCCalendarView } from '../calendar-header/calendar-header.component';
+import {
+  ExtendedCalendarView,
+  SRCCalendarView,
+} from '../calendar-header/calendar-header.component';
 import { SettingsService } from '../services/settings.service';
 import { Category } from '../models/settings.model';
 import { QNAFormService } from '../services/q-n-a-form.service';
 import { QNAService } from '../services/q-n-a.service';
+import { PhotoService } from '../services/photo.service';
 
 @UntilDestroy()
 @Component({
   selector: 'app-home',
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.scss'],
-  providers: [ConfirmationService]
+  providers: [ConfirmationService],
 })
 export class HomeComponent implements OnInit, OnDestroy {
   view: ExtendedCalendarView = CalendarView.Month;
@@ -49,7 +65,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   events$: Observable<CalendarEvent[]>;
 
   open = false;
-  loading = false
+  loading = false;
   activeDayIsOpen = false;
   eventToModify?: SpacedRepModel;
   openEdit?: boolean;
@@ -69,7 +85,8 @@ export class HomeComponent implements OnInit, OnDestroy {
     private spacedRepService: SpacedRepService,
     private confirmationService: ConfirmationService,
     private qnaFormService: QNAFormService,
-    private qnaService: QNAService
+    private qnaService: QNAService,
+    private photoService: PhotoService,
   ) {
     // This handle the case of multiple confirmation called in rapid succession
     // the new confirmation object is passed only after the notifier (that emits when the confirmDialog is closed) emits
@@ -77,37 +94,34 @@ export class HomeComponent implements OnInit, OnDestroy {
     const oldConfirmation = this.confirmationService.requireConfirmation$;
     this.confirmationService.requireConfirmation$ = zip(
       oldConfirmation,
-      this.notifier.pipe(delay(1000))
-    ).pipe(
-      map(([conf]) => conf)
-    );
+      this.notifier.pipe(delay(1000)),
+    ).pipe(map(([conf]) => conf));
 
     this.events$ = combineLatest([
       this.spacedRepService.getAll().pipe(
         tap(() => {
           this.categoryOpts = this.settingsService.categories;
           this.initialCategory = this.settingsService.currentCategory;
-        })
+        }),
       ),
       this.monthToView$.pipe(
         distinctUntilChanged((prev, next) => {
           // Simple equality check: get keys, sort, concatenate, check if string are equal
-          const prevString = prev.map(d => format(d, 'yyyy-MM')).join(',');
-          const nextString = next.map(d => format(d, 'yyyy-MM')).join(',');
+          const prevString = prev.map((d) => format(d, 'yyyy-MM')).join(',');
+          const nextString = next.map((d) => format(d, 'yyyy-MM')).join(',');
           return prevString === nextString;
-        })
-      )
+        }),
+      ),
     ]).pipe(
       map(([events, monthsToView]) =>
-        events.filter(e => monthsToView.some(m => isSameMonth(e.start, m)))
-      )
+        events.filter((e) => monthsToView.some((m) => isSameMonth(e.start, m))),
+      ),
     );
 
     this.viewDateChange(this.viewDate);
   }
 
-  ngOnInit(): void {
-  }
+  ngOnInit(): void {}
 
   ngOnDestroy() {
     this.removeAutoSaving();
@@ -133,40 +147,57 @@ export class HomeComponent implements OnInit, OnDestroy {
     }
     const createSpacedRep = this.eventFormService.getCreateSpacedRep();
     this.loading = true;
-    this.spacedRepService.create(createSpacedRep)
+    this.spacedRepService
+      .create(createSpacedRep)
       .pipe(
         untilDestroyed(this),
-        switchMap((commonSr) => forkJoin([
-          this.savePhotos(commonSr),
-          this.saveQNA(commonSr.id, commonSr.id)
-          ])
+        switchMap((commonSr) =>
+          forkJoin([
+            this.savePhotos(commonSr),
+            this.saveQNA(commonSr.id, commonSr.id),
+          ]),
         ),
         finalize(() => {
           this.loading = false;
           this.open = false;
-        })
-      ).subscribe()
+        }),
+      )
+      .subscribe();
   }
 
-  dayClicked({date, events}: { date: Date; events: CalendarEvent[] }): void {
+  dayClicked({ date, events }: { date: Date; events: CalendarEvent[] }): void {
     if (isSameMonth(date, this.viewDate)) {
-      this.activeDayIsOpen = !((isSameDay(this.viewDate, date) && this.activeDayIsOpen) || events.length === 0);
+      this.activeDayIsOpen = !(
+        (isSameDay(this.viewDate, date) && this.activeDayIsOpen) ||
+        events.length === 0
+      );
       this.viewDate = date;
     }
   }
 
-  reloadPhotos({event, callback}: { event: SpacedRepModel, callback: (photos?: Photo[]) => void }) {
+  reloadPhotos({
+    event,
+    callback,
+  }: {
+    event: SpacedRepModel;
+    callback: (photos?: Photo[]) => void;
+  }) {
     this.loading = true;
-    this.loadPhotos(event, true).pipe(
-      untilDestroyed(this),
-      tap(event => callback(event.photos)),
-      finalize(() => this.loading = false)
-    ).subscribe();
+    this.loadPhotos(event, true)
+      .pipe(
+        untilDestroyed(this),
+        tap((event) => callback(event.photos)),
+        finalize(() => (this.loading = false)),
+      )
+      .subscribe();
   }
 
-  private loadPhotos(event: SpacedRepModel, withRetry: boolean): Observable<SpacedRepModel> {
-    return this.spacedRepService.getPhotos(event).pipe(
-      map(photos => {
+  private loadPhotos(
+    event: SpacedRepModel,
+    withRetry: boolean,
+  ): Observable<SpacedRepModel> {
+    return this.photoService.getPhotos(extractCommonModel(event).masterId).pipe(
+      map((photos) => {
         event.photos = photos;
         return event;
       }),
@@ -179,51 +210,55 @@ export class HomeComponent implements OnInit, OnDestroy {
         this.confirmationService.confirm({
           icon: 'pi pi-exclamation-triangle',
           header: 'Error while loading photos',
-          message: 'You can retry the load or you can just skip it for the moment',
+          message:
+            'You can retry the load or you can just skip it for the moment',
           acceptLabel: 'Skip',
           acceptIcon: 'hidden',
           accept: () => respObs$.next('skip'),
           rejectLabel: 'Retry',
           rejectIcon: 'hidden',
-          reject: () => respObs$.next('retry')
+          reject: () => respObs$.next('retry'),
         });
 
         return respObs$.pipe(
-          switchMap(retry => {
+          switchMap((retry) => {
             if (retry === 'retry') {
               return this.loadPhotos(event, withRetry);
             } else {
-              return of(event).pipe(
-                finalize(() => respObs$.complete())
-              );
+              return of(event).pipe(finalize(() => respObs$.complete()));
             }
-          })
-        )
-      })
+          }),
+        );
+      }),
     );
   }
 
   editEvent(event: SpacedRepModel): void {
-    this.spacedRepService.get(event.id as string).pipe(
-      untilDestroyed(this),
-      switchMap((sr: SpacedRepModel) =>
-        this.loadPhotos(sr, false)
-      ),
-      tap(fullEvent => {
-        this.eventToModify = fullEvent;
-        this.openEdit = true;
+    this.spacedRepService
+      .get(event.id as string)
+      .pipe(
+        untilDestroyed(this),
+        switchMap((sr: SpacedRepModel) => this.loadPhotos(sr, false)),
+        tap((fullEvent) => {
+          this.eventToModify = fullEvent;
+          this.openEdit = true;
 
-        const autoSavingTimer = this.settingsService.generalOptions.autoSavingTimer;
-        if (autoSavingTimer) {
-          this.removeAutoSaving();
-          this.autoSaveSub = this.eventFormService.onEditedSpacedRep().pipe(
-            skip(1),
-            debounceTime(autoSavingTimer * 1000),
-            tap(() => this.saveEvent(true))
-          ).subscribe();
-        }
-      })
-    ).subscribe()
+          const autoSavingTimer =
+            this.settingsService.generalOptions.autoSavingTimer;
+          if (autoSavingTimer) {
+            this.removeAutoSaving();
+            this.autoSaveSub = this.eventFormService
+              .onEditedSpacedRep()
+              .pipe(
+                skip(1),
+                debounceTime(autoSavingTimer * 1000),
+                tap(() => this.saveEvent(true)),
+              )
+              .subscribe();
+          }
+        }),
+      )
+      .subscribe();
   }
 
   removeAutoSaving(): void {
@@ -243,27 +278,37 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   confirmDeleteEvent(): void {
-    const isMasterMessage = !this.eventToModify?.linkedSpacedRepId ? ' (Deleting this will delete the whole series!)' : '';
+    const isMasterMessage = !this.eventToModify?.linkedSpacedRepId
+      ? ' (Deleting this will delete the whole series!)'
+      : '';
     this.confirmationService.confirm({
-      message: 'Are you sure do you want to delete this repetition?' + isMasterMessage,
-      accept: () => this.deleteEvent()
+      message:
+        'Are you sure do you want to delete this repetition?' + isMasterMessage,
+      accept: () => this.deleteEvent(),
     });
   }
 
   deleteEvent(): void {
     this.loading = true;
-    this.spacedRepService.deleteEvent(this.eventToModify).pipe(
-      untilDestroyed(this),
-      finalize(() => {
-        this.loading = false;
-        this.openEdit = false;
-      })
-    ).subscribe()
+    this.spacedRepService
+      .deleteEvent(this.eventToModify)
+      .pipe(
+        untilDestroyed(this),
+        finalize(() => {
+          this.loading = false;
+          this.openEdit = false;
+        }),
+      )
+      .subscribe();
   }
 
   private savePhotos(event: CommonSpacedRepModel): Observable<unknown> {
     const photos = this.eventFormService.getPhotos();
-    return this.spacedRepService.savePhotos(event, photos, this.confirmationService);
+    return this.photoService.savePhotos(
+      extractCommonModel(event).masterId,
+      photos,
+      this.confirmationService,
+    );
   }
 
   saveEvent(autoSaving?: boolean): void {
@@ -277,32 +322,41 @@ export class HomeComponent implements OnInit, OnDestroy {
       this.removeAutoSaving();
     }
     const event = this.eventFormService.getEditedSpacedRep();
-    this.spacedRepService.save(event).pipe(
-      untilDestroyed(this),
-      switchMap(() => {
-        if (autoSaving) {
-          this.autoSavingState = 'saved';
-          this.lastAutoSave = new Date();
-          return of();
-        } else {
-          return forkJoin([
-            this.savePhotos(event),
-            this.saveQNA(event.linkedSpacedRepId || event.id, event.id)
-          ]);
-        }
-      }),
-      finalize(() => {
-        if (!autoSaving) {
-          this.loading = false;
-          this.openEdit = false;
-        }
-      })
-    ).subscribe();
+    this.spacedRepService
+      .save(event)
+      .pipe(
+        untilDestroyed(this),
+        switchMap(() => {
+          if (autoSaving) {
+            this.autoSavingState = 'saved';
+            this.lastAutoSave = new Date();
+            return of();
+          } else {
+            return forkJoin([
+              this.savePhotos(event),
+              this.saveQNA(event.linkedSpacedRepId || event.id, event.id),
+            ]);
+          }
+        }),
+        finalize(() => {
+          if (!autoSaving) {
+            this.loading = false;
+            this.openEdit = false;
+          }
+        }),
+      )
+      .subscribe();
   }
 
   private saveQNA(masterId: string, eventId: string) {
     const qnas = this.qnaFormService.qnas;
     const qnasToDelete = this.qnaFormService.qnasToDelete;
-    return this.qnaService.save(masterId, eventId, qnas, qnasToDelete, this.confirmationService);
+    return this.qnaService.save(
+      masterId,
+      eventId,
+      qnas,
+      qnasToDelete,
+      this.confirmationService,
+    );
   }
 }

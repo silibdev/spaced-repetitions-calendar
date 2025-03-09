@@ -1,13 +1,14 @@
 <div class="dev-open-day-events pb-2" *ngIf="isOpen" [@enterAnimation]="">
-  <div class="dev-event-row "
-       *ngFor="let event of events"
-       (click)="eventClicked.emit({event, sourceEvent: $event})"
+  <div
+    class="dev-event-row"
+    *ngFor="let event of events"
+    (click)="eventClicked.emit({ event, sourceEvent: $event })"
   >
     <div class="dev-header grid">
       <div class="col-fixed pr-0 dev-header-1">
         <p-avatar
           [styleClass]="'event-dot'"
-          [style]="{'background-color': event.color?.primary}"
+          [style]="{ 'background-color': event.color?.primary }"
           shape="circle"
         ></p-avatar>
         <span class="dev-done" [class.visible]="event.done"></span>
@@ -15,9 +16,17 @@
       <div class="col dev-header-2">
         <div class="grid">
           <div class="col-8 md:col-9 lg:col-10 dev-title">
-            <div [class.dev-bold]="event.boldTitle" [class.dev-highlight]="event.highlightTitle">{{event.title}}</div>
+            <div
+              [class.dev-bold]="event.boldTitle"
+              [class.dev-highlight]="event.highlightTitle"
+            >
+              {{ event.title }}
+            </div>
           </div>
-          <div class="col-4 md:col-3 lg:col-2 dev-bar" *ngIf="segmentsMap$ | async as segmentsMap">
+          <div
+            class="col-4 md:col-3 lg:col-2 dev-bar"
+            *ngIf="segmentsMap$ | async as segmentsMap"
+          >
             <app-multi-segment-bar
               *ngIf="segmentsMap[event.id] | async as sm"
               [correct]="sm.correct"
@@ -26,7 +35,7 @@
             ></app-multi-segment-bar>
           </div>
           <div class="col-12 py-0 dev-short-description">
-            {{event.shortDescription}}
+            {{ event.shortDescription }}
           </div>
         </div>
       </div>

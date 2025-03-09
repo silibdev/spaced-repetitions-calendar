@@ -1,5 +1,16 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, concat, filter, firstValueFrom, from, fromEvent, Observable, of, switchMap, tap } from 'rxjs';
+import {
+  BehaviorSubject,
+  concat,
+  filter,
+  firstValueFrom,
+  from,
+  fromEvent,
+  Observable,
+  of,
+  switchMap,
+  tap,
+} from 'rxjs';
 import * as netlifyIdentity from 'netlify-identity-widget';
 import { User } from '../models/settings.model';
 import { Router } from '@angular/router';
@@ -14,7 +25,7 @@ const LOGIN_STATE_KEY = 'src-login-state';
 type LoginState = 'SYNC_LOCAL' | 'CLEAR_LOCAL' | 'ANONYM' | 'NONE';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class AuthService {
   private user$ = new BehaviorSubject<User | undefined>(undefined);
@@ -23,7 +34,7 @@ export class AuthService {
   isReady$: Observable<boolean>;
 
   get loginState(): LoginState {
-    return sessionStorage.getItem(LOGIN_STATE_KEY) as LoginState || 'NONE';
+    return (sessionStorage.getItem(LOGIN_STATE_KEY) as LoginState) || 'NONE';
   }
 
   set loginState(state: LoginState) {
@@ -33,19 +44,19 @@ export class AuthService {
   constructor(
     private router: Router,
     private spacedRepService: SpacedRepService,
-    private swUpdate: SwUpdate
+    private swUpdate: SwUpdate,
   ) {
     this.isReady$ = this._isReady$.asObservable();
 
-    this.user$.pipe(
-      tap((user) => !user && this._isReady$.next(false))
-    ).subscribe();
+    this.user$
+      .pipe(tap((user) => !user && this._isReady$.next(false)))
+      .subscribe();
 
-    netlifyIdentity.on('login', user => {
+    netlifyIdentity.on('login', (user) => {
       netlifyIdentity.close();
       this.setUser({
         name: user.user_metadata?.full_name as string,
-        token: user.token?.access_token
+        token: user.token?.access_token,
       });
     });
 
@@ -53,67 +64,80 @@ export class AuthService {
       this.resetUser();
     });
 
-    this.user$.pipe(
-      switchMap(user => {
-        if (user?.token) {
-          return fromEvent(window, 'focus').pipe(
-            filter(() => document.visibilityState === 'visible'),
-            switchMap(() => concat(
-                this.spacedRepService.syncPendingChanges(),
-                this.spacedRepService.sync(),
-                this.swUpdate.checkForUpdate().catch(err => console.log('checkUpdateError', err))
-              )
-            )
-          )
-        }
-        return of(undefined);
-      })
-    ).subscribe();
+    this.user$
+      .pipe(
+        switchMap((user) => {
+          if (user?.token) {
+            return fromEvent(window, 'focus').pipe(
+              filter(() => document.visibilityState === 'visible'),
+              switchMap(() =>
+                concat(
+                  this.spacedRepService.syncPendingChanges(),
+                  this.spacedRepService.sync(),
+                  this.swUpdate
+                    .checkForUpdate()
+                    .catch((err) => console.debug('checkUpdateError', err)),
+                ),
+              ),
+            );
+          }
+          return of(undefined);
+        }),
+      )
+      .subscribe();
   }
 
   private setUser(user: User): void {
     this.user$.next(user);
-    const doSyncLocal = (this.loginState === 'CLEAR_LOCAL' ? this.spacedRepService.desyncLocal() : of(undefined))
-      .pipe(switchMap(() => this.spacedRepService.sync()));
+    const doSyncLocal = (
+      this.loginState === 'CLEAR_LOCAL'
+        ? this.spacedRepService.desyncLocal()
+        : of(undefined)
+    ).pipe(switchMap(() => this.spacedRepService.sync()));
     firstValueFrom(
-      this.loginState === 'SYNC_LOCAL' ? this.spacedRepService.syncLocal() : doSyncLocal
-    )
-      .then(() => {
-        this._isReady$.next(true);
-        if (this.loginState !== 'NONE') {
-          this.loginState = 'NONE';
-          this.router.navigate(['home'])
-        }
-      });
+      this.loginState === 'SYNC_LOCAL'
+        ? this.spacedRepService.syncLocal()
+        : doSyncLocal,
+    ).then(() => {
+      this._isReady$.next(true);
+      if (this.loginState !== 'NONE') {
+        this.loginState = 'NONE';
+        this.router.navigate(['home']);
+      }
+    });
   }
 
   private resetUser(): void {
     this.user$.next(undefined);
-    firstValueFrom(this.spacedRepService.desyncLocal())
-      .then(() => this.router.navigate(['login']));
+    firstValueFrom(this.spacedRepService.desyncLocal()).then(() =>
+      this.router.navigate(['login']),
+    );
   }
 
-  init = () => new Promise(resolve => {
-    let resolved = false;
-    netlifyIdentity.on('init', user => {
-      // If I'm not logged, check if there is an anonymous user
-      if (!user) {
-        const localAnonymousUser = JSON.parse(localStorage.getItem(USER_DB_NAME) || 'null');
-        if (localAnonymousUser) {
-          this.setUser(localAnonymousUser);
+  init = () =>
+    new Promise((resolve) => {
+      let resolved = false;
+      netlifyIdentity.on('init', (user) => {
+        // If I'm not logged, check if there is an anonymous user
+        if (!user) {
+          const localAnonymousUser = JSON.parse(
+            localStorage.getItem(USER_DB_NAME) || 'null',
+          );
+          if (localAnonymousUser) {
+            this.setUser(localAnonymousUser);
+          }
         }
+        resolved = true;
+        resolve(undefined);
+      });
+      netlifyIdentity.on('error', (err) => console.error('Error', err));
+      // netlifyIdentity.on('open', () => console.log('Widget opened'));
+      // netlifyIdentity.on('close', () => console.log('Widget closed'));
+      netlifyIdentity.init();
+      if (!environment.production && !resolved) {
+        setTimeout(() => resolve(undefined), 2000);
       }
-      resolved = true;
-      resolve(undefined);
     });
-    netlifyIdentity.on('error', err => console.error('Error', err));
-    // netlifyIdentity.on('open', () => console.log('Widget opened'));
-    // netlifyIdentity.on('close', () => console.log('Widget closed'));
-    netlifyIdentity.init();
-    if (!environment.production && !resolved) {
-      setTimeout(() => resolve(undefined), 2000);
-    }
-  });
 
   getUser$(): Observable<User | undefined> {
     return this.user$.asObservable();
@@ -143,7 +167,7 @@ export class AuthService {
   anonymousLogin() {
     this.loginState = 'ANONYM';
     const localAnonymousUser = {
-      name: 'Local Anonymous'
+      name: 'Local Anonymous',
     };
     localStorage.setItem(USER_DB_NAME, JSON.stringify(localAnonymousUser));
     this.setUser(localAnonymousUser);
