@@ -1,22 +1,21 @@
+import { sql } from './db-connector';
 import { getPhotoPath, RepositoryResult } from './utils';
-import { DB } from './db-connector';
 import { deleteObjects } from './object-storage';
 
 export const DataRepository = {
   async deleteData(userId: string): Promise<RepositoryResult<string>> {
-    const photos = await DB.from('photo').select('id').eq('user', userId);
-    const keys = (photos.data || []).map((photo: { id: string }) => getPhotoPath(userId, photo.id));
+    const photos = await sql`SELECT id FROM "db".photo WHERE "user" = ${userId}`;
+    const keys = photos.map((photo: { id: string }) => getPhotoPath(userId, photo.id));
     await deleteObjects(keys);
 
-    // Delete dependent rows before their parent rows to respect foreign keys.
-    await DB.from('qnastatus').delete().eq('user', userId);
-    await DB.from('photo').delete().eq('user', userId);
-    await DB.from('qnatemplate').delete().eq('user', userId);
-    await DB.from('eventdescription').delete().eq('user', userId);
-    await DB.from('eventdetail').delete().eq('user', userId);
-    await DB.from('calendarevent').delete().eq('user', userId);
-    await DB.from('eventlist').delete().eq('user', userId);
-    await DB.from('settings').delete().eq('user', userId);
+    await sql`DELETE FROM "db".qnastatus WHERE "user" = ${userId}`;
+    await sql`DELETE FROM "db".photo WHERE "user" = ${userId}`;
+    await sql`DELETE FROM "db".qnatemplate WHERE "user" = ${userId}`;
+    await sql`DELETE FROM "db".eventdescription WHERE "user" = ${userId}`;
+    await sql`DELETE FROM "db".eventdetail WHERE "user" = ${userId}`;
+    await sql`DELETE FROM "db".calendarevent WHERE "user" = ${userId}`;
+    await sql`DELETE FROM "db".eventlist WHERE "user" = ${userId}`;
+    await sql`DELETE FROM "db".settings WHERE "user" = ${userId}`;
 
     return { data: 'Done', updatedAt: new Date().toISOString() };
   },

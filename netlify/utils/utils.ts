@@ -1,6 +1,4 @@
-import {
-  Handler, HandlerContext, HandlerEvent, HandlerResponse,
-} from '@netlify/functions';
+import { Handler, HandlerContext, HandlerEvent, HandlerResponse } from '@netlify/functions';
 import Busboy from 'busboy';
 
 export function getUser(context: HandlerContext): { userId: string } | HandlerResponse {
@@ -43,9 +41,7 @@ export function createHandler<P>({ getResource, postResource, deleteResource, bu
         if (queryParams && 'bulk' in queryParams) {
           const bulkBody = bodyOrError as RequestBody<any>;
           if (!('method' in bulkBody)) return { statusCode: 500, body: 'Bulk body is not correct' };
-          response = bulkResource
-            ? await bulkResource(userId, bulkBody)
-            : { statusCode: 500, body: 'Bulk operation not allowed' };
+          response = bulkResource ? await bulkResource(userId, bulkBody) : { statusCode: 500, body: 'Bulk operation not allowed' };
         } else if (postResource) response = await postResource(userId, bodyOrError, queryParams);
         break;
       }
@@ -63,19 +59,9 @@ export function createResponse<T>({ data, updatedAt, statusCode }: RepositoryRes
   return { statusCode: statusCode || 200, body: JSON.stringify({ data, updatedAt }) };
 }
 
-export async function checkLastUpdate(query: PromiseLike<{ data: any[] | null }>, lastUpdatedAt?: string): Promise<RepositoryResult<string> | undefined> {
+export async function bulkCheckLastUpdate(query: PromiseLike<{ data: any[] }>, idColumn: string, lastUpdatedAt?: Record<string, string>): Promise<RepositoryResult<Record<string, RepositoryResult<string>>> | undefined> {
   if (!lastUpdatedAt) return undefined;
   const result = await query;
-  if (!result.data?.length) return undefined;
-  const lastUpdateFromDb = getUpdatedAtFromRow(result.data[0]);
-  if (lastUpdateFromDb === lastUpdatedAt) return undefined;
-  return { data: 'OUT-OF-SYNC', statusCode: 500, updatedAt: lastUpdateFromDb };
-}
-
-export async function bulkCheckLastUpdate(query: PromiseLike<{ data: any[] | null }>, idColumn: string, lastUpdatedAt?: Record<string, string>): Promise<RepositoryResult<Record<string, RepositoryResult<string>>> | undefined> {
-  if (!lastUpdatedAt) return undefined;
-  const result = await query;
-  if (!result.data?.length) return undefined;
   const errors: Record<string, RepositoryResult<string>> = {};
   for (const row of result.data) {
     const id = row[idColumn];
