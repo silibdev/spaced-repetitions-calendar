@@ -14,12 +14,11 @@ export const EventDescriptionRepository = {
     userId: string,
     eventId: string,
   ): Promise<RepositoryResult<string>> {
-    const result = await DB.from('eventdescription')
-      .select()
-      .eq('user', userId)
-      .eq('id', eventId)
-      .maybeSingle();
-    const settingsRow: Tables<'eventdescription'> | null = result.data;
+    const rows = await DB.query<Tables<'eventdescription'>>(
+      'SELECT "user", id, description, updated_at FROM eventdescription WHERE "user" = $1 AND id = $2 LIMIT 1',
+      [userId, eventId],
+    );
+    const settingsRow = rows[0] || null;
     const data: string = settingsRow?.description || '';
     const updatedAt = getUpdatedAtFromRow(settingsRow);
     console.log('get event description', eventId);
@@ -32,22 +31,22 @@ export const EventDescriptionRepository = {
     { data: description, lastUpdatedAt }: RequestBody,
   ): Promise<RepositoryResult<string>> {
     const checkError = await checkLastUpdate(
-      DB.from('eventdescription')
-        .select('updated_at')
-        .eq('user', userId)
-        .eq('id', eventId),
+      DB.query<{ updated_at: string | Date | null }>(
+        'SELECT updated_at FROM eventdescription WHERE "user" = $1 AND id = $2',
+        [userId, eventId],
+      ),
       lastUpdatedAt,
     );
     if (checkError) return checkError;
     const updatedAt = new Date().toISOString();
-    const values: Tables<'eventdescription'> = {
-      user: userId,
-      description,
-      id: eventId,
-      updated_at: updatedAt,
-    };
-    const result = await DB.from('eventdescription').upsert(values);
-    console.log('post eventDescription', result.count);
+    await DB.query(
+      `INSERT INTO eventdescription ("user", id, description, updated_at)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT ("user", id)
+       DO UPDATE SET description = EXCLUDED.description, updated_at = EXCLUDED.updated_at`,
+      [userId, eventId, description, updatedAt],
+    );
+    console.log('post eventDescription 1');
     return { data: 'ok', updatedAt };
   },
 
@@ -55,13 +54,11 @@ export const EventDescriptionRepository = {
     userId: string,
     eventId: string,
   ): Promise<RepositoryResult<string>> {
-    const result = await DB.from('eventdescription')
-      .delete()
-      .eq('user', userId)
-      .eq('id', eventId)
-      .select()
-      .maybeSingle();
-    const eventDescriptionRow: Tables<'eventdescription'> | null = result.data;
+    const rows = await DB.query<Tables<'eventdescription'>>(
+      'DELETE FROM eventdescription WHERE "user" = $1 AND id = $2 RETURNING "user", id, description, updated_at',
+      [userId, eventId],
+    );
+    const eventDescriptionRow = rows[0] || null;
     const data: string = eventDescriptionRow?.description || '';
     const updatedAt = getUpdatedAtFromRow(eventDescriptionRow);
     console.log('delete eventDescription', data);
@@ -72,11 +69,14 @@ export const EventDescriptionRepository = {
     userId: string,
     ids: string[],
   ): Promise<RepositoryResult<Record<string, RepositoryResult<string>>>> {
-    const result = await DB.from('eventdescription')
-      .select('id, description, updated_at')
-      .eq('user', userId)
-      .in('id', ids);
-    const returnData = (result.data || []).reduce(
+    if (!ids || ids.length === 0) {
+      return { data: {}, updatedAt: new Date().toISOString() };
+    }
+    const rows = await DB.query<Tables<'eventdescription'>>(
+      'SELECT id, description, updated_at FROM eventdescription WHERE "user" = $1 AND id = ANY($2)',
+      [userId, ids],
+    );
+    const returnData = rows.reduce(
       (acc, row) => {
         const id: string = 'id=' + row.id;
         acc[id] = {
@@ -94,6 +94,9 @@ export const EventDescriptionRepository = {
     userId: string,
     bulkData: BulkRequestBodyData[],
   ): Promise<RepositoryResult<Record<string, RepositoryResult<string>>>> {
+    if (!bulkData || bulkData.length === 0) {
+      return { data: {}, updatedAt: new Date().toISOString() };
+    }
     const ids = bulkData.map(
       (bd) => new URLSearchParams(bd.queryParams).get('id') as string,
     );
@@ -106,26 +109,29 @@ export const EventDescriptionRepository = {
     );
 
     const checkErrors = await bulkCheckLastUpdate(
-      DB.from('eventdescription')
-        .select('id, updated_at')
-        .eq('user', userId)
-        .in('id', ids),
+      DB.query<{ id: string; updated_at: string | Date | null }>(
+        'SELECT id, updated_at FROM eventdescription WHERE "user" = $1 AND id = ANY($2)',
+        [userId, ids],
+      ),
       'id',
       bulkLastUpdates,
     );
     if (checkErrors) return checkErrors;
 
-    // CREATE QUERY
     const updatedAt = new Date().toISOString();
-    // CREATE VALUES FOR QUERY
-    const values: Tables<'eventdescription'>[] = bulkData.map((bd, index) => ({
-      user: userId,
-      id: ids[index],
-      description: bd.body?.data,
-      updated_at: updatedAt,
-    }));
-    const result = await DB.from('eventdescription').upsert(values);
-    console.log('post eventDescription', result.count);
+
+    for (let i = 0; i < ids.length; i++) {
+      const id = ids[i];
+      const description = bulkData[i].body?.data;
+      await DB.query(
+        `INSERT INTO eventdescription ("user", id, description, updated_at)
+         VALUES ($1, $2, $3, $4)
+         ON CONFLICT ("user", id)
+         DO UPDATE SET description = EXCLUDED.description, updated_at = EXCLUDED.updated_at`,
+        [userId, id, description, updatedAt],
+      );
+    }
+    console.log('post eventDescription bulk', bulkData.length);
 
     const returnData = bulkData.reduce(
       (acc, bd) => {

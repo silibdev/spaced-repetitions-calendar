@@ -11,10 +11,10 @@ export const CalendarEventRepository = {
     const prev = startOfMonth(addMonths(middleDate, -1)).toISOString();
     const next = endOfMonth(addMonths(middleDate, 1)).toISOString();
     console.log({ prev, next });
-    const result = await DB.from('calendarevent').select().eq('user', userId);
-    // .gte('start', prev)
-    // .lte('start', next);
-    const eventList: Tables<'calendarevent'>[] | null = result.data;
+    const eventList = await DB.query<Tables<'calendarevent'>>(
+      'SELECT "user", id, masterid, start, details FROM calendarevent WHERE "user" = $1',
+      [userId],
+    );
     const list =
       eventList?.map(({ id, start, user, details, masterid }) =>
         Object.assign(
@@ -23,7 +23,7 @@ export const CalendarEventRepository = {
             start: new Date(start).toISOString(),
             linkedSpacedRepId: masterid,
           },
-          details,
+          typeof details === 'string' ? JSON.parse(details) : details,
         ),
       ) || [];
     const updatedAt = new Date().toISOString();
@@ -36,24 +36,18 @@ export const CalendarEventRepository = {
     userId: string,
     { data: list, lastUpdatedAt }: RequestBody<any[]>,
   ): Promise<RepositoryResult<any[]>> {
-    // const checkError = await checkLastUpdate(
-    //   DB.from('eventlist')
-    //     .select('updated_at')
-    //     .eq('user', userId),
-    //   lastUpdatedAt);
-    // if (checkError) return checkError;
     const updatedAt = new Date().toISOString();
-    const values: Tables<'calendarevent'>[] = list.map(
-      ({ id, linkedSpacedRepId, start, ...details }) => ({
-        user: userId,
-        id: id,
-        masterid: linkedSpacedRepId,
-        start: start,
-        details,
-      }),
-    );
-    const result = await DB.from('calendarevent').upsert(values);
-    console.log('post list', result.count);
+    for (const item of list) {
+      const { id, linkedSpacedRepId, start, ...details } = item;
+      await DB.query(
+        `INSERT INTO calendarevent ("user", id, masterid, start, details)
+         VALUES ($1, $2, $3, $4, $5)
+         ON CONFLICT ("user", id, start)
+         DO UPDATE SET masterid = EXCLUDED.masterid, details = EXCLUDED.details`,
+        [userId, id, linkedSpacedRepId || null, start, JSON.stringify(details)],
+      );
+    }
+    console.log('post list', list.length);
     return { data: list, updatedAt };
   },
 
@@ -61,12 +55,10 @@ export const CalendarEventRepository = {
     userId: string,
     eventId: string,
   ): Promise<RepositoryResult<any>> {
-    const result = await DB.from('calendarevent')
-      .delete()
-      .eq('user', userId)
-      .or(`id.eq.${eventId},masterid.eq.${eventId}`)
-      .select();
-    const events: Tables<'calendarevent'>[] | null = result.data;
+    const events = await DB.query<Tables<'calendarevent'>>(
+      'DELETE FROM calendarevent WHERE "user" = $1 AND (id = $2 OR masterid = $2) RETURNING "user", id, masterid, start, details',
+      [userId, eventId],
+    );
     console.log(
       'delete events',
       events?.map((e) => e.id),

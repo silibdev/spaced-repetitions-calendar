@@ -1,36 +1,33 @@
 import { getPhotoPath, PHOTO_STORAGE, RepositoryResult } from './utils';
 import { DB } from './db-connector';
+import { StorageClient } from './storage-connector';
 
 export const DataRepository = {
   async deleteData(userId: string): Promise<RepositoryResult<string>> {
+    // 1. Fetch photo ids for all events belonging to the user
+    const photos = await DB.query<{ id: string }>(
+      'SELECT id FROM photo WHERE "user" = $1',
+      [userId],
+    );
+    const paths = (photos || []).map((p) => getPhotoPath(userId, p.id));
+
+    // 2. Remove files from storage
+    if (paths.length > 0) {
+      await StorageClient.remove(PHOTO_STORAGE, paths);
+    }
+
+    // 3. Delete records from all tables
     await Promise.all([
-      DB.from('settings').delete().eq('user', userId),
-      DB.from('eventlist').delete().eq('user', userId),
-      DB.from('eventdescription').delete().eq('user', userId),
-      DB.from('eventdetail')
-        .delete()
-        .eq('user', userId)
-        .select()
-        .then(async (events) => {
-          // FOR ALL EVENTS
-          const ids = (events.data || [])?.map((e) => e.id);
-          const photos = await DB.from('photo')
-            .select('id')
-            .eq('user', userId)
-            .in('eventid', ids);
-          // CREATE PATH TO STORAGE
-          const paths = (photos.data || []).map((p) =>
-            getPhotoPath(userId, p.id),
-          );
-          // DELETE THEM
-          if (paths.length) {
-            await DB.storage.from(PHOTO_STORAGE).remove(paths);
-          }
-        }),
-      DB.from('qnastatus').delete().eq('user', userId),
-      DB.from('qnatemplate').delete().eq('user', userId),
-      DB.from('photo').delete().eq('user', userId),
+      DB.query('DELETE FROM settings WHERE "user" = $1', [userId]),
+      DB.query('DELETE FROM eventlist WHERE "user" = $1', [userId]),
+      DB.query('DELETE FROM eventdescription WHERE "user" = $1', [userId]),
+      DB.query('DELETE FROM eventdetail WHERE "user" = $1', [userId]),
+      DB.query('DELETE FROM qnastatus WHERE "user" = $1', [userId]),
+      DB.query('DELETE FROM qnatemplate WHERE "user" = $1', [userId]),
+      DB.query('DELETE FROM photo WHERE "user" = $1', [userId]),
+      DB.query('DELETE FROM calendarevent WHERE "user" = $1', [userId]),
     ]);
+
     return Promise.resolve({
       data: 'Done',
       updatedAt: new Date().toISOString(),

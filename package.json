@@ -7,7 +7,8 @@
     "start:functions": "set -a; source db-scripts/.env; set +a; netlify functions:serve",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "test:netlify": "npx esbuild netlify/tests/repositories.spec.js --bundle --platform=node --format=esm --packages=external --outfile=netlify/tests/repositories.test.mjs && node netlify/tests/repositories.test.mjs && rm netlify/tests/repositories.test.mjs"
   },
   "private": true,
   "type": "module",
@@ -22,6 +23,8 @@
     "@angular/platform-browser-dynamic": "^15.2.8",
     "@angular/router": "^15.2.8",
     "@angular/service-worker": "^15.2.8",
+    "@aws-sdk/client-s3": "^3.1161.0",
+    "@neondatabase/serverless": "^1.2.0",
     "@netlify/functions": "^1.4.0",
     "@ngneat/effects-ng": "^3.1.4",
     "@ngneat/elf": "^2.5.1",
@@ -31,7 +34,6 @@
     "@ngneat/until-destroy": "^9.2.3",
     "@planetscale/database": "^1.7.0",
     "@schematics/angular": "^15.2.7",
-    "@supabase/supabase-js": "^2.42.3",
     "@types/busboy": "^1.5.0",
     "@types/howler": "^2.2.9",
     "@types/lz-string": "^1.3.34",
