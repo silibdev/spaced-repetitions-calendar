@@ -5,7 +5,6 @@ import {
   HandlerResponse,
 } from '@netlify/functions';
 import Busboy from 'busboy';
-import { PostgrestSingleResponse } from '@supabase/supabase-js';
 
 export function getUser(
   context: HandlerContext,
@@ -133,7 +132,11 @@ export interface RepositoryResult<D> {
 }
 
 export function getUpdatedAtFromRow(row: any | undefined): string {
-  return row?.updated_at || '';
+  if (!row?.updated_at) return '';
+  if (row.updated_at instanceof Date) {
+    return row.updated_at.toISOString();
+  }
+  return String(row.updated_at);
 }
 
 export function createResponse<T>({
@@ -149,17 +152,17 @@ export function createResponse<T>({
 
 // Undefined means everything is ok
 export async function checkLastUpdate(
-  query: PromiseLike<PostgrestSingleResponse<{ updated_at: string | null }[]>>,
+  queryPromise: PromiseLike<{ updated_at: string | Date | null }[]>,
   lastUpdatedAt?: string | undefined,
 ): Promise<RepositoryResult<string> | undefined> {
   if (!lastUpdatedAt) {
     return undefined;
   }
-  const updatedAtResult = await query;
-  if (!updatedAtResult.data?.length) {
+  const rows = await queryPromise;
+  if (!rows || !rows.length) {
     return undefined;
   }
-  const lastUpdateFromDb = getUpdatedAtFromRow(updatedAtResult.data[0]);
+  const lastUpdateFromDb = getUpdatedAtFromRow(rows[0]);
   if (lastUpdateFromDb === lastUpdatedAt) {
     return undefined;
   }
@@ -168,7 +171,7 @@ export async function checkLastUpdate(
 
 // Undefined means everything is ok
 export async function bulkCheckLastUpdate(
-  query: PromiseLike<PostgrestSingleResponse<{ updated_at: string | null }[]>>,
+  queryPromise: PromiseLike<{ [key: string]: any; updated_at: string | Date | null }[]>,
   idColumn: string,
   lastUpdatedAt?: Record<string, string>,
 ): Promise<
@@ -177,12 +180,12 @@ export async function bulkCheckLastUpdate(
   if (!lastUpdatedAt) {
     return undefined;
   }
-  const updatedAtResult = await query;
-  if (!updatedAtResult.data?.length) {
+  const rows = await queryPromise;
+  if (!rows || !rows.length) {
     return undefined;
   }
 
-  const rowsOutOfSync = updatedAtResult.data
+  const rowsOutOfSync = rows
     .filter(
       (row: Record<string, any>) =>
         lastUpdatedAt[row[idColumn]] &&
@@ -281,7 +284,7 @@ function parseMultipartForm(event: HandlerEvent) {
   });
 }
 
-export const PHOTO_STORAGE = 'db.photo';
+export const PHOTO_STORAGE = 'db-photos';
 
 export function getPhotoPath(user: string, id: string) {
   return `${user}/${id}`;

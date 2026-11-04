@@ -11,29 +11,37 @@ export const QNAsRepository = {
   ): Promise<RepositoryResult<any>> {
     console.log('getQNA', { userId, eventId, qnaId });
 
-    const values: Tables<'qnastatus'> = {
-      user: userId,
-      id: qnaId,
-      eventid: eventId,
-      updated_at: new Date().toISOString(),
-      status: null,
-    };
-    await DB.from('qnastatus').upsert(values, { ignoreDuplicates: true });
+    const updatedAtNow = new Date().toISOString();
+    await DB.query(
+      `INSERT INTO qnastatus ("user", eventid, id, status, updated_at)
+       VALUES ($1, $2, $3, NULL, $4)
+       ON CONFLICT ("user", eventid, id) DO NOTHING`,
+      [userId, eventId, qnaId, updatedAtNow],
+    );
 
-    const result = await DB.from('qnatemplate')
-      .select('id, question, answer, qnastatus (status)')
-      .eq('user', userId)
-      .eq('eventid', masterId)
-      .eq('id', qnaId)
-      .eq('qnastatus.eventid', eventId)
-      .maybeSingle();
+    const rows = await DB.query<{
+      id: string;
+      question: string | null;
+      answer: string | null;
+      status: string | null;
+      updated_at: string | Date | null;
+    }>(
+      `SELECT t.id, t.question, t.answer, s.status, s.updated_at
+       FROM qnatemplate t
+       LEFT JOIN qnastatus s ON s."user" = t."user" AND s.id = t.id AND s.eventid = $4
+       WHERE t."user" = $1 AND t.eventid = $2 AND t.id = $3
+       LIMIT 1`,
+      [userId, masterId, qnaId, eventId],
+    );
+
+    const first = rows[0] || null;
     const qnaRow = {
-      id: result.data?.id,
-      question: result.data?.question,
-      answer: result.data?.answer,
-      status: result.data?.qnastatus[0].status,
+      id: first?.id,
+      question: first?.question,
+      answer: first?.answer,
+      status: first?.status,
     };
-    const updatedAt = getUpdatedAtFromRow(qnaRow);
+    const updatedAt = getUpdatedAtFromRow(first);
     console.log('get qna', userId, eventId, 'qnaId', qnaId);
 
     return { data: qnaRow, updatedAt };
@@ -47,36 +55,42 @@ export const QNAsRepository = {
     console.log('getQNAs', { userId, eventId });
     const updatedAt = new Date().toISOString();
 
-    //check which statuses are present
     // 1. get questions ids
-    const r = await DB.from('qnatemplate')
-      .select('id')
-      .eq('user', userId)
-      .eq('eventid', masterId);
-    const questionIds: string[] = (r.data || []).map((r) => r.id);
+    const questions = await DB.query<{ id: string }>(
+      'SELECT id FROM qnatemplate WHERE "user" = $1 AND eventid = $2',
+      [userId, masterId],
+    );
+    const questionIds: string[] = questions.map((r) => r.id);
 
     if (questionIds.length) {
-      const values: Tables<'qnastatus'>[] = questionIds.map((id) => ({
-        user: userId,
-        eventid: eventId,
-        id,
-        updated_at: updatedAt,
-        status: null,
-      }));
-      // 2. Add statuses that are missing
-      await DB.from('qnastatus').upsert(values, { ignoreDuplicates: true });
+      for (const id of questionIds) {
+        await DB.query(
+          `INSERT INTO qnastatus ("user", eventid, id, status, updated_at)
+           VALUES ($1, $2, $3, NULL, $4)
+           ON CONFLICT ("user", eventid, id) DO NOTHING`,
+          [userId, eventId, id, updatedAt],
+        );
+      }
     }
 
-    const result = await DB.from('qnatemplate')
-      .select('id, question, answer, qnastatus (status)')
-      .eq('user', userId)
-      .eq('eventid', masterId)
-      .eq('qnastatus.eventid', eventId);
-    const qnas = (result.data || []).map((qna) => ({
+    const rows = await DB.query<{
+      id: string;
+      question: string | null;
+      answer: string | null;
+      status: string | null;
+    }>(
+      `SELECT t.id, t.question, t.answer, s.status
+       FROM qnatemplate t
+       JOIN qnastatus s ON s."user" = t."user" AND s.id = t.id AND s.eventid = $3
+       WHERE t."user" = $1 AND t.eventid = $2`,
+      [userId, masterId, eventId],
+    );
+
+    const qnas = rows.map((qna) => ({
       id: qna.id,
       question: qna.question,
       answer: qna.answer,
-      status: qna.qnastatus[0].status,
+      status: qna.status,
     }));
     console.log('get qnas', userId, eventId, 'qnas', qnas.length);
 
@@ -91,39 +105,38 @@ export const QNAsRepository = {
   ): Promise<RepositoryResult<any>> {
     const updatedAt = new Date().toISOString();
 
-    const tValues: TablesInsert<'qnatemplate'> = {
-      user: userId,
-      eventid: masterId,
-      id: qna.id,
-      question: qna.question,
-      answer: qna.answer,
-      updated_at: updatedAt,
-    };
-    const tResult = await DB.from('qnatemplate')
-      .upsert(tValues)
-      .select()
-      .single();
-    qna.id = tResult.data!.id;
+    let id = qna.id;
+    if (id) {
+      await DB.query(
+        `INSERT INTO qnatemplate ("user", eventid, id, question, answer, updated_at)
+         VALUES ($1, $2, $3, $4, $5, $6)
+         ON CONFLICT ("user", eventid, id)
+         DO UPDATE SET question = EXCLUDED.question, answer = EXCLUDED.answer, updated_at = EXCLUDED.updated_at`,
+        [userId, masterId, id, qna.question, qna.answer, updatedAt],
+      );
+    } else {
+      const generatedRows = await DB.query<{ id: string }>(
+        `INSERT INTO qnatemplate ("user", eventid, question, answer, updated_at)
+         VALUES ($1, $2, $3, $4, $5)
+         RETURNING id`,
+        [userId, masterId, qna.question, qna.answer, updatedAt],
+      );
+      id = generatedRows[0]?.id;
+    }
+    qna.id = id;
 
-    const sValues: TablesInsert<'qnastatus'> = {
-      user: userId,
-      eventid: eventId,
-      id: qna.id,
-      status: qna.status,
-      updated_at: updatedAt,
-    };
-    const sResult = await DB.from('qnastatus')
-      .upsert(sValues)
-      .select()
-      .single();
+    await DB.query(
+      `INSERT INTO qnastatus ("user", eventid, id, status, updated_at)
+       VALUES ($1, $2, $3, $4, $5)
+       ON CONFLICT ("user", eventid, id)
+       DO UPDATE SET status = EXCLUDED.status, updated_at = EXCLUDED.updated_at`,
+      [userId, eventId, id, qna.status, updatedAt],
+    );
 
-    const id = qna.id;
-
-    console.log('post qna', tResult.data, sResult.data, id);
+    console.log('post qna', id);
     return { data: { id }, updatedAt };
   },
 
-  // EventId is not used because when deleting a qna you have to delete all statuses for all events
   async deleteQNA(
     userId: string,
     masterId: string,
@@ -134,18 +147,17 @@ export const QNAsRepository = {
       id: string;
     }>
   > {
-    const sResult = await DB.from('qnastatus')
-      .delete()
-      .eq('user', userId)
-      .eq('id', qnaId);
+    const sResult = await DB.query(
+      'DELETE FROM qnastatus WHERE "user" = $1 AND id = $2',
+      [userId, qnaId],
+    );
 
-    const tResult = await DB.from('qnatemplate')
-      .delete()
-      .eq('user', userId)
-      .eq('eventid', masterId)
-      .eq('id', qnaId);
+    const tResult = await DB.query(
+      'DELETE FROM qnatemplate WHERE "user" = $1 AND eventid = $2 AND id = $3',
+      [userId, masterId, qnaId],
+    );
 
-    console.log('delete qna', tResult.count, sResult.count);
+    console.log('delete qna', tResult.length, sResult.length);
 
     return { data: { id: qnaId }, updatedAt: new Date().toISOString() };
   },

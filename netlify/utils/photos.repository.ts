@@ -6,12 +6,22 @@ import {
   RequestBody,
 } from './utils';
 import { DB } from './db-connector';
+import { StorageClient } from './storage-connector';
 import { Tables, TablesInsert } from './database.type';
 import sharp from 'sharp';
 
 export const PhotosRepository = {
-  _imageFromDBToAPI(image: string): string {
-    return Buffer.from(image.substring(2), 'hex').toString('base64');
+  _imageFromDBToAPI(image: string | Buffer): string {
+    if (Buffer.isBuffer(image)) {
+      return image.toString('base64');
+    }
+    if (typeof image === 'string') {
+      if (image.startsWith('\\x')) {
+        return Buffer.from(image.substring(2), 'hex').toString('base64');
+      }
+      return Buffer.from(image, 'binary').toString('base64');
+    }
+    return '';
   },
 
   _imageFromAPIToDB(image: Buffer): string {
@@ -21,12 +31,11 @@ export const PhotosRepository = {
   async _getPhotoFromStorage(user: string, id: string) {
     console.log({ user, id });
     const path = getPhotoPath(user, id);
-    const photo = await DB.storage.from(PHOTO_STORAGE).download(path);
+    const photoBuffer = await StorageClient.download(PHOTO_STORAGE, path);
 
-    if (!photo.data) return null;
+    if (!photoBuffer) return null;
 
-    const photoBuffer = await photo.data.arrayBuffer();
-    return Buffer.from(photoBuffer).toString('base64');
+    return photoBuffer.toString('base64');
   },
 
   async _uploadPhotoToStorage(
@@ -36,28 +45,29 @@ export const PhotosRepository = {
     { upsert } = { upsert: false },
   ) {
     const path = getPhotoPath(user, id);
-    await DB.storage
-      .from(PHOTO_STORAGE)
-      .upload(path, photo.content, { upsert, contentType: photo.mimeType });
+    await StorageClient.upload(
+      PHOTO_STORAGE,
+      path,
+      photo.content,
+      photo.mimeType,
+    );
   },
 
   async _deletePhotoFromStorage(user: string, id: string) {
     const path = getPhotoPath(user, id);
-    await DB.storage.from(PHOTO_STORAGE).remove([path]);
+    await StorageClient.remove(PHOTO_STORAGE, [path]);
   },
 
   async getPhoto(userId: string, eventId: string, photoId: string) {
     console.log('getPhoto', { userId, eventId, photoId });
     const [result, photoBuffer] = await Promise.all([
-      DB.from('photo')
-        .select('name')
-        .eq('user', userId)
-        .eq('eventid', eventId)
-        .eq('id', photoId)
-        .maybeSingle(),
+      DB.query<Pick<Tables<'photo'>, 'name'>>(
+        'SELECT name FROM photo WHERE "user" = $1 AND eventid = $2 AND id = $3 LIMIT 1',
+        [userId, eventId, photoId],
+      ),
       this._getPhotoFromStorage(userId, photoId),
     ]);
-    const photoRow: Pick<Tables<'photo'>, 'name'> | null = result.data;
+    const photoRow = result[0] || null;
     if (!photoRow) throw 'Photo not found';
     console.log('get photo', userId, eventId, 'photoId', photoId);
     return { photo: photoBuffer, name: photoRow.name };
@@ -68,13 +78,13 @@ export const PhotosRepository = {
     eventId: string,
   ): Promise<RepositoryResult<any>> {
     console.log('getPhotos', { userId, eventId });
-    const result = await DB.from('photo')
-      .select('id, name, thumbnail')
-      .eq('user', userId)
-      .eq('eventid', eventId)
-      .order('name', { ascending: true });
-    const photos: Pick<Tables<'photo'>, 'id' | 'name' | 'thumbnail'>[] =
-      result.data || [];
+    const rows = await DB.query<
+      Pick<Tables<'photo'>, 'id' | 'name' | 'thumbnail'>
+    >(
+      'SELECT id, name, thumbnail FROM photo WHERE "user" = $1 AND eventid = $2 ORDER BY name ASC',
+      [userId, eventId],
+    );
+    const photos = rows || [];
     photos.forEach((p) => {
       const thumbnailString =
         p.thumbnail && this._imageFromDBToAPI(p.thumbnail);
@@ -90,8 +100,6 @@ export const PhotosRepository = {
     { data: { newPhotos, photoMetadata } }: RequestBody<any>,
   ): Promise<RepositoryResult<string>> {
     console.log('postPhotos', { userId, eventId });
-    // const checkError = await checkLastUpdate(DB.execute("SELECT updated_at FROM EventDescription WHERE user=:userId AND id=:id", {userId, id: eventId}), lastUpdatedAt);
-    // if (checkError) return checkError;
     const updatedAt = new Date().toISOString();
 
     if (newPhotos) {
@@ -127,19 +135,16 @@ export const PhotosRepository = {
             fit: 'inside',
           })
           .toBuffer();
-        const values: TablesInsert<'photo'> = {
-          user: userId,
-          // id is generated automatically by default value in sql
-          eventid: eventId,
-          name: f.filename,
-          updated_at: updatedAt,
-          thumbnail: this._imageFromAPIToDB(thumbnail),
-        };
-        const uploaded = await DB.from('photo')
-          .upsert(values)
-          .select()
-          .single();
-        await this._uploadPhotoToStorage(userId, uploaded.data!.id, f);
+        const thumbnailHex = this._imageFromAPIToDB(thumbnail);
+
+        const insertedRows = await DB.query<{ id: string }>(
+          `INSERT INTO photo ("user", eventid, name, updated_at, thumbnail)
+           VALUES ($1, $2, $3, $4, $5)
+           RETURNING id`,
+          [userId, eventId, f.filename, updatedAt, thumbnailHex],
+        );
+        const photoId = insertedRows[0]?.id;
+        await this._uploadPhotoToStorage(userId, photoId, f);
       }),
     );
 
@@ -161,17 +166,18 @@ export const PhotosRepository = {
 
     const photoMapped = photos.map((f: any) => JSON.parse(f));
 
-    const values: TablesInsert<'photo'>[] = photoMapped
-      .filter((p) => !p.toDelete)
-      .map((f: any) => ({
-        user: userId,
-        eventid: eventId,
-        id: f.id,
-        name: f.name,
-        updated_at: updatedAt,
-      }));
-    const result = await DB.from('photo').upsert(values);
-    console.log('modified photos', result.count);
+    const photosToUpdate = photoMapped.filter((p: any) => !p.toDelete);
+
+    for (const f of photosToUpdate) {
+      await DB.query(
+        `INSERT INTO photo ("user", eventid, id, name, updated_at)
+         VALUES ($1, $2, $3, $4, $5)
+         ON CONFLICT ("user", id)
+         DO UPDATE SET name = EXCLUDED.name, updated_at = EXCLUDED.updated_at`,
+        [userId, eventId, f.id, f.name, updatedAt],
+      );
+    }
+    console.log('modified photos', photosToUpdate.length);
   },
 
   async deletePhoto(
@@ -180,14 +186,13 @@ export const PhotosRepository = {
     photoId: string,
   ): Promise<RepositoryResult<{ id: string }>> {
     const [resultDelete] = await Promise.all([
-      DB.from('photo')
-        .delete()
-        .eq('user', userId)
-        .eq('eventid', eventId)
-        .eq('id', photoId),
+      DB.query(
+        'DELETE FROM photo WHERE "user" = $1 AND eventid = $2 AND id = $3 RETURNING id',
+        [userId, eventId, photoId],
+      ),
       this._deletePhotoFromStorage(userId, photoId),
     ]);
-    console.log('deleted photo', resultDelete.count);
+    console.log('deleted photo', resultDelete.length);
     return { data: { id: photoId }, updatedAt: new Date().toISOString() };
   },
 };

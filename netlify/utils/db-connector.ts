@@ -1,20 +1,37 @@
-import { createClient, SupabaseClientOptions } from '@supabase/supabase-js';
-import fetch, { Headers, Request, Response } from 'node-fetch';
-import { Database } from './database.type';
+import { neon, NeonQueryFunction } from '@neondatabase/serverless';
 
-// @ts-ignore
-globalThis.fetch = fetch;
-// @ts-ignore
-globalThis.Headers = Headers;
-// @ts-ignore
-globalThis.Request = Request;
-// @ts-ignore
-globalThis.Response = Response;
+let sqlClient: NeonQueryFunction<false, false> | null = null;
 
-const url = process.env['DATABASE_URL']!;
-const key = process.env['DATABASE_KEY']!;
-const config: SupabaseClientOptions<'db'> = {
-  db: { schema: 'db' },
+export function getDb(): NeonQueryFunction<false, false> {
+  if (!sqlClient) {
+    const connectionString = process.env['DATABASE_URL'];
+    if (!connectionString) {
+      throw new Error('DATABASE_URL environment variable is not defined');
+    }
+    sqlClient = neon(connectionString);
+  }
+  return sqlClient;
+}
+
+/**
+ * Execute a query against Neon in the 'db' schema.
+ * Using sql.transaction to execute 'SET search_path TO db;' followed by the query,
+ * or running the parameterized query directly with search_path.
+ */
+export async function query<T = any>(
+  text: string,
+  params: any[] = [],
+): Promise<T[]> {
+  const sql = getDb();
+  // Neon sql.transaction executes statements sequentially in a single HTTP request
+  const results = await (sql as any).transaction([
+    (sql as any)`SET search_path TO db`,
+    (sql as any)(text, params),
+  ]);
+  // results[1] is the query result rows
+  return (results[1] || []) as T[];
+}
+
+export const DB = {
+  query,
 };
-
-export const DB = createClient<Database>(url, key, config);
