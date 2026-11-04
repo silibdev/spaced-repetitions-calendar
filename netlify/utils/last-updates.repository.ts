@@ -3,54 +3,21 @@ import { RepositoryResult } from './utils';
 
 export const LastUpdatesRepository = {
   async getLastUpdates(userId: string): Promise<RepositoryResult<any>> {
-    const result = await DB.from('eventlist')
-      .select(
-        `
-      updated_at,
-      settings (
-        updated_at
-      )
-      `,
-      )
-      .eq('user', userId)
-      .maybeSingle();
-    const row = result.data;
-    const eventListUpdate = row?.updated_at;
-    const settingsUpdate = row?.settings?.updated_at;
-    console.log({ eventListUpdate, settingsUpdate });
-
-    const eventResult = await DB.from('eventdetail')
-      .select(
-        `
-      id,
-      updated_at,
-      eventdescription (
-        updated_at
-      )
-      `,
-      )
-      .eq('user', userId);
-    const detUpdates: any[] = [];
-    const desUpdates: any[] = [];
-
-    (eventResult.data || []).forEach((row) => {
-      const id = row.id;
-      desUpdates.push({
-        id,
-        updatedAt: row.eventdescription?.updated_at,
-      });
-      detUpdates.push({
-        id,
-        updatedAt: row.updated_at,
-      });
-    });
-
+    const [listResult, settingsResult, eventResult, descriptionResult] = await Promise.all([
+      DB.from('eventlist').select('updated_at').eq('user', userId).maybeSingle(),
+      DB.from('settings').select('updated_at').eq('user', userId).maybeSingle(),
+      DB.from('eventdetail').select('id, updated_at').eq('user', userId),
+      DB.from('eventdescription').select('id, updated_at').eq('user', userId),
+    ]);
+    const descriptions = new Map((descriptionResult.data || []).map((row: any) => [row.id, row.updated_at]));
+    const eventDescriptions = (eventResult.data || []).map((row: any) => ({ id: row.id, updatedAt: descriptions.get(row.id) }));
+    const eventDetails = (eventResult.data || []).map((row: any) => ({ id: row.id, updatedAt: row.updated_at }));
     return {
       data: {
-        eventList: eventListUpdate,
-        eventDescriptions: desUpdates,
-        eventDetails: detUpdates,
-        settings: settingsUpdate,
+        eventList: listResult.data?.updated_at,
+        eventDescriptions,
+        eventDetails,
+        settings: settingsResult.data?.updated_at,
       },
       updatedAt: '',
     };

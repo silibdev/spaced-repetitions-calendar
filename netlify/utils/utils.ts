@@ -1,288 +1,113 @@
 import {
-  Handler,
-  HandlerContext,
-  HandlerEvent,
-  HandlerResponse,
+  Handler, HandlerContext, HandlerEvent, HandlerResponse,
 } from '@netlify/functions';
 import Busboy from 'busboy';
-import { PostgrestSingleResponse } from '@supabase/supabase-js';
 
-export function getUser(
-  context: HandlerContext,
-): { userId: string } | HandlerResponse {
-  if (!context.clientContext || !context.clientContext['user']) {
-    return {
-      statusCode: 401,
-      body: 'Unauthorized',
-    };
-  }
-  const userId: string = context.clientContext['user'].sub;
-  return { userId };
+export function getUser(context: HandlerContext): { userId: string } | HandlerResponse {
+  if (!context.clientContext || !context.clientContext['user']) return { statusCode: 401, body: 'Unauthorized' };
+  return { userId: context.clientContext['user'].sub };
 }
 
 export function getBody(body: string | null): RequestBody | HandlerResponse {
   const { data, lastUpdatedAt, method } = JSON.parse(body || '{}');
-  if (data === undefined || data === null) {
-    return {
-      statusCode: 500,
-      body: 'No data in body',
-    };
-  }
+  if (data === undefined || data === null) return { statusCode: 500, body: 'No data in body' };
   return { data, lastUpdatedAt, method };
 }
 
-export interface RequestBody<D = string> {
-  data: D;
-  lastUpdatedAt?: string;
-  method?: 'GET' | 'POST';
-}
-
+export interface RequestBody<D = string> { data: D; lastUpdatedAt?: string; method?: 'GET' | 'POST' }
 export type BulkRequestBodyData = { queryParams: string; body?: any };
 export type BulkRequestBody = RequestBody<BulkRequestBodyData[]>;
-
 export interface ResourceHandler<P> {
   getResource?: (userId: string, queryParams?: any) => Promise<HandlerResponse>;
-  postResource?: (
-    userId: string,
-    body: RequestBody<P>,
-    queryParams?: any,
-  ) => Promise<HandlerResponse>;
-  deleteResource?: (
-    userId: string,
-    queryParams?: any,
-  ) => Promise<HandlerResponse>;
-  bulkResource?: (
-    userId: string,
-    body: BulkRequestBody,
-  ) => Promise<HandlerResponse>;
+  postResource?: (userId: string, body: RequestBody<P>, queryParams?: any) => Promise<HandlerResponse>;
+  deleteResource?: (userId: string, queryParams?: any) => Promise<HandlerResponse>;
+  bulkResource?: (userId: string, body: BulkRequestBody) => Promise<HandlerResponse>;
 }
 
-export function createHandler<P>({
-  getResource,
-  postResource,
-  deleteResource,
-  bulkResource,
-}: ResourceHandler<P>): Handler {
+export function createHandler<P>({ getResource, postResource, deleteResource, bulkResource }: ResourceHandler<P>): Handler {
   return async (event, context) => {
-    let response: HandlerResponse | undefined;
     const userOrError = getUser(context);
-    if (!('userId' in userOrError)) {
-      return userOrError;
-    }
-    const userId = userOrError.userId;
+    if (!('userId' in userOrError)) return userOrError;
+    const { userId } = userOrError;
     const queryParams = event.queryStringParameters;
-    console.log('query', queryParams);
+    let response: HandlerResponse | undefined;
     switch (event.httpMethod) {
       case 'GET':
-        if (getResource) {
-          response = await getResource(userId, queryParams);
-        }
+        if (getResource) response = await getResource(userId, queryParams);
         break;
-      case 'POST':
-        let bodyOrError;
-        if (!event.headers['content-type']?.includes('json')) {
-          const data = await parseMultipartForm(event);
-          bodyOrError = { data } as RequestBody<any>;
-          console.log('form data post');
-        } else {
-          bodyOrError = getBody(event.body);
-        }
-        if (!('data' in bodyOrError)) {
-          console.log('error in body');
-          return bodyOrError;
-        }
+      case 'POST': {
+        const bodyOrError = !event.headers['content-type']?.includes('json')
+          ? { data: await parseMultipartForm(event) } as RequestBody<any>
+          : getBody(event.body);
+        if (!('data' in bodyOrError)) return bodyOrError;
         if (queryParams && 'bulk' in queryParams) {
           const bulkBody = bodyOrError as RequestBody<any>;
-          if (!('data' in bulkBody) || !('method' in bulkBody)) {
-            response = {
-              statusCode: 500,
-              body: 'Bulk body is not correct',
-            };
-          } else {
-            if (bulkResource) {
-              response = await bulkResource(userId, bulkBody);
-            } else {
-              response = {
-                statusCode: 500,
-                body: 'Bulk operation not allowed',
-              };
-            }
-          }
-        } else {
-          if (postResource) {
-            response = await postResource(userId, bodyOrError, queryParams);
-          }
-        }
+          if (!('method' in bulkBody)) return { statusCode: 500, body: 'Bulk body is not correct' };
+          response = bulkResource
+            ? await bulkResource(userId, bulkBody)
+            : { statusCode: 500, body: 'Bulk operation not allowed' };
+        } else if (postResource) response = await postResource(userId, bodyOrError, queryParams);
         break;
+      }
       case 'DELETE':
-        if (deleteResource) {
-          response = await deleteResource(userId, queryParams);
-        }
+        if (deleteResource) response = await deleteResource(userId, queryParams);
+        break;
     }
-    if (!response) {
-      return { statusCode: 405, body: 'Method Not Allowed' };
-    }
-    return response;
+    return response || { statusCode: 405, body: 'Method Not Allowed' };
   };
 }
 
-export interface RepositoryResult<D> {
-  updatedAt: string;
-  data: D;
-  statusCode?: number;
+export interface RepositoryResult<D> { updatedAt: string; data: D; statusCode?: number }
+export function getUpdatedAtFromRow(row: any | undefined): string { return row?.updated_at || ''; }
+export function createResponse<T>({ data, updatedAt, statusCode }: RepositoryResult<T>): HandlerResponse {
+  return { statusCode: statusCode || 200, body: JSON.stringify({ data, updatedAt }) };
 }
 
-export function getUpdatedAtFromRow(row: any | undefined): string {
-  return row?.updated_at || '';
-}
-
-export function createResponse<T>({
-  data,
-  updatedAt,
-  statusCode,
-}: RepositoryResult<T>): HandlerResponse {
-  return {
-    statusCode: statusCode || 200,
-    body: JSON.stringify({ data, updatedAt }),
-  };
-}
-
-// Undefined means everything is ok
-export async function checkLastUpdate(
-  query: PromiseLike<PostgrestSingleResponse<{ updated_at: string | null }[]>>,
-  lastUpdatedAt?: string | undefined,
-): Promise<RepositoryResult<string> | undefined> {
-  if (!lastUpdatedAt) {
-    return undefined;
-  }
-  const updatedAtResult = await query;
-  if (!updatedAtResult.data?.length) {
-    return undefined;
-  }
-  const lastUpdateFromDb = getUpdatedAtFromRow(updatedAtResult.data[0]);
-  if (lastUpdateFromDb === lastUpdatedAt) {
-    return undefined;
-  }
+export async function checkLastUpdate(query: PromiseLike<{ data: any[] | null }>, lastUpdatedAt?: string): Promise<RepositoryResult<string> | undefined> {
+  if (!lastUpdatedAt) return undefined;
+  const result = await query;
+  if (!result.data?.length) return undefined;
+  const lastUpdateFromDb = getUpdatedAtFromRow(result.data[0]);
+  if (lastUpdateFromDb === lastUpdatedAt) return undefined;
   return { data: 'OUT-OF-SYNC', statusCode: 500, updatedAt: lastUpdateFromDb };
 }
 
-// Undefined means everything is ok
-export async function bulkCheckLastUpdate(
-  query: PromiseLike<PostgrestSingleResponse<{ updated_at: string | null }[]>>,
-  idColumn: string,
-  lastUpdatedAt?: Record<string, string>,
-): Promise<
-  RepositoryResult<Record<string, RepositoryResult<string>>> | undefined
-> {
-  if (!lastUpdatedAt) {
-    return undefined;
+export async function bulkCheckLastUpdate(query: PromiseLike<{ data: any[] | null }>, idColumn: string, lastUpdatedAt?: Record<string, string>): Promise<RepositoryResult<Record<string, RepositoryResult<string>>> | undefined> {
+  if (!lastUpdatedAt) return undefined;
+  const result = await query;
+  if (!result.data?.length) return undefined;
+  const errors: Record<string, RepositoryResult<string>> = {};
+  for (const row of result.data) {
+    const id = row[idColumn];
+    if (lastUpdatedAt[id] && getUpdatedAtFromRow(row) !== lastUpdatedAt[id]) {
+      errors[id] = { data: 'OUT-OF-SYNC', statusCode: 500, updatedAt: getUpdatedAtFromRow(row) };
+    }
   }
-  const updatedAtResult = await query;
-  if (!updatedAtResult.data?.length) {
-    return undefined;
-  }
-
-  const rowsOutOfSync = updatedAtResult.data
-    .filter(
-      (row: Record<string, any>) =>
-        lastUpdatedAt[row[idColumn]] &&
-        getUpdatedAtFromRow(row) !== lastUpdatedAt[row[idColumn]],
-    )
-    .map((row: Record<string, any>) => ({
-      id: row[idColumn],
-      result: {
-        data: 'OUT-OF-SYNC',
-        statusCode: 500,
-        updatedAt: getUpdatedAtFromRow(row),
-      } as RepositoryResult<string>,
-    }));
-
-  if (!rowsOutOfSync.length) {
-    return undefined;
-  }
-  const errors = rowsOutOfSync.reduce(
-    (acc, err) => {
-      acc[err.id] = {
-        data: err.result.data,
-        updatedAt: err.result.updatedAt,
-        statusCode: err.result.statusCode,
-      };
-      return acc;
-    },
-    {} as Record<string, RepositoryResult<string>>,
-  );
-  return { data: errors, statusCode: 500, updatedAt: new Date().toISOString() };
+  return Object.keys(errors).length ? { data: errors, statusCode: 500, updatedAt: new Date().toISOString() } : undefined;
 }
 
-export interface ParsedFile<C = any> {
-  filename: string;
-  mimeType: string;
-  encoding: string;
-  content: C;
-}
-
-function parseMultipartForm(event: HandlerEvent) {
+export interface ParsedFile<C = any> { filename: string; mimeType: string; encoding: string; content: C }
+function parseMultipartForm(event: HandlerEvent): Promise<Record<string, any>> {
   return new Promise((resolve, reject) => {
-    const busboy = Busboy({
-      headers: {
-        'content-type':
-          event.headers['content-type'] || event.headers['Content-Type'],
-      },
-    });
-    const result: any = {};
-
-    const addField = (fieldname: string, value: any) => {
-      const oldField = result[fieldname];
-      if (!oldField) {
-        result[fieldname] = value;
-      } else if (oldField instanceof Array) {
-        oldField.push(value);
-      } else {
-        result[fieldname] = [oldField, value];
-      }
+    const busboy = Busboy({ headers: { 'content-type': event.headers['content-type'] || event.headers['Content-Type'] } });
+    const result: Record<string, any> = {};
+    const addField = (name: string, value: any) => {
+      if (result[name] === undefined) result[name] = value;
+      else if (Array.isArray(result[name])) result[name].push(value);
+      else result[name] = [result[name], value];
     };
-
     busboy.on('file', (fieldname, file, { filename, encoding, mimeType }) => {
-      let content: any;
-
-      file.on('data', (data) => {
-        content = data;
-      });
-
-      file.on('end', () => {
-        if (content) {
-          const myFile: ParsedFile = {
-            filename,
-            mimeType,
-            encoding,
-            content,
-          };
-          addField(fieldname, myFile);
-        }
-      });
+      const chunks: Buffer[] = [];
+      file.on('data', (chunk: Buffer) => chunks.push(chunk));
+      file.on('error', reject);
+      file.on('end', () => addField(fieldname, { filename, mimeType, encoding, content: Buffer.concat(chunks) }));
     });
-
-    busboy.on('field', (fieldname, value) => {
-      addField(fieldname, value);
-    });
-
-    busboy.on('error', (error) => {
-      reject(error);
-    });
-
-    busboy.on('finish', () => {
-      resolve(result);
-    });
-
-    const encoding = event.isBase64Encoded ? 'base64' : 'binary';
-
-    busboy.write(event.body, encoding);
+    busboy.on('field', addField);
+    busboy.on('error', reject);
+    busboy.on('finish', () => resolve(result));
+    busboy.write(event.body || '', event.isBase64Encoded ? 'base64' : 'binary');
     busboy.end();
   });
 }
 
-export const PHOTO_STORAGE = 'db.photo';
-
-export function getPhotoPath(user: string, id: string) {
-  return `${user}/${id}`;
-}
+export function getPhotoPath(user: string, id: string): string { return `${user}/${id}`; }

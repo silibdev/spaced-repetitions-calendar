@@ -6,43 +6,29 @@ This project was generated with [Angular CLI](https://github.com/angular/angular
 
 Run `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The app will automatically reload if you change any of the source files.
 
-## Code scaffolding
-
-Run `ng generate component component-name` to generate a new component. You can also use `ng generate directive|pipe|service|class|guard|interface|enum|module`.
-
 ## Build
 
-Run `ng build` to build the project. The build artifacts will be stored in the `dist/` directory.
+Run `ng build` for a production build. Run `ng test` to execute unit tests.
 
-### Update database.type
+## Backend configuration
 
-Go in the folder _netlify/utils_.  
-You need an access token too, _export SUPABASE_ACCESS_TOKEN=_.  
-The process may block, check the output file, it could ask for something.
+Netlify Functions connect to Neon using the official `@neondatabase/serverless` driver. Configure `DATABASE_URL` with the Neon PostgreSQL connection string as a server-side environment variable. The connector explicitly uses the `db` schema; the connection string and credentials must never be exposed in the Angular client.
 
-`npx supabase gen types typescript --project-id wwquwqcvoqbrmadllcmo --schema db > database.type.ts`
+Photos use Neon Object Storage through its S3-compatible API and the AWS SDK for JavaScript v3. Configure these server-side environment variables:
 
-## Running unit tests
+- `AWS_REGION`
+- `AWS_ACCESS_KEY_ID`
+- `AWS_SECRET_ACCESS_KEY`
+- `AWS_ENDPOINT_URL_S3`
 
-Run `ng test` to execute the unit tests via [Karma](https://karma-runner.github.io).
+The object bucket is `db-photos`. Files keep the existing key format `<user-id>/<photo-id>`.
 
-## Running end-to-end tests
+For local Netlify Functions, put these values in `db-scripts/.env` (do not commit secrets). Start the functions with `npm run start:functions`.
 
-Run `ng e2e` to execute the end-to-end tests via a platform of your choice. To use this command, you need to first add a package that implements end-to-end testing capabilities.
+## Update database types
 
-## Further help
-
-To get more help on the Angular CLI use `ng help` or go check out the [Angular CLI Overview and Command Reference](https://angular.io/cli) page.
+`netlify/utils/database.type.ts` describes the tables in schema `db`. Keep it aligned with the Neon schema when that schema changes.
 
 ## Release
 
 Do a release with git-flow, update the version with npm and then finish the release deleting the tag created by npm (we're using the git-flow one).
-
-Example:
-
-```bash
-$ git-flow release start 1.6.1
-$ npm version 1.6.1
-$ git tag -d v1.6.1
-$ git-flow release finish 1.6.1
-```
